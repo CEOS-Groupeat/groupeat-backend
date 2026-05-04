@@ -1,0 +1,31 @@
+# --- Java & Gradle ---
+.gradle/
+build/
+out/
+!gradle/wrapper/gradle-wrapper.jar
+
+# --- IntelliJ IDEA ---
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# --- OS & IDE (VS Code, Mac) ---
+.DS_Store
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+
+# --- Backup & Logs ---
+*.log
+*.swp
+*~
+.attach_pid*
+
+# --- Project Specific ---
+/data/
+application-local.yml
+application-secret.yml

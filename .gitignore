@@ -29,3 +29,11 @@ out/
 /data/
 application-local.yml
 application-secret.yml
+
+# --- Database & Infrastructure ---
+# 로컬 PostgreSQL 데이터 (docker-compose 볼륨)
+data/
+
+# 환경 변수 관리 파일
+.env
+.env.local

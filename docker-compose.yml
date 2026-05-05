@@ -1,0 +1,12 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: groupeat-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: groupeat
+      POSTGRES_PASSWORD: groupeat123
+      POSTGRES_DB: groupeat
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data

@@ -1,6 +1,7 @@
 package com.groupeat.global.apiPayload;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.groupeat.global.apiPayload.code.BaseCode;
 import com.groupeat.global.apiPayload.code.status.SuccessStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,6 +18,15 @@ public class ApiResponse<T> {
 
     public static <T> ApiResponse<T> onSuccess(T data) {
         return new ApiResponse<>(true, SuccessStatus.OK.getCode(), SuccessStatus.OK.getMessage(), data);
+    }
+
+    public static <T> ApiResponse<T> of(BaseCode code, T data) {
+        return new ApiResponse<>(
+                true,
+                code.getReason().getCode(),
+                code.getReason().getMessage(),
+                data
+        );
     }
 
     public static <T> ApiResponse<T> onFailure(String code, String message, T data) {

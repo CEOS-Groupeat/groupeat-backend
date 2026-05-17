@@ -55,6 +55,13 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/groupeat
+            
+            cat > .env << 'EOF'
+            ${{ secrets.PROD_ENV }}
+            EOF
+            
+            chmod 600 .env
+            
             docker compose pull
-            docker compose up -d
+            docker compose up -d --no-deps --remove-orphans app
             docker image prune -f

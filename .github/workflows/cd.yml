@@ -44,6 +44,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/groupeat-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0

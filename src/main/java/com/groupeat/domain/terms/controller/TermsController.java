@@ -1,6 +1,6 @@
 package com.groupeat.domain.terms.controller;
 
-import com.groupeat.domain.terms.TermsResponse;
+import com.groupeat.domain.terms.dto.TermsResponse;
 import com.groupeat.domain.terms.enums.TermsTargetType;
 import com.groupeat.domain.terms.service.TermsService;
 import lombok.RequiredArgsConstructor;

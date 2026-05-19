@@ -1,4 +1,4 @@
-package com.groupeat.domain.terms;
+package com.groupeat.domain.terms.dto;
 
 import com.groupeat.domain.terms.entity.Terms;
 

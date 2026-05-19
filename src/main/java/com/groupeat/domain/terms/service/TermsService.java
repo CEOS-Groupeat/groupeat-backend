@@ -1,6 +1,6 @@
 package com.groupeat.domain.terms.service;
 
-import com.groupeat.domain.terms.TermsResponse;
+import com.groupeat.domain.terms.dto.TermsResponse;
 import com.groupeat.domain.terms.entity.Terms;
 import com.groupeat.domain.terms.enums.TermsTargetType;
 import com.groupeat.domain.terms.repository.TermsRepository;

@@ -8,6 +8,4 @@ import java.util.Optional;
 public interface PhoneVerificationRepository extends JpaRepository<PhoneVerification, Long> {
 
     Optional<PhoneVerification> findTopByPhoneNumberOrderByIdDesc(String phoneNumber);
-
-    boolean existsByPhoneNumberAndVerifiedTrue(String phoneNumber);
 }

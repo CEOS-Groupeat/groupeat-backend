@@ -3,6 +3,8 @@ package com.groupeat.domain.auth.oauth.handler;
 import com.groupeat.domain.auth.oauth.dto.OAuth2LoginUserInfo;
 import com.groupeat.domain.auth.oauth.userinfo.KakaoOAuth2UserInfo;
 import com.groupeat.domain.auth.service.AuthService;
+import com.groupeat.domain.member.entity.Member;
+import com.groupeat.domain.member.enums.MemberStatus;
 import com.groupeat.domain.member.enums.MemberType;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -41,11 +43,23 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         OAuth2LoginUserInfo userInfo = extractOAuth2UserInfo(registrationId, oauth2User);
 
-        boolean registered = authService.isRegisteredUser(userInfo);
+        Member member = authService.findMemberBySocialAccount(userInfo).orElse(null);
 
-        if (registered) {
+        if (member != null && member.getMemberStatus() == MemberStatus.ACTIVE) {
             // TODO: 기존 회원이면 AccessToken / RefreshToken 발급 후 프론트 메인 페이지로 redirect
+            deleteMemberTypeCookie(response);
             response.sendRedirect("/api/auth/oauth2/success-test?status=login");
+            return;
+        }
+
+        if (member != null && member.getMemberStatus() == MemberStatus.SIGNUP_IN_PROGRESS) {
+            deleteMemberTypeCookie(response);
+            response.sendRedirect(
+                    "/api/auth/oauth2/success-test?status=signup-in-progress"
+                            + "&memberId=" + member.getId()
+                            + "&memberType=" + member.getMemberType()
+                            + "&nextStep=" + getNextStep(member.getMemberType())
+            );
             return;
         }
 
@@ -60,6 +74,13 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         // TODO: 프론트 회원가입 페이지로 변경
         // 예: http://localhost:3000/signup?signupToken=...
         response.sendRedirect("/api/auth/oauth2/success-test?status=signup&signupToken=" + encodedSignupToken);
+    }
+
+    private String getNextStep(MemberType memberType) {
+        return switch (memberType) {
+            case CUSTOMER -> "CUSTOMER_PROFILE";
+            case BUSINESS -> "BUSINESS_PROFILE";
+        };
     }
 
     private OAuth2LoginUserInfo extractOAuth2UserInfo(

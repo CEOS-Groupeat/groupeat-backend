@@ -55,9 +55,11 @@ public class PhoneVerificationService {
 
     @Transactional(readOnly = true)
     public void validateVerifiedPhoneNumber(String phoneNumber) {
-        boolean verified = phoneVerificationRepository.existsByPhoneNumberAndVerifiedTrue(phoneNumber);
+        PhoneVerification verification = phoneVerificationRepository
+                .findTopByPhoneNumberOrderByIdDesc(phoneNumber)
+                .orElseThrow(() -> new IllegalArgumentException("휴대폰 인증 요청 내역이 없습니다."));
 
-        if (!verified) {
+        if (!verification.isVerified() || verification.isExpired()) {
             throw new IllegalArgumentException("휴대폰 인증이 완료되지 않았습니다.");
         }
     }

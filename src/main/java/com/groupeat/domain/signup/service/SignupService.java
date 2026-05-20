@@ -40,6 +40,7 @@ public class SignupService {
         validateNotRegisteredSocialAccount(payload);
 
         phoneVerificationService.validateVerifiedPhoneNumber(request.phoneNumber());
+        validatePhoneNumberNotUsed(request.phoneNumber());
 
         termsAgreementValidator.validateRequiredTermsAgreed(
                 TermsTargetType.COMMON,
@@ -113,6 +114,12 @@ public class SignupService {
 
         if (exists) {
             throw new IllegalArgumentException("이미 가입된 소셜 계정입니다.");
+        }
+    }
+
+    private void validatePhoneNumberNotUsed(String phoneNumber) {
+        if (memberRepository.existsByPhoneNumber(phoneNumber)) {
+            throw new IllegalArgumentException("이미 가입된 휴대폰 번호입니다.");
         }
     }
 

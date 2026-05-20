@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -21,8 +22,11 @@ public class TermsAgreementValidator {
             TermsTargetType targetType,
             List<SignupAgreementRequest> agreements
     ) {
-        List<Terms> requiredTerms = termsRepository.findByTargetTypeAndActiveTrue(targetType)
-                .stream()
+        List<Terms> activeTerms = termsRepository.findByTargetTypeAndActiveTrue(targetType);
+
+        validateAgreementTarget(targetType, agreements, activeTerms);
+
+        List<Terms> requiredTerms = activeTerms.stream()
                 .filter(Terms::isRequired)
                 .toList();
 
@@ -43,6 +47,24 @@ public class TermsAgreementValidator {
             if (!Boolean.TRUE.equals(agreed)) {
                 throw new IllegalArgumentException("필수 약관에 동의하지 않았습니다. termsId=" + terms.getId());
             }
+        }
+    }
+
+    private void validateAgreementTarget(
+            TermsTargetType targetType,
+            List<SignupAgreementRequest> agreements,
+            List<Terms> activeTerms
+    ) {
+        Set<Long> activeTargetTermIds = activeTerms.stream()
+                .map(Terms::getId)
+                .collect(Collectors.toSet());
+
+        boolean hasInvalidTerms = agreements.stream()
+                .map(SignupAgreementRequest::termsId)
+                .anyMatch(termsId -> !activeTargetTermIds.contains(termsId));
+
+        if (hasInvalidTerms) {
+            throw new IllegalArgumentException("약관 대상이 올바르지 않습니다. targetType=" + targetType);
         }
     }
 }

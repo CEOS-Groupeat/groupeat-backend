@@ -42,6 +42,11 @@ public class AuthCookieService {
         addRefreshTokenCookie(response, member);
     }
 
+    public void clearAuthTokenCookies(HttpServletResponse response) {
+        response.addHeader(HttpHeaders.SET_COOKIE, createCookie(ACCESS_TOKEN_COOKIE, "", 0));
+        response.addHeader(HttpHeaders.SET_COOKIE, createCookie(REFRESH_TOKEN_COOKIE, "", 0));
+    }
+
     public String extractRefreshToken(HttpServletRequest request) {
         return extractCookieValue(request, REFRESH_TOKEN_COOKIE);
     }

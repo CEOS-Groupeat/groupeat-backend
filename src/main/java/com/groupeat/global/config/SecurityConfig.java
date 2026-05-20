@@ -43,6 +43,7 @@ public class SecurityConfig {
                                 "/api/phone-verifications/**",
                                 "/api/signup/**",
                                 "/api/auth/reissue",
+                                "/api/auth/logout",
                                 "/api/auth/oauth2/**",
                                 "/oauth2/**",
                                 "/login/oauth2/**"

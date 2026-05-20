@@ -1,6 +1,7 @@
 package com.groupeat.domain.auth.controller;
 
 import com.groupeat.domain.auth.dto.AuthenticatedMemberResponse;
+import com.groupeat.domain.auth.dto.LogoutResponse;
 import com.groupeat.domain.auth.dto.TokenReissueResponse;
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
 import com.groupeat.domain.auth.service.AuthCookieService;
@@ -38,5 +39,12 @@ public class AuthController {
         authService.reissueAccessToken(refreshToken, response);
 
         return new TokenReissueResponse("Access token이 재발급되었습니다.");
+    }
+
+    @PostMapping("/logout")
+    public LogoutResponse logout(HttpServletResponse response) {
+        authCookieService.clearAuthTokenCookies(response);
+
+        return new LogoutResponse("로그아웃되었습니다.");
     }
 }

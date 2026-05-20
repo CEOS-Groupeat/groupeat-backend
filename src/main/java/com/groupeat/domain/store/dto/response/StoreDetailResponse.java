@@ -3,6 +3,8 @@ package com.groupeat.domain.store.dto.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
+import java.time.LocalTime;
+
 @Builder
 public record StoreDetailResponse(
 
@@ -19,7 +21,10 @@ public record StoreDetailResponse(
         String address,
 
         @Schema(description = "평균 별점", example = "4.7")
-        Double rating,
+        Double reviewRating,
+
+        @Schema(description = "리뷰 개수", example = "128")
+        Integer reviewCount,
 
         @Schema(description = "전화번호", example = "010-1234-5678")
         String phoneNumber,
@@ -29,6 +34,12 @@ public record StoreDetailResponse(
 
         @Schema(description = "휴무일", example = "화요일 휴무")
         String closedDays,
+
+        @Schema(description = "픽업 시작 시간", example = "10:00")
+        LocalTime pickupOpenTime,
+
+        @Schema(description = "픽업 마감 시간", example = "17:00")
+        LocalTime pickupCloseTime,
 
         @Schema(description = "주문 가능 기한", example = "3")
         Integer minOrderDays,

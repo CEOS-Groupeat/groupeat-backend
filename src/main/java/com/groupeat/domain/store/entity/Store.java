@@ -37,7 +37,11 @@ public class Store extends BaseEntity {
     private String orderProcess;
 
     @Builder.Default
-    private Double rating = 0.0;
+    private Double reviewRating = 0.0;
+
+    @Builder.Default
+    @Column(name = "review_count")
+    private Integer reviewCount = 0;
 
     @Column(name = "image_url")
     private String imageUrl;

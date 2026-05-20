@@ -1,6 +1,7 @@
 package com.groupeat.domain.store.controller;
 
 import com.groupeat.domain.store.dto.response.MenuListResponse;
+import com.groupeat.domain.store.dto.response.PickupTimeResponse;
 import com.groupeat.domain.store.dto.response.StoreDetailResponse;
 import com.groupeat.domain.store.service.MenuService;
 import com.groupeat.domain.store.service.StoreService;
@@ -12,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 @Tag(name = "가게 정보 API", description = "가게 상세 조회 및 관리 API")
 @RestController
@@ -39,6 +42,16 @@ public class StoreController {
             @Nullable @AuthenticationPrincipal Long userId
     ) {
         MenuListResponse result = menuService.getStoreMenus(storeId);
+        return ApiResponse.onSuccess(result);
+    }
+
+    @Operation(summary = "특정 날짜의 픽업 가능 시간 및 수량 조회", description = "날짜를 선택하면 해당 날짜의 30분 단위 시간대별 잔여 수량을 반환합니다.")
+    @GetMapping("/{storeId}/pickup-times")
+    public ApiResponse<PickupTimeResponse> getPickupTimes(
+            @PathVariable Long storeId,
+            @RequestParam LocalDate date
+    ) {
+        PickupTimeResponse result = storeService.getAvailablePickupTimes(storeId, date);
         return ApiResponse.onSuccess(result);
     }
 }

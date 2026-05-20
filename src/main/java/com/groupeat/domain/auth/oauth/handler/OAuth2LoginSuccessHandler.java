@@ -3,7 +3,9 @@ package com.groupeat.domain.auth.oauth.handler;
 import com.groupeat.domain.auth.config.OAuth2RedirectProperties;
 import com.groupeat.domain.auth.exception.AuthErrorStatus;
 import com.groupeat.domain.auth.oauth.dto.OAuth2LoginUserInfo;
+import com.groupeat.domain.auth.oauth.userinfo.GoogleOAuth2UserInfo;
 import com.groupeat.domain.auth.oauth.userinfo.KakaoOAuth2UserInfo;
+import com.groupeat.domain.auth.oauth.userinfo.NaverOAuth2UserInfo;
 import com.groupeat.domain.auth.service.AuthCookieService;
 import com.groupeat.domain.auth.service.AuthService;
 import com.groupeat.domain.member.entity.Member;
@@ -95,8 +97,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     ) {
         return switch (registrationId) {
             case "kakao" -> KakaoOAuth2UserInfo.from(oauth2User);
-            // case "google" -> GoogleOAuth2UserInfo.from(oauth2User);
-            // case "naver" -> NaverOAuth2UserInfo.from(oauth2User);
+            case "google" -> GoogleOAuth2UserInfo.from(oauth2User);
+            case "naver" -> NaverOAuth2UserInfo.from(oauth2User);
             default -> throw new GeneralException(AuthErrorStatus.UNSUPPORTED_OAUTH_PROVIDER);
         };
     }

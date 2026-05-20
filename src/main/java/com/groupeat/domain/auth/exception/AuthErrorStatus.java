@@ -13,6 +13,7 @@ public enum AuthErrorStatus implements BaseErrorCode {
     MISSING_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH4010", "Refresh token이 없습니다."),
     MISSING_MEMBER_TYPE(HttpStatus.BAD_REQUEST, "AUTH4000", "회원 유형 정보가 없습니다."),
     UNSUPPORTED_OAUTH_PROVIDER(HttpStatus.BAD_REQUEST, "AUTH4001", "지원하지 않는 소셜 로그인입니다."),
+    INVALID_OAUTH_USER_INFO(HttpStatus.BAD_REQUEST, "AUTH4002", "소셜 사용자 정보를 확인할 수 없습니다."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH4011", "유효하지 않은 토큰입니다."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH4012", "만료된 토큰입니다."),
     NOT_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH4013", "Access token이 아닙니다."),

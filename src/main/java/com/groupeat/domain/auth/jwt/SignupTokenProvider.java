@@ -2,6 +2,7 @@ package com.groupeat.domain.auth.jwt;
 
 import com.groupeat.domain.auth.oauth.dto.OAuth2LoginUserInfo;
 import com.groupeat.domain.member.enums.MemberType;
+import com.groupeat.domain.member.enums.OAuthProvider;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -48,5 +49,17 @@ public class SignupTokenProvider {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    public SignupTokenPayload getPayload(String token) {
+        Claims claims = parseSignupToken(token);
+
+        return new SignupTokenPayload(
+                OAuthProvider.valueOf(claims.get("provider", String.class)),
+                claims.get("providerUserId", String.class),
+                claims.get("nickname", String.class),
+                claims.get("email", String.class),
+                MemberType.valueOf(claims.get("memberType", String.class))
+        );
     }
 }

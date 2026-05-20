@@ -1,5 +1,6 @@
 package com.groupeat.domain.auth.oauth.handler;
 
+import com.groupeat.domain.auth.config.OAuth2RedirectProperties;
 import com.groupeat.domain.auth.exception.AuthErrorStatus;
 import com.groupeat.domain.auth.oauth.dto.OAuth2LoginUserInfo;
 import com.groupeat.domain.auth.oauth.userinfo.KakaoOAuth2UserInfo;
@@ -32,6 +33,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final AuthService authService;
     private final AuthCookieService authCookieService;
+    private final OAuth2RedirectProperties oAuth2RedirectProperties;
 
     @Override
     public void onAuthenticationSuccess(
@@ -50,21 +52,15 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         Member member = authService.findMemberBySocialAccount(userInfo).orElse(null);
 
         if (member != null && member.getMemberStatus() == MemberStatus.ACTIVE) {
-            // TODO: 기존 회원이면 AccessToken / RefreshToken 발급 후 프론트 메인 페이지로 redirect
             authCookieService.addAuthTokenCookies(response, member);
             deleteMemberTypeCookie(response);
-            response.sendRedirect("/api/auth/oauth2/success-test?status=login");
+            response.sendRedirect(oAuth2RedirectProperties.loginSuccessUrl());
             return;
         }
 
         if (member != null && member.getMemberStatus() == MemberStatus.SIGNUP_IN_PROGRESS) {
             deleteMemberTypeCookie(response);
-            response.sendRedirect(
-                    "/api/auth/oauth2/success-test?status=signup-in-progress"
-                            + "&memberId=" + member.getId()
-                            + "&memberType=" + member.getMemberType()
-                            + "&nextStep=" + getNextStep(member.getMemberType())
-            );
+            response.sendRedirect(buildSignupInProgressRedirectUrl(member));
             return;
         }
 
@@ -76,9 +72,14 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         String encodedSignupToken = URLEncoder.encode(signupToken, StandardCharsets.UTF_8);
 
-        // TODO: 프론트 회원가입 페이지로 변경
-        // 예: http://localhost:3000/signup?signupToken=...
-        response.sendRedirect("/api/auth/oauth2/success-test?status=signup&signupToken=" + encodedSignupToken);
+        response.sendRedirect(oAuth2RedirectProperties.signupUrl() + "?signupToken=" + encodedSignupToken);
+    }
+
+    private String buildSignupInProgressRedirectUrl(Member member) {
+        return oAuth2RedirectProperties.signupInProgressUrl()
+                + "?memberId=" + member.getId()
+                + "&memberType=" + member.getMemberType()
+                + "&nextStep=" + getNextStep(member.getMemberType());
     }
 
     private String getNextStep(MemberType memberType) {

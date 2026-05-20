@@ -6,6 +6,8 @@ import com.groupeat.domain.auth.dto.TokenReissueResponse;
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
 import com.groupeat.domain.auth.service.AuthCookieService;
 import com.groupeat.domain.auth.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +20,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Auth", description = "인증 및 토큰 관리 API")
 public class AuthController {
 
     private final AuthService authService;
     private final AuthCookieService authCookieService;
 
     @GetMapping("/me")
+    @Operation(summary = "내 인증 정보 조회", description = "Access token 쿠키로 현재 로그인한 회원 정보를 조회합니다.")
     public AuthenticatedMemberResponse me(
             @AuthenticationPrincipal AuthenticatedMember member
     ) {
@@ -31,6 +35,7 @@ public class AuthController {
     }
 
     @PostMapping("/reissue")
+    @Operation(summary = "Access token 재발급", description = "Refresh token 쿠키로 Access token 쿠키를 재발급합니다.")
     public TokenReissueResponse reissue(
             HttpServletRequest request,
             HttpServletResponse response
@@ -42,6 +47,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    @Operation(summary = "로그아웃", description = "인증 쿠키를 삭제합니다.")
     public LogoutResponse logout(HttpServletResponse response) {
         authCookieService.clearAuthTokenCookies(response);
 

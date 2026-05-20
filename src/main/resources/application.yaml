@@ -70,6 +70,21 @@ jwt:
   access-secret: ${JWT_ACCESS_SECRET}
   refresh-secret: ${JWT_REFRESH_SECRET}
 
+app:
+  auth:
+    cookie:
+      secure: ${AUTH_COOKIE_SECURE:false}
+      same-site: ${AUTH_COOKIE_SAME_SITE:Lax}
+      domain: ${AUTH_COOKIE_DOMAIN:}
+  frontend:
+    oauth-redirect:
+      base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+      login-success-path: /
+      signup-path: /signup
+      signup-in-progress-path: /signup/customer
+  swagger:
+    prod-server-url: ${SWAGGER_PROD_SERVER_URL:https://api.groupeat.co.kr}
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

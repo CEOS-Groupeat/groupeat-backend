@@ -1,6 +1,7 @@
 package com.groupeat.domain.auth.service;
 
 import com.groupeat.domain.auth.exception.AuthErrorStatus;
+import com.groupeat.domain.auth.config.AuthCookieProperties;
 import com.groupeat.domain.auth.jwt.AuthTokenProvider;
 import com.groupeat.domain.member.entity.Member;
 import com.groupeat.global.exception.GeneralException;
@@ -20,6 +21,7 @@ public class AuthCookieService {
     public static final String REFRESH_TOKEN_COOKIE = "REFRESH_TOKEN";
 
     private final AuthTokenProvider authTokenProvider;
+    private final AuthCookieProperties authCookieProperties;
 
     public void addAccessTokenCookie(HttpServletResponse response, Member member) {
         String accessToken = authTokenProvider.createAccessToken(member);
@@ -70,13 +72,17 @@ public class AuthCookieService {
     }
 
     private String createCookie(String name, String value, long maxAgeSeconds) {
-        return ResponseCookie.from(name, value)
+        ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie.from(name, value)
                 .httpOnly(true)
-                .secure(false)
+                .secure(authCookieProperties.secure())
                 .path("/")
                 .maxAge(maxAgeSeconds)
-                .sameSite("Lax")
-                .build()
-                .toString();
+                .sameSite(authCookieProperties.sameSite());
+
+        if (authCookieProperties.hasDomain()) {
+            cookieBuilder.domain(authCookieProperties.domain());
+        }
+
+        return cookieBuilder.build().toString();
     }
 }

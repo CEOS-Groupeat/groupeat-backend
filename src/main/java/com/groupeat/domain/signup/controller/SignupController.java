@@ -1,5 +1,7 @@
 package com.groupeat.domain.signup.controller;
 
+import com.groupeat.domain.signup.dto.BusinessSignupRequest;
+import com.groupeat.domain.signup.dto.BusinessSignupResponse;
 import com.groupeat.domain.signup.dto.CommonSignupRequest;
 import com.groupeat.domain.signup.dto.CommonSignupResponse;
 import com.groupeat.domain.signup.dto.CustomerSignupRequest;
@@ -36,5 +38,13 @@ public class SignupController {
             @Valid @RequestBody CustomerSignupRequest request
     ) {
         return signupService.signupCustomer(request);
+    }
+
+    @PostMapping("/business")
+    @Operation(summary = "사업자 회원가입 신청", description = "사업자 추가 약관, 프로필, 사업자 인증 정보를 저장하고 승인 대기 상태로 전환합니다.")
+    public BusinessSignupResponse signupBusiness(
+            @Valid @RequestBody BusinessSignupRequest request
+    ) {
+        return signupService.signupBusiness(request);
     }
 }

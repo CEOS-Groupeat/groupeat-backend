@@ -1,6 +1,9 @@
 package com.groupeat.domain.auth.jwt;
 
 import com.groupeat.domain.member.entity.Member;
+import com.groupeat.domain.member.enums.MemberStatus;
+import com.groupeat.domain.member.enums.MemberType;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +37,27 @@ public class AuthTokenProvider {
 
     public String createRefreshToken(Member member) {
         return createToken(member, "refresh", REFRESH_TOKEN_VALID_TIME, refreshSecretKey);
+    }
+
+    public AuthenticatedMember parseAccessToken(String token) {
+        Claims claims = Jwts.parser()
+                .verifyWith(accessSecretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+
+        String tokenType = claims.get("tokenType", String.class);
+        if (!"access".equals(tokenType)) {
+            throw new IllegalArgumentException("Access token이 아닙니다.");
+        }
+
+        Number memberId = claims.get("memberId", Number.class);
+
+        return new AuthenticatedMember(
+                memberId.longValue(),
+                MemberType.valueOf(claims.get("memberType", String.class)),
+                MemberStatus.valueOf(claims.get("memberStatus", String.class))
+        );
     }
 
     private String createToken(

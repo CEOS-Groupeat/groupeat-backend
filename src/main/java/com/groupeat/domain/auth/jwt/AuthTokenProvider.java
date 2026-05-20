@@ -1,9 +1,13 @@
 package com.groupeat.domain.auth.jwt;
 
+import com.groupeat.domain.auth.exception.AuthErrorStatus;
 import com.groupeat.domain.member.entity.Member;
 import com.groupeat.domain.member.enums.MemberStatus;
 import com.groupeat.domain.member.enums.MemberType;
+import com.groupeat.global.exception.GeneralException;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,11 +44,7 @@ public class AuthTokenProvider {
     }
 
     public AuthenticatedMember parseAccessToken(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(accessSecretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        Claims claims = parseToken(token, accessSecretKey);
 
         validateTokenType(claims, "access");
 
@@ -58,11 +58,7 @@ public class AuthTokenProvider {
     }
 
     public Long parseRefreshTokenMemberId(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(refreshSecretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        Claims claims = parseToken(token, refreshSecretKey);
 
         validateTokenType(claims, "refresh");
 
@@ -70,11 +66,29 @@ public class AuthTokenProvider {
         return memberId.longValue();
     }
 
+    private Claims parseToken(String token, SecretKey secretKey) {
+        try {
+            return Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (ExpiredJwtException exception) {
+            throw new GeneralException(AuthErrorStatus.EXPIRED_TOKEN);
+        } catch (JwtException | IllegalArgumentException exception) {
+            throw new GeneralException(AuthErrorStatus.INVALID_TOKEN);
+        }
+    }
+
     private void validateTokenType(Claims claims, String expectedTokenType) {
         String tokenType = claims.get("tokenType", String.class);
 
-        if (!expectedTokenType.equals(tokenType)) {
-            throw new IllegalArgumentException(expectedTokenType + " token이 아닙니다.");
+        if ("access".equals(expectedTokenType) && !expectedTokenType.equals(tokenType)) {
+            throw new GeneralException(AuthErrorStatus.NOT_ACCESS_TOKEN);
+        }
+
+        if ("refresh".equals(expectedTokenType) && !expectedTokenType.equals(tokenType)) {
+            throw new GeneralException(AuthErrorStatus.NOT_REFRESH_TOKEN);
         }
     }
 

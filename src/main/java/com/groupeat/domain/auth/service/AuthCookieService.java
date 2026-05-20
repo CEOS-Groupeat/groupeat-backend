@@ -1,7 +1,9 @@
 package com.groupeat.domain.auth.service;
 
+import com.groupeat.domain.auth.exception.AuthErrorStatus;
 import com.groupeat.domain.auth.jwt.AuthTokenProvider;
 import com.groupeat.domain.member.entity.Member;
+import com.groupeat.global.exception.GeneralException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -55,7 +57,7 @@ public class AuthCookieService {
         Cookie[] cookies = request.getCookies();
 
         if (cookies == null) {
-            throw new IllegalArgumentException(cookieName + " 쿠키가 없습니다.");
+            throw new GeneralException(AuthErrorStatus.MISSING_REFRESH_TOKEN);
         }
 
         for (Cookie cookie : cookies) {
@@ -64,7 +66,7 @@ public class AuthCookieService {
             }
         }
 
-        throw new IllegalArgumentException(cookieName + " 쿠키가 없습니다.");
+        throw new GeneralException(AuthErrorStatus.MISSING_REFRESH_TOKEN);
     }
 
     private String createCookie(String name, String value, long maxAgeSeconds) {

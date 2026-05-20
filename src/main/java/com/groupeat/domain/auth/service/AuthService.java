@@ -3,9 +3,12 @@ package com.groupeat.domain.auth.service;
 import com.groupeat.domain.auth.jwt.AuthTokenProvider;
 import com.groupeat.domain.auth.jwt.SignupTokenProvider;
 import com.groupeat.domain.auth.oauth.dto.OAuth2LoginUserInfo;
+import com.groupeat.domain.auth.exception.AuthErrorStatus;
 import com.groupeat.domain.member.entity.Member;
 import com.groupeat.domain.member.enums.MemberStatus;
 import com.groupeat.domain.member.enums.MemberType;
+import com.groupeat.domain.signup.exception.SignupErrorStatus;
+import com.groupeat.global.exception.GeneralException;
 import com.groupeat.domain.member.repository.MemberRepository;
 import com.groupeat.domain.member.repository.SocialAccountRepository;
 import jakarta.servlet.http.HttpServletResponse;
@@ -41,10 +44,10 @@ public class AuthService {
     public void reissueAccessToken(String refreshToken, HttpServletResponse response) {
         Long memberId = authTokenProvider.parseRefreshTokenMemberId(refreshToken);
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+                .orElseThrow(() -> new GeneralException(SignupErrorStatus.MEMBER_NOT_FOUND));
 
         if (member.getMemberStatus() != MemberStatus.ACTIVE) {
-            throw new IllegalArgumentException("활성 회원이 아닙니다.");
+            throw new GeneralException(AuthErrorStatus.INACTIVE_MEMBER);
         }
 
         authCookieService.addAccessTokenCookie(response, member);

@@ -4,7 +4,9 @@ import com.groupeat.domain.verification.phone.dto.PhoneVerificationConfirmReques
 import com.groupeat.domain.verification.phone.dto.PhoneVerificationResponse;
 import com.groupeat.domain.verification.phone.dto.PhoneVerificationSendRequest;
 import com.groupeat.domain.verification.phone.entity.PhoneVerification;
+import com.groupeat.domain.verification.phone.exception.PhoneVerificationErrorStatus;
 import com.groupeat.domain.verification.phone.repository.PhoneVerificationRepository;
+import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,14 +37,16 @@ public class PhoneVerificationService {
     public PhoneVerificationResponse confirmCode(PhoneVerificationConfirmRequest request) {
         PhoneVerification verification = phoneVerificationRepository
                 .findTopByPhoneNumberOrderByIdDesc(request.phoneNumber())
-                .orElseThrow(() -> new IllegalArgumentException("인증 요청 내역이 없습니다."));
+                .orElseThrow(() -> new GeneralException(
+                        PhoneVerificationErrorStatus.VERIFICATION_REQUEST_NOT_FOUND
+                ));
 
         if (verification.isExpired()) {
-            throw new IllegalArgumentException("인증번호가 만료되었습니다.");
+            throw new GeneralException(PhoneVerificationErrorStatus.VERIFICATION_CODE_EXPIRED);
         }
 
         if (!verification.isCodeMatched(request.code())) {
-            throw new IllegalArgumentException("인증번호가 일치하지 않습니다.");
+            throw new GeneralException(PhoneVerificationErrorStatus.VERIFICATION_CODE_MISMATCH);
         }
 
         verification.verify();
@@ -57,10 +61,12 @@ public class PhoneVerificationService {
     public void validateVerifiedPhoneNumber(String phoneNumber) {
         PhoneVerification verification = phoneVerificationRepository
                 .findTopByPhoneNumberOrderByIdDesc(phoneNumber)
-                .orElseThrow(() -> new IllegalArgumentException("휴대폰 인증 요청 내역이 없습니다."));
+                .orElseThrow(() -> new GeneralException(
+                        PhoneVerificationErrorStatus.VERIFICATION_REQUEST_NOT_FOUND
+                ));
 
         if (!verification.isVerified() || verification.isExpired()) {
-            throw new IllegalArgumentException("휴대폰 인증이 완료되지 않았습니다.");
+            throw new GeneralException(PhoneVerificationErrorStatus.PHONE_NOT_VERIFIED);
         }
     }
 }

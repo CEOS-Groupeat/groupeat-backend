@@ -9,11 +9,13 @@ import com.groupeat.domain.member.enums.MemberType;
 import com.groupeat.domain.member.repository.MemberRepository;
 import com.groupeat.domain.member.repository.SocialAccountRepository;
 import com.groupeat.domain.signup.dto.*;
+import com.groupeat.domain.signup.exception.SignupErrorStatus;
 import com.groupeat.domain.terms.entity.MemberTermsAgreement;
 import com.groupeat.domain.terms.enums.TermsTargetType;
 import com.groupeat.domain.terms.repository.MemberTermsAgreementRepository;
 import com.groupeat.domain.terms.service.TermsAgreementValidator;
 import com.groupeat.domain.verification.phone.service.PhoneVerificationService;
+import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,7 +77,7 @@ public class SignupService {
     // Customer 추가 회원가입
     public CustomerSignupResponse signupCustomer(CustomerSignupRequest request) {
         Member member = memberRepository.findById(request.memberId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+                .orElseThrow(() -> new GeneralException(SignupErrorStatus.MEMBER_NOT_FOUND));
 
         validateCustomerSignupAvailable(member);
 
@@ -113,13 +115,13 @@ public class SignupService {
                 .isPresent();
 
         if (exists) {
-            throw new IllegalArgumentException("이미 가입된 소셜 계정입니다.");
+            throw new GeneralException(SignupErrorStatus.SOCIAL_ACCOUNT_ALREADY_REGISTERED);
         }
     }
 
     private void validatePhoneNumberNotUsed(String phoneNumber) {
         if (memberRepository.existsByPhoneNumber(phoneNumber)) {
-            throw new IllegalArgumentException("이미 가입된 휴대폰 번호입니다.");
+            throw new GeneralException(SignupErrorStatus.PHONE_NUMBER_ALREADY_REGISTERED);
         }
     }
 
@@ -147,21 +149,21 @@ public class SignupService {
 
     private void validateCustomerSignupAvailable(Member member) {
         if (member.getMemberType() != MemberType.CUSTOMER) {
-            throw new IllegalArgumentException("고객 회원이 아닙니다.");
+            throw new GeneralException(SignupErrorStatus.NOT_CUSTOMER_MEMBER);
         }
 
         if (member.getMemberStatus() != MemberStatus.SIGNUP_IN_PROGRESS) {
-            throw new IllegalArgumentException("회원가입을 진행할 수 없는 상태입니다.");
+            throw new GeneralException(SignupErrorStatus.SIGNUP_NOT_AVAILABLE);
         }
     }
 
     private void validateCustomerUniqueFields(CustomerSignupRequest request) {
         if (memberRepository.existsByNickname(request.nickname())) {
-            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+            throw new GeneralException(SignupErrorStatus.NICKNAME_ALREADY_EXISTS);
         }
 
         if (memberRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+            throw new GeneralException(SignupErrorStatus.EMAIL_ALREADY_EXISTS);
         }
     }
 }

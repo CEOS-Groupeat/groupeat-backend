@@ -1,5 +1,6 @@
 package com.groupeat.domain.auth.oauth.handler;
 
+import com.groupeat.domain.auth.exception.AuthErrorStatus;
 import com.groupeat.domain.auth.oauth.dto.OAuth2LoginUserInfo;
 import com.groupeat.domain.auth.oauth.userinfo.KakaoOAuth2UserInfo;
 import com.groupeat.domain.auth.service.AuthCookieService;
@@ -7,6 +8,7 @@ import com.groupeat.domain.auth.service.AuthService;
 import com.groupeat.domain.member.entity.Member;
 import com.groupeat.domain.member.enums.MemberStatus;
 import com.groupeat.domain.member.enums.MemberType;
+import com.groupeat.global.exception.GeneralException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -94,7 +96,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             case "kakao" -> KakaoOAuth2UserInfo.from(oauth2User);
             // case "google" -> GoogleOAuth2UserInfo.from(oauth2User);
             // case "naver" -> NaverOAuth2UserInfo.from(oauth2User);
-            default -> throw new IllegalArgumentException("지원하지 않는 소셜 로그인입니다.");
+            default -> throw new GeneralException(AuthErrorStatus.UNSUPPORTED_OAUTH_PROVIDER);
         };
     }
 
@@ -102,7 +104,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         Cookie[] cookies = request.getCookies();
 
         if (cookies == null) {
-            throw new IllegalArgumentException("회원 유형 정보가 없습니다.");
+            throw new GeneralException(AuthErrorStatus.MISSING_MEMBER_TYPE);
         }
 
         for (Cookie cookie : cookies) {
@@ -111,7 +113,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             }
         }
 
-        throw new IllegalArgumentException("회원 유형 정보가 없습니다.");
+        throw new GeneralException(AuthErrorStatus.MISSING_MEMBER_TYPE);
     }
 
     private void deleteMemberTypeCookie(HttpServletResponse response) {

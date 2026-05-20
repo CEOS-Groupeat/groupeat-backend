@@ -3,7 +3,9 @@ package com.groupeat.domain.terms.service;
 import com.groupeat.domain.signup.dto.SignupAgreementRequest;
 import com.groupeat.domain.terms.entity.Terms;
 import com.groupeat.domain.terms.enums.TermsTargetType;
+import com.groupeat.domain.terms.exception.TermsErrorStatus;
 import com.groupeat.domain.terms.repository.TermsRepository;
+import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -31,7 +33,7 @@ public class TermsAgreementValidator {
                 .toList();
 
         if (requiredTerms.isEmpty()) {
-            throw new IllegalStateException("활성화된 필수 약관이 존재하지 않습니다. targetType=" + targetType);
+            throw new GeneralException(TermsErrorStatus.REQUIRED_TERMS_NOT_CONFIGURED);
         }
 
         Map<Long, Boolean> agreementMap = agreements.stream()
@@ -45,7 +47,7 @@ public class TermsAgreementValidator {
             Boolean agreed = agreementMap.get(terms.getId());
 
             if (!Boolean.TRUE.equals(agreed)) {
-                throw new IllegalArgumentException("필수 약관에 동의하지 않았습니다. termsId=" + terms.getId());
+                throw new GeneralException(TermsErrorStatus.REQUIRED_TERMS_NOT_AGREED);
             }
         }
     }
@@ -64,7 +66,7 @@ public class TermsAgreementValidator {
                 .anyMatch(termsId -> !activeTargetTermIds.contains(termsId));
 
         if (hasInvalidTerms) {
-            throw new IllegalArgumentException("약관 대상이 올바르지 않습니다. targetType=" + targetType);
+            throw new GeneralException(TermsErrorStatus.INVALID_TERMS_TARGET);
         }
     }
 }

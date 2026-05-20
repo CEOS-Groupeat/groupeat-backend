@@ -42,6 +42,7 @@ public class SecurityConfig {
                                 "/api/terms/**",
                                 "/api/phone-verifications/**",
                                 "/api/signup/**",
+                                "/api/auth/reissue",
                                 "/api/auth/oauth2/**",
                                 "/oauth2/**",
                                 "/login/oauth2/**"

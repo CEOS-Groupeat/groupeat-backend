@@ -46,10 +46,7 @@ public class AuthTokenProvider {
                 .parseSignedClaims(token)
                 .getPayload();
 
-        String tokenType = claims.get("tokenType", String.class);
-        if (!"access".equals(tokenType)) {
-            throw new IllegalArgumentException("Access token이 아닙니다.");
-        }
+        validateTokenType(claims, "access");
 
         Number memberId = claims.get("memberId", Number.class);
 
@@ -58,6 +55,27 @@ public class AuthTokenProvider {
                 MemberType.valueOf(claims.get("memberType", String.class)),
                 MemberStatus.valueOf(claims.get("memberStatus", String.class))
         );
+    }
+
+    public Long parseRefreshTokenMemberId(String token) {
+        Claims claims = Jwts.parser()
+                .verifyWith(refreshSecretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+
+        validateTokenType(claims, "refresh");
+
+        Number memberId = claims.get("memberId", Number.class);
+        return memberId.longValue();
+    }
+
+    private void validateTokenType(Claims claims, String expectedTokenType) {
+        String tokenType = claims.get("tokenType", String.class);
+
+        if (!expectedTokenType.equals(tokenType)) {
+            throw new IllegalArgumentException(expectedTokenType + " token이 아닙니다.");
+        }
     }
 
     private String createToken(

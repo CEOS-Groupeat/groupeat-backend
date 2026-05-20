@@ -1,11 +1,14 @@
 package com.groupeat.domain.auth.service;
 
+import com.groupeat.domain.auth.jwt.AuthTokenProvider;
 import com.groupeat.domain.auth.jwt.SignupTokenProvider;
 import com.groupeat.domain.auth.oauth.dto.OAuth2LoginUserInfo;
 import com.groupeat.domain.member.entity.Member;
+import com.groupeat.domain.member.enums.MemberStatus;
 import com.groupeat.domain.member.enums.MemberType;
 import com.groupeat.domain.member.repository.MemberRepository;
 import com.groupeat.domain.member.repository.SocialAccountRepository;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +23,8 @@ public class AuthService {
     private final SocialAccountRepository socialAccountRepository;
     private final MemberRepository memberRepository;
     private final SignupTokenProvider signupTokenProvider;
+    private final AuthTokenProvider authTokenProvider;
+    private final AuthCookieService authCookieService;
 
     public Optional<Member> findMemberBySocialAccount(OAuth2LoginUserInfo userInfo) {
         return socialAccountRepository.findByProviderAndProviderUserId(
@@ -31,5 +36,17 @@ public class AuthService {
 
     public String createSignupToken(OAuth2LoginUserInfo userInfo, MemberType memberType) {
         return signupTokenProvider.createSignupToken(userInfo, memberType);
+    }
+
+    public void reissueAccessToken(String refreshToken, HttpServletResponse response) {
+        Long memberId = authTokenProvider.parseRefreshTokenMemberId(refreshToken);
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        if (member.getMemberStatus() != MemberStatus.ACTIVE) {
+            throw new IllegalArgumentException("활성 회원이 아닙니다.");
+        }
+
+        authCookieService.addAccessTokenCookie(response, member);
     }
 }

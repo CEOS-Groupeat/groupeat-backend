@@ -67,6 +67,8 @@ spring:
 
 jwt:
   signup-secret: ${JWT_SIGNUP_SECRET}
+  access-secret: ${JWT_ACCESS_SECRET}
+  refresh-secret: ${JWT_REFRESH_SECRET}
 
 springdoc:
   swagger-ui:

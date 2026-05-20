@@ -1,5 +1,6 @@
 package com.groupeat.domain.auth.oauth.handler;
 
+import com.groupeat.domain.auth.jwt.AuthTokenProvider;
 import com.groupeat.domain.auth.oauth.dto.OAuth2LoginUserInfo;
 import com.groupeat.domain.auth.oauth.userinfo.KakaoOAuth2UserInfo;
 import com.groupeat.domain.auth.service.AuthService;
@@ -11,6 +12,8 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -26,8 +29,11 @@ import java.nio.charset.StandardCharsets;
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private static final String OAUTH2_MEMBER_TYPE_COOKIE = "OAUTH2_MEMBER_TYPE";
+    private static final String ACCESS_TOKEN_COOKIE = "ACCESS_TOKEN";
+    private static final String REFRESH_TOKEN_COOKIE = "REFRESH_TOKEN";
 
     private final AuthService authService;
+    private final AuthTokenProvider authTokenProvider;
 
     @Override
     public void onAuthenticationSuccess(
@@ -47,6 +53,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         if (member != null && member.getMemberStatus() == MemberStatus.ACTIVE) {
             // TODO: 기존 회원이면 AccessToken / RefreshToken 발급 후 프론트 메인 페이지로 redirect
+            addAuthTokenCookies(response, member);
             deleteMemberTypeCookie(response);
             response.sendRedirect("/api/auth/oauth2/success-test?status=login");
             return;
@@ -81,6 +88,33 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             case CUSTOMER -> "CUSTOMER_PROFILE";
             case BUSINESS -> "BUSINESS_PROFILE";
         };
+    }
+
+    private void addAuthTokenCookies(HttpServletResponse response, Member member) {
+        String accessToken = authTokenProvider.createAccessToken(member);
+        String refreshToken = authTokenProvider.createRefreshToken(member);
+
+        response.addHeader(HttpHeaders.SET_COOKIE, createCookie(
+                ACCESS_TOKEN_COOKIE,
+                accessToken,
+                AuthTokenProvider.ACCESS_TOKEN_VALID_TIME.toSeconds()
+        ));
+        response.addHeader(HttpHeaders.SET_COOKIE, createCookie(
+                REFRESH_TOKEN_COOKIE,
+                refreshToken,
+                AuthTokenProvider.REFRESH_TOKEN_VALID_TIME.toSeconds()
+        ));
+    }
+
+    private String createCookie(String name, String value, long maxAgeSeconds) {
+        return ResponseCookie.from(name, value)
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(maxAgeSeconds)
+                .sameSite("Lax")
+                .build()
+                .toString();
     }
 
     private OAuth2LoginUserInfo extractOAuth2UserInfo(

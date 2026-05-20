@@ -6,6 +6,8 @@ import com.groupeat.domain.auth.dto.TokenReissueResponse;
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
 import com.groupeat.domain.auth.service.AuthCookieService;
 import com.groupeat.domain.auth.service.AuthService;
+import com.groupeat.global.apiPayload.code.status.GlobalErrorStatus;
+import com.groupeat.global.exception.GeneralException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,10 +29,14 @@ public class AuthController {
     private final AuthCookieService authCookieService;
 
     @GetMapping("/me")
-    @Operation(summary = "내 인증 정보 조회", description = "Access token 쿠키로 현재 로그인한 회원 정보를 조회합니다.")
+    @Operation(summary = "내 인증 정보 조회", description = "Access token 쿠키 또는 Bearer 토큰으로 현재 로그인한 회원 정보를 조회합니다.")
     public AuthenticatedMemberResponse me(
             @AuthenticationPrincipal AuthenticatedMember member
     ) {
+        if (member == null) {
+            throw new GeneralException(GlobalErrorStatus._UNAUTHORIZED);
+        }
+
         return AuthenticatedMemberResponse.from(member);
     }
 

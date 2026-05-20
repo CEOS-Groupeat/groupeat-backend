@@ -71,6 +71,8 @@ jwt:
   refresh-secret: ${JWT_REFRESH_SECRET}
 
 app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
   auth:
     cookie:
       secure: ${AUTH_COOKIE_SECURE:false}

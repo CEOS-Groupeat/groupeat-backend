@@ -10,8 +10,8 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum StoreErrorStatus implements BaseErrorCode {
 
-    STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "STORE404", "해당 가게를 찾을 수 없습니다."),
-    STORE_CLOSED(HttpStatus.BAD_REQUEST, "STORE400", "현재 영업 중인 가게가 아닙니다.");
+    STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "STORE4040", "해당 가게를 찾을 수 없습니다."),
+    STORE_CLOSED(HttpStatus.BAD_REQUEST, "STORE4000", "현재 영업 중인 가게가 아닙니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

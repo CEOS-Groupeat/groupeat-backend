@@ -1,4 +1,4 @@
-package com.groupeat.domain.store.exception;
+package com.groupeat.domain.search.exception;
 
 import com.groupeat.global.apiPayload.code.BaseErrorCode;
 import com.groupeat.global.apiPayload.code.ErrorReasonDTO;
@@ -8,12 +8,10 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @AllArgsConstructor
-public enum StoreErrorStatus implements BaseErrorCode {
+public enum SearchErrorStatus implements BaseErrorCode {
 
-    STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "STORE4040", "해당 가게를 찾을 수 없습니다."),
-    STORE_CLOSED(HttpStatus.BAD_REQUEST, "STORE4000", "현재 영업 중인 가게가 아닙니다."),
-    INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "STORE4001", "지원하지 않는 카테고리입니다."),
-    INVALID_REGION(HttpStatus.BAD_REQUEST, "STORE4002", "지원하지 않는 지역입니다.");
+    INVALID_SEARCH_CONDITION(HttpStatus.BAD_REQUEST, "SEARCH400", "잘못된 검색 조건입니다."),
+    SEARCH_RESULT_NOT_FOUND(HttpStatus.NOT_FOUND, "SEARCH404", "조건에 맞는 가게를 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

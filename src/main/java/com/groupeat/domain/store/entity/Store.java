@@ -27,6 +27,14 @@ public class Store extends BaseEntity {
     @Column(nullable = false)
     private String address;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", length = 50)
+    private StoreCategory category;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "region", length = 50)
+    private StoreRegion region;
+
     @Column(name = "phone_number", nullable = false, length = 20)
     private String phoneNumber;
 
@@ -63,9 +71,6 @@ public class Store extends BaseEntity {
 
     @Column(name = "discount_rate")
     private Integer discountRate;
-
-    @Column(length = 50)
-    private String category;
 
     @Column(name = "min_price")
     private Integer minPrice;

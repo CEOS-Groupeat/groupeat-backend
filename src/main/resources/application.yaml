@@ -81,7 +81,8 @@ app:
   frontend:
     oauth-redirect:
       base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
-      login-success-path: /
+      customer-login-success-path: /customer/home
+      business-login-success-path: /owner/home
       signup-path: /signup
       signup-in-progress-path: /signup/customer
   swagger:

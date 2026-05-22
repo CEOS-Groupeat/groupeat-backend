@@ -56,7 +56,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         if (member != null && member.getMemberStatus() == MemberStatus.ACTIVE) {
             authCookieService.addAuthTokenCookies(response, member);
             deleteMemberTypeCookie(response);
-            response.sendRedirect(oAuth2RedirectProperties.loginSuccessUrl());
+            response.sendRedirect(oAuth2RedirectProperties.loginSuccessUrl(member.getMemberType()));
             return;
         }
 

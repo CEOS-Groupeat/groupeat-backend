@@ -50,6 +50,6 @@ public class AuthService {
             throw new GeneralException(AuthErrorStatus.INACTIVE_MEMBER);
         }
 
-        authCookieService.addAccessTokenCookie(response, member);
+        authCookieService.addAuthTokenCookies(response, member);
     }
 }

@@ -1,8 +1,8 @@
 package com.groupeat.domain.search.dto.request;
 
-import com.groupeat.domain.search.entity.StoreSortType;
-import com.groupeat.domain.store.entity.StoreCategory;
-import com.groupeat.domain.store.entity.StoreRegion;
+import com.groupeat.domain.search.enums.StoreSortType;
+import com.groupeat.domain.store.enums.StoreCategory;
+import com.groupeat.domain.store.enums.StoreRegion;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import java.time.LocalDate;

@@ -1,10 +1,10 @@
 package com.groupeat.domain.search.repository;
 
 import com.groupeat.domain.search.dto.request.StoreSearchCondition;
-import com.groupeat.domain.search.entity.StoreSortType;
+import com.groupeat.domain.search.enums.StoreSortType;
 import com.groupeat.domain.store.entity.Store;
-import com.groupeat.domain.store.entity.StoreCategory;
-import com.groupeat.domain.store.entity.StoreRegion;
+import com.groupeat.domain.store.enums.StoreCategory;
+import com.groupeat.domain.store.enums.StoreRegion;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;

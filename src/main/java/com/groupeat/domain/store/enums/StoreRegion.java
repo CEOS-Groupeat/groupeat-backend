@@ -1,4 +1,4 @@
-package com.groupeat.domain.store.entity;
+package com.groupeat.domain.store.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.groupeat.domain.store.exception.StoreErrorStatus;

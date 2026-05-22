@@ -1,4 +1,4 @@
-package com.groupeat.domain.search.entity;
+package com.groupeat.domain.search.enums;
 
 import lombok.Getter;
 import lombok.AllArgsConstructor;

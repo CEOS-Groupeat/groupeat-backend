@@ -3,10 +3,10 @@ package com.groupeat.domain.auth.controller;
 import com.groupeat.domain.member.enums.MemberType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,12 +23,15 @@ public class OAuth2AuthorizationController {
             @RequestParam MemberType memberType,
             HttpServletResponse response
     ) {
-        Cookie cookie = new Cookie(OAUTH2_MEMBER_TYPE_COOKIE, memberType.name());
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(180);
+        ResponseCookie cookie = ResponseCookie.from(OAUTH2_MEMBER_TYPE_COOKIE, memberType.name())
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(180)
+                .sameSite("None")
+                .build();
 
-        response.addCookie(cookie);
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         return ResponseEntity.status(302)
                 .header(HttpHeaders.LOCATION, "/oauth2/authorization/" + provider)

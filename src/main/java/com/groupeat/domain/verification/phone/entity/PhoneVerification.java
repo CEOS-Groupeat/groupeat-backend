@@ -28,6 +28,9 @@ public class PhoneVerification extends BaseEntity {
     private boolean verified;
 
     @Column(nullable = false)
+    private boolean used;
+
+    @Column(nullable = false)
     private LocalDateTime expiredAt;
 
     private LocalDateTime verifiedAt;
@@ -37,6 +40,7 @@ public class PhoneVerification extends BaseEntity {
         verification.phoneNumber = phoneNumber;
         verification.code = code;
         verification.verified = false;
+        verification.used = false;
         verification.expiredAt = LocalDateTime.now().plusMinutes(5);
         return verification;
     }
@@ -44,6 +48,10 @@ public class PhoneVerification extends BaseEntity {
     public void verify() {
         this.verified = true;
         this.verifiedAt = LocalDateTime.now();
+    }
+
+    public void use() {
+        this.used = true;
     }
 
     public boolean isExpired() {

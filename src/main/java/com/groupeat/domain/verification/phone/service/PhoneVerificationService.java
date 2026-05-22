@@ -57,7 +57,6 @@ public class PhoneVerificationService {
         );
     }
 
-    @Transactional(readOnly = true)
     public void validateVerifiedPhoneNumber(String phoneNumber) {
         PhoneVerification verification = phoneVerificationRepository
                 .findTopByPhoneNumberOrderByIdDesc(phoneNumber)
@@ -65,8 +64,10 @@ public class PhoneVerificationService {
                         PhoneVerificationErrorStatus.VERIFICATION_REQUEST_NOT_FOUND
                 ));
 
-        if (!verification.isVerified() || verification.isExpired()) {
+        if (!verification.isVerified() || verification.isExpired() || verification.isUsed()) {
             throw new GeneralException(PhoneVerificationErrorStatus.PHONE_NOT_VERIFIED);
         }
+
+        verification.use();
     }
 }

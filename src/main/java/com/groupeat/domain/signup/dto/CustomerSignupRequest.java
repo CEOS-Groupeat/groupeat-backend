@@ -4,6 +4,7 @@ import com.groupeat.domain.member.enums.Gender;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public record CustomerSignupRequest(
@@ -17,18 +18,12 @@ public record CustomerSignupRequest(
         @NotBlank(message = "이름은 필수입니다.")
         String name,
 
-        @NotBlank(message = "닉네임은 필수입니다.")
-        String nickname,
-
-        @NotBlank(message = "이메일은 필수입니다.")
         @Email(message = "이메일 형식이 올바르지 않습니다.")
         String email,
 
-        @NotNull(message = "나이는 필수입니다.")
-        @Min(value = 0, message = "나이는 0 이상이어야 합니다.")
-        Integer age,
+        @PastOrPresent(message = "생년월일은 미래일 수 없습니다.")
+        LocalDate birthDate,
 
-        @NotNull(message = "성별은 필수입니다.")
         Gender gender
 ) {
 }

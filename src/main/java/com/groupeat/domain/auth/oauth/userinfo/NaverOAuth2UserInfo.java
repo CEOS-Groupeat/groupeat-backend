@@ -26,7 +26,6 @@ public class NaverOAuth2UserInfo {
         return new OAuth2LoginUserInfo(
                 OAuthProvider.NAVER,
                 id.toString(),
-                toStringOrNull(response.get("nickname")),
                 toStringOrNull(response.get("email"))
         );
     }

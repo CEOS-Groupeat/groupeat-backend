@@ -16,7 +16,6 @@ public enum SignupErrorStatus implements BaseErrorCode {
     NOT_CUSTOMER_MEMBER(HttpStatus.BAD_REQUEST, "SIGNUP4000", "고객 회원이 아닙니다."),
     NOT_BUSINESS_MEMBER(HttpStatus.BAD_REQUEST, "SIGNUP4002", "사업자 회원이 아닙니다."),
     SIGNUP_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "SIGNUP4001", "회원가입을 진행할 수 없는 상태입니다."),
-    NICKNAME_ALREADY_EXISTS(HttpStatus.CONFLICT, "SIGNUP4092", "이미 사용 중인 닉네임입니다."),
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "SIGNUP4093", "이미 사용 중인 이메일입니다."),
     BUSINESS_PROFILE_ALREADY_EXISTS(HttpStatus.CONFLICT, "SIGNUP4094", "이미 사업자 정보가 등록된 회원입니다."),
     BUSINESS_REGISTRATION_NUMBER_ALREADY_EXISTS(HttpStatus.CONFLICT, "SIGNUP4095", "이미 등록된 사업자등록번호입니다.");

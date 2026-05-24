@@ -18,7 +18,6 @@ public class GoogleOAuth2UserInfo {
         return new OAuth2LoginUserInfo(
                 OAuthProvider.GOOGLE,
                 id.toString(),
-                oauth2User.getAttribute("name"),
                 oauth2User.getAttribute("email")
         );
     }

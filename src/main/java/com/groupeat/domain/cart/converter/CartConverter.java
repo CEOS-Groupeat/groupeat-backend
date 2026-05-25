@@ -1,6 +1,8 @@
 package com.groupeat.domain.cart.converter;
 
+import com.groupeat.domain.cart.dto.request.CartItemAddRequest;
 import com.groupeat.domain.cart.dto.response.CartListResponse;
+import com.groupeat.domain.cart.entity.Cart;
 import com.groupeat.domain.cart.entity.CartItem;
 import com.groupeat.domain.cart.entity.CartItemOption;
 import com.groupeat.domain.store.entity.Menu;
@@ -52,6 +54,29 @@ public class CartConverter {
         }).toList();
 
         return CartListResponse.builder().storeCarts(storeCarts).build();
+    }
+
+    public static CartItem toCartItem(Cart cart, CartItemAddRequest request) {
+        return CartItem.builder()
+                .cart(cart)
+                .storeId(request.storeId())
+                .menuId(request.menuId())
+                .quantity(request.quantity())
+                .pickupDateTime(request.pickupDateTime())
+                .build();
+    }
+
+    public static List<CartItemOption> toCartItemOptions(CartItem cartItem, List<Long> optionIds) {
+        if (optionIds == null || optionIds.isEmpty()) {
+            return List.of();
+        }
+
+        return optionIds.stream()
+                .map(optionId -> CartItemOption.builder()
+                        .cartItem(cartItem)
+                        .menuOptionId(optionId)
+                        .build())
+                .toList();
     }
 
     private static CartListResponse.CartItemDTO buildCartItemDTO(

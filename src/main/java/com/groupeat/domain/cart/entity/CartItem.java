@@ -4,6 +4,8 @@ import com.groupeat.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Builder
@@ -28,6 +30,9 @@ public class CartItem extends BaseEntity {
 
     @Column(nullable = false)
     private Integer quantity;
+
+    @Column(name = "pickup_datetime", nullable = false)
+    private LocalDateTime pickupDateTime;
 
     public void updateQuantity(Integer quantity) {
         this.quantity = quantity;

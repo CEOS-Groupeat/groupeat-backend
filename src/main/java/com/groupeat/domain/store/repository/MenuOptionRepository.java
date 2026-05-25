@@ -15,4 +15,3 @@ public interface MenuOptionRepository extends JpaRepository<MenuOption, Long> {
             "IN :optionIds AND mog.menu.id = :menuId")
     long countValidOptions(@Param("optionIds") List<Long> optionIds, @Param("menuId") Long menuId);
 }
-

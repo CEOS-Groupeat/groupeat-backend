@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 
-@Tag(name = "가게 정보 API", description = "가게 상세 조회 및 관리 API")
+@Tag(name = "Store", description = "가게 상세 조회 및 관리 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/stores")

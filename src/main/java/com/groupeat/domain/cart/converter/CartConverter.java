@@ -7,6 +7,7 @@ import com.groupeat.domain.store.entity.Menu;
 import com.groupeat.domain.store.entity.MenuOption;
 import com.groupeat.domain.store.entity.Store;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -18,7 +19,7 @@ public class CartConverter {
             Map<Long, List<CartItemOption>> cartItemOptionsMap, Map<Long, MenuOption> menuOptionMap
     ) {
         Map<Long, List<CartItem>> itemsByStore = cartItems.stream()
-                .collect(Collectors.groupingBy(CartItem::getStoreId));
+                .collect(Collectors.groupingBy(CartItem::getStoreId, LinkedHashMap::new, Collectors.toList()));
 
         List<CartListResponse.StoreCartDTO> storeCarts = itemsByStore.entrySet().stream().map(entry -> {
             Long storeId = entry.getKey();
@@ -26,16 +27,19 @@ public class CartConverter {
             Store store = storeMap.get(storeId);
 
             int totalStoreQuantity = storeItems.stream().mapToInt(CartItem::getQuantity).sum();
-            int discountRate = (store != null && store.getDiscountConditionQuantity() != null
+            int discountRate = (store != null
+                    && store.getDiscountConditionQuantity() != null
+                    && store.getDiscountRate() != null
                     && totalStoreQuantity >= store.getDiscountConditionQuantity())
                     ? store.getDiscountRate() : 0;
 
-            List<CartListResponse.CartItemDTO> itemDTOs = storeItems.stream().map(item -> {
-                Menu menu = menuMap.get(item.getMenuId());
-                List<CartItemOption> options = cartItemOptionsMap.getOrDefault(item.getId(), List.of());
-
-                return buildCartItemDTO(item, menu, options, menuOptionMap, discountRate);
-            }).toList();
+            List<CartListResponse.CartItemDTO> itemDTOs = storeItems.stream()
+                    .filter(item -> menuMap.get(item.getMenuId()) != null) 
+                    .map(item -> {
+                        Menu menu = menuMap.get(item.getMenuId());
+                        List<CartItemOption> options = cartItemOptionsMap.getOrDefault(item.getId(), List.of());
+                        return buildCartItemDTO(item, menu, options, menuOptionMap, discountRate);
+                    }).toList();
 
             int storeTotalPrice = itemDTOs.stream().mapToInt(CartListResponse.CartItemDTO::finalPrice).sum();
 

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "🔍 Search API", description = "메인 화면 동적 검색 API")
+@Tag(name = "Search", description = "메인 화면 동적 검색 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/search")

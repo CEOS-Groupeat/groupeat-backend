@@ -21,6 +21,7 @@ import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -53,7 +54,7 @@ public class SignupService {
         );
 
         Member member = Member.createInProgress(
-                payload.memberType(),
+                request.memberType(),
                 request.phoneNumber()
         );
 
@@ -81,10 +82,11 @@ public class SignupService {
     public CustomerSignupResponse signupCustomer(CustomerSignupRequest request) {
         Member member = memberRepository.findById(request.memberId())
                 .orElseThrow(() -> new GeneralException(SignupErrorStatus.MEMBER_NOT_FOUND));
+        String email = normalizeOptionalText(request.email());
 
         validateCustomerSignupAvailable(member);
 
-        validateCustomerUniqueFields(request);
+        validateCustomerUniqueFields(email);
 
         termsAgreementValidator.validateRequiredTermsAgreed(
                 TermsTargetType.CUSTOMER,
@@ -95,9 +97,8 @@ public class SignupService {
 
         member.completeCustomerSignup(
                 request.name(),
-                request.nickname(),
-                request.email(),
-                request.age(),
+                email,
+                request.birthDate(),
                 request.gender()
         );
 
@@ -204,14 +205,14 @@ public class SignupService {
         }
     }
 
-    private void validateCustomerUniqueFields(CustomerSignupRequest request) {
-        if (memberRepository.existsByNickname(request.nickname())) {
-            throw new GeneralException(SignupErrorStatus.NICKNAME_ALREADY_EXISTS);
-        }
-
-        if (memberRepository.existsByEmail(request.email())) {
+    private void validateCustomerUniqueFields(String email) {
+        if (email != null && memberRepository.existsByEmail(email)) {
             throw new GeneralException(SignupErrorStatus.EMAIL_ALREADY_EXISTS);
         }
+    }
+
+    private String normalizeOptionalText(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 
     private void validateBusinessSignupAvailable(Member member) {

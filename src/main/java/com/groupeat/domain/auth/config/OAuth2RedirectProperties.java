@@ -2,16 +2,22 @@ package com.groupeat.domain.auth.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import com.groupeat.domain.member.enums.MemberType;
+
 @ConfigurationProperties(prefix = "app.frontend.oauth-redirect")
 public record OAuth2RedirectProperties(
         String baseUrl,
-        String loginSuccessPath,
+        String customerLoginSuccessPath,
+        String businessLoginSuccessPath,
         String signupPath,
         String signupInProgressPath
 ) {
 
-    public String loginSuccessUrl() {
-        return buildUrl(loginSuccessPath);
+    public String loginSuccessUrl(MemberType memberType) {
+        return switch (memberType) {
+            case CUSTOMER -> buildUrl(customerLoginSuccessPath);
+            case BUSINESS -> buildUrl(businessLoginSuccessPath);
+        };
     }
 
     public String signupUrl() {

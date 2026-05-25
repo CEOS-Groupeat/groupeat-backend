@@ -1,0 +1,13 @@
+package com.groupeat.domain.cart.repository;
+
+import com.groupeat.domain.cart.entity.CartItemOption;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+
+public interface CartItemOptionRepository extends JpaRepository<CartItemOption, Long> {
+    // 여러 장바구니 항목들의 옵션을 한 번에 가져오기 위한 메서드
+    List<CartItemOption> findAllByCartItemIdIn(List<Long> cartItemIds);
+
+    // 장바구니 항목 ID로 엮인 옵션들을 한 번에 지우는 메서드
+    void deleteAllByCartItemId(Long cartItemId);
+}

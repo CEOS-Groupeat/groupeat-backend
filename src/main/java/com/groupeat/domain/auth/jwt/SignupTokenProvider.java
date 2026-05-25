@@ -1,7 +1,6 @@
 package com.groupeat.domain.auth.jwt;
 
 import com.groupeat.domain.auth.oauth.dto.OAuth2LoginUserInfo;
-import com.groupeat.domain.member.enums.MemberType;
 import com.groupeat.domain.member.enums.OAuthProvider;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -26,7 +25,7 @@ public class SignupTokenProvider {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String createSignupToken(OAuth2LoginUserInfo userInfo, MemberType memberType) {
+    public String createSignupToken(OAuth2LoginUserInfo userInfo) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + SIGNUP_TOKEN_VALID_TIME);
 
@@ -34,9 +33,7 @@ public class SignupTokenProvider {
                 .subject("signup")
                 .claim("provider", userInfo.provider().name())
                 .claim("providerUserId", userInfo.providerUserId())
-                .claim("nickname", userInfo.nickname())
                 .claim("email", userInfo.email())
-                .claim("memberType", memberType.name())
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(secretKey)
@@ -57,9 +54,7 @@ public class SignupTokenProvider {
         return new SignupTokenPayload(
                 OAuthProvider.valueOf(claims.get("provider", String.class)),
                 claims.get("providerUserId", String.class),
-                claims.get("nickname", String.class),
-                claims.get("email", String.class),
-                MemberType.valueOf(claims.get("memberType", String.class))
+                claims.get("email", String.class)
         );
     }
 }

@@ -8,6 +8,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "member")
 @Getter
@@ -42,10 +44,9 @@ public class Member extends BaseEntity {
     private String name;
 
     @Column(unique = true)
-    private String nickname;
-
-    @Column(unique = true)
     private String email;
+
+    private LocalDate birthDate;
 
     private Integer age;
 
@@ -68,15 +69,13 @@ public class Member extends BaseEntity {
 
     public void completeCustomerSignup(
             String name,
-            String nickname,
             String email,
-            Integer age,
+            LocalDate birthDate,
             Gender gender
     ) {
         this.name = name;
-        this.nickname = nickname;
         this.email = email;
-        this.age = age;
+        this.birthDate = birthDate;
         this.gender = gender;
         this.memberStatus = MemberStatus.ACTIVE;
     }

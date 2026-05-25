@@ -13,7 +13,6 @@ import com.groupeat.domain.member.enums.MemberStatus;
 import com.groupeat.domain.member.enums.MemberType;
 import com.groupeat.global.exception.GeneralException;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -30,8 +29,6 @@ import java.nio.charset.StandardCharsets;
 @Component
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
-
-    private static final String OAUTH2_MEMBER_TYPE_COOKIE = "OAUTH2_MEMBER_TYPE";
 
     private final AuthService authService;
     private final AuthCookieService authCookieService;
@@ -55,22 +52,16 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         if (member != null && member.getMemberStatus() == MemberStatus.ACTIVE) {
             authCookieService.addAuthTokenCookies(response, member);
-            deleteMemberTypeCookie(response);
-            response.sendRedirect(oAuth2RedirectProperties.loginSuccessUrl());
+            response.sendRedirect(oAuth2RedirectProperties.loginSuccessUrl(member.getMemberType()));
             return;
         }
 
         if (member != null && member.getMemberStatus() == MemberStatus.SIGNUP_IN_PROGRESS) {
-            deleteMemberTypeCookie(response);
             response.sendRedirect(buildSignupInProgressRedirectUrl(member));
             return;
         }
 
-        MemberType memberType = extractMemberTypeFromCookie(request);
-
-        String signupToken = authService.createSignupToken(userInfo, memberType);
-
-        deleteMemberTypeCookie(response);
+        String signupToken = authService.createSignupToken(userInfo);
 
         String encodedSignupToken = URLEncoder.encode(signupToken, StandardCharsets.UTF_8);
 
@@ -103,28 +94,4 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         };
     }
 
-    private MemberType extractMemberTypeFromCookie(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-
-        if (cookies == null) {
-            throw new GeneralException(AuthErrorStatus.MISSING_MEMBER_TYPE);
-        }
-
-        for (Cookie cookie : cookies) {
-            if (OAUTH2_MEMBER_TYPE_COOKIE.equals(cookie.getName())) {
-                return MemberType.valueOf(cookie.getValue());
-            }
-        }
-
-        throw new GeneralException(AuthErrorStatus.MISSING_MEMBER_TYPE);
-    }
-
-    private void deleteMemberTypeCookie(HttpServletResponse response) {
-        Cookie cookie = new Cookie(OAUTH2_MEMBER_TYPE_COOKIE, null);
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        cookie.setHttpOnly(true);
-
-        response.addCookie(cookie);
-    }
 }

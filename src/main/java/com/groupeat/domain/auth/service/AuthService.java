@@ -6,7 +6,6 @@ import com.groupeat.domain.auth.oauth.dto.OAuth2LoginUserInfo;
 import com.groupeat.domain.auth.exception.AuthErrorStatus;
 import com.groupeat.domain.member.entity.Member;
 import com.groupeat.domain.member.enums.MemberStatus;
-import com.groupeat.domain.member.enums.MemberType;
 import com.groupeat.domain.signup.exception.SignupErrorStatus;
 import com.groupeat.global.exception.GeneralException;
 import com.groupeat.domain.member.repository.MemberRepository;
@@ -37,8 +36,8 @@ public class AuthService {
                 .flatMap(socialAccount -> memberRepository.findById(socialAccount.getMemberId()));
     }
 
-    public String createSignupToken(OAuth2LoginUserInfo userInfo, MemberType memberType) {
-        return signupTokenProvider.createSignupToken(userInfo, memberType);
+    public String createSignupToken(OAuth2LoginUserInfo userInfo) {
+        return signupTokenProvider.createSignupToken(userInfo);
     }
 
     public void reissueAccessToken(String refreshToken, HttpServletResponse response) {

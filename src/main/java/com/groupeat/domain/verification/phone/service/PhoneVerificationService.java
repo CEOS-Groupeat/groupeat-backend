@@ -11,26 +11,33 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class PhoneVerificationService {
 
-    private static final String MOCK_CODE = "123456"; // 일단은 mock code 전송
+    private static final SecureRandom RANDOM = new SecureRandom();
+    private static final int CODE_BOUND = 1_000_000;
 
     private final PhoneVerificationRepository phoneVerificationRepository;
+    private final SmsSender smsSender;
 
     public PhoneVerificationResponse sendCode(PhoneVerificationSendRequest request) {
+        String code = generateVerificationCode();
+
         PhoneVerification verification = PhoneVerification.create(
                 request.phoneNumber(),
-                MOCK_CODE
+                code
         );
 
         phoneVerificationRepository.save(verification);
+        smsSender.sendVerificationCode(request.phoneNumber(), code);
 
         return new PhoneVerificationResponse(
                 false,
-                "인증번호가 발송되었습니다. 개발 환경 인증번호는 123456입니다."
+                "인증번호가 발송되었습니다. 개발 환경 인증번호는 " + code + "입니다."
         );
     }
 
@@ -69,5 +76,9 @@ public class PhoneVerificationService {
         }
 
         verification.use();
+    }
+
+    private String generateVerificationCode() {
+        return String.format("%06d", RANDOM.nextInt(CODE_BOUND));
     }
 }

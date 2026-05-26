@@ -10,11 +10,14 @@ import com.groupeat.domain.cart.service.CartCalculateService;
 import com.groupeat.domain.orders.converter.OrderConverter;
 import com.groupeat.domain.orders.dto.request.OrderCreateRequest;
 import com.groupeat.domain.orders.dto.response.OrderCreateResponse;
+import com.groupeat.domain.orders.dto.response.OrderListResponse;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.entity.OrderItem;
 import com.groupeat.domain.orders.entity.OrderItemOption;
+import com.groupeat.domain.orders.enums.OrderStatus;
 import com.groupeat.domain.orders.repository.OrderItemOptionRepository;
 import com.groupeat.domain.orders.repository.OrderItemRepository;
+import com.groupeat.domain.orders.repository.OrderQueryRepository;
 import com.groupeat.domain.orders.repository.OrderRepository;
 import com.groupeat.domain.store.entity.Menu;
 import com.groupeat.domain.store.entity.MenuOption;
@@ -41,6 +44,7 @@ import java.util.stream.Collectors;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final OrderQueryRepository orderQueryRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderItemOptionRepository orderItemOptionRepository;
 
@@ -122,5 +126,32 @@ public class OrderService {
         cartItemRepository.deleteAllByIdInBatch(cartItemIds);
 
         return OrderConverter.toOrderCreateResponse(savedOrder);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderListResponse getOrderList(Long memberId, List<OrderStatus> statuses, Long lastOrderId, int size) {
+        // 전체 카운트 조회
+        long totalElements = orderQueryRepository.countOrders(memberId, statuses);
+
+        // 커서 기반 주문 목록 조회 (요청 size + 1개 가져옴)
+        List<Order> orders = orderQueryRepository.findOrdersByCursor(memberId, statuses, lastOrderId, size);
+
+        // 다음 페이지 여부 확인 및 데이터 슬라이싱
+        boolean hasNext = false;
+        if (orders.size() > size) {
+            hasNext = true;
+            orders = orders.subList(0, size); // +1 확인용으로 가져온 마지막 데이터 제외
+        }
+
+        if (orders.isEmpty()) {
+            return OrderListResponse.builder().orders(List.of()).totalElements(totalElements).hasNext(false).build();
+        }
+
+        List<Long> orderIds = orders.stream().map(Order::getId).toList();
+        List<OrderItem> allItems = orderItemRepository.findByOrderIdIn(orderIds);
+        Map<Long, List<OrderItem>> itemsByOrderId = allItems.stream()
+                .collect(Collectors.groupingBy(item -> item.getOrder().getId()));
+
+        return OrderConverter.toOrderListResponse(orders, totalElements, hasNext, itemsByOrderId);
     }
 }

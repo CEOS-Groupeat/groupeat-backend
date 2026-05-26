@@ -45,7 +45,4 @@ public class OrderItem extends BaseEntity {
     @Builder.Default
     private List<OrderItemOption> orderItemOptions = new ArrayList<>();
 
-    public void setOrder(Order order) {
-        this.order = order;
-    }
 }

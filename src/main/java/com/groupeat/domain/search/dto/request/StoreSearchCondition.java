@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 public record StoreSearchCondition(
         @Schema(description = "텍스트 검색어", example = "데이브런치")
@@ -15,11 +16,11 @@ public record StoreSearchCondition(
         @Schema(description = "위치 필터", example = "마포구")
         StoreRegion region,
 
-        @Schema(description = "픽업 날짜 필터", example = "2026-04-23")
+        @Schema(description = "픽업 날짜 필터 (단일 선택)", example = "2026-04-23")
         LocalDate pickupDate,
 
-        @Schema(description = "픽업 시간 필터", example = "12:00")
-        LocalTime pickupTime,
+        @Schema(description = "픽업 시간 필터 (다중 선택 가능)", example = "[\"12:00:00\", \"13:00:00\"]")
+        List<LocalTime> pickupTimes,
 
         @Schema(description = "주문 수량 필터", example = "50")
         @Min(value = 1, message = "수량은 1개 이상이어야 합니다.")

@@ -34,7 +34,7 @@ public class SearchRepository {
                         regionEq(condition.region()),
                         categoryEq(condition.category()),
                         budgetLessThanOrEqualTo(condition.budget()),
-                        isPickupTimeAvailable(condition.pickupTime()),
+                        isPickupTimesAvailable(condition.pickupTimes()),
                         isPickupDateAvailable(condition.pickupDate()),
                         isQuantitySatisfied(condition.quantity())
                 )
@@ -52,7 +52,7 @@ public class SearchRepository {
                         regionEq(condition.region()),
                         categoryEq(condition.category()),
                         budgetLessThanOrEqualTo(condition.budget()),
-                        isPickupTimeAvailable(condition.pickupTime()),
+                        isPickupTimesAvailable(condition.pickupTimes()),
                         isPickupDateAvailable(condition.pickupDate()),
                         isQuantitySatisfied(condition.quantity())
                 )
@@ -80,11 +80,22 @@ public class SearchRepository {
         return budget != null ? store.minPrice.loe(budget) : null;
     }
 
-    private BooleanExpression isPickupTimeAvailable(LocalTime requestedTime) {
-        if (requestedTime == null) return null;
+    private BooleanExpression isPickupTimesAvailable(List<LocalTime> requestedTimes) {
+        if (requestedTimes == null || requestedTimes.isEmpty()) {
+            return null; // 시간이 안 넘어오면 조건 무시
+        }
 
-        return store.pickupOpenTime.loe(requestedTime)
-                .and(store.pickupCloseTime.goe(requestedTime));
+        BooleanExpression result = null;
+
+        // 선택한 시간들(예: 12:00, 13:00) 중 '하나라도' 영업시간 내에 있으면 검색되도록 (OR 조건)
+        for (LocalTime time : requestedTimes) {
+            BooleanExpression timeCondition = store.pickupOpenTime.loe(time)
+                    .and(store.pickupCloseTime.goe(time));
+
+            result = (result == null) ? timeCondition : result.or(timeCondition);
+        }
+
+        return result;
     }
 
     private BooleanExpression isPickupDateAvailable(LocalDate requestedDate) {

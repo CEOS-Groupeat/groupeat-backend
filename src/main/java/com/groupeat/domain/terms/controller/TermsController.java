@@ -3,6 +3,7 @@ package com.groupeat.domain.terms.controller;
 import com.groupeat.domain.terms.dto.TermsResponse;
 import com.groupeat.domain.terms.enums.TermsTargetType;
 import com.groupeat.domain.terms.service.TermsService;
+import com.groupeat.global.apiPayload.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +24,9 @@ public class TermsController {
 
     @GetMapping
     @Operation(summary = "약관 목록 조회", description = "대상 유형별 활성 약관 목록을 조회합니다.")
-    public List<TermsResponse> getTerms(
+    public ApiResponse<List<TermsResponse>> getTerms(
             @RequestParam TermsTargetType targetType
     ) {
-        return termsService.getTerms(targetType);
+        return ApiResponse.onSuccess(termsService.getTerms(targetType));
     }
 }

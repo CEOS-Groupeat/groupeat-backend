@@ -6,6 +6,8 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,6 +22,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String ACCESS_TOKEN_COOKIE = "ACCESS_TOKEN";
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final AuthTokenProvider authTokenProvider;
 
@@ -31,7 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         String accessToken = extractAccessToken(request);
 
-        if (accessToken != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        if (accessToken != null && shouldAuthenticateWithAccessToken()) {
             authenticate(accessToken);
         }
 
@@ -55,6 +58,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String extractAccessToken(HttpServletRequest request) {
+        String bearerToken = extractBearerToken(request);
+        if (bearerToken != null) {
+            return bearerToken;
+        }
+
         Cookie[] cookies = request.getCookies();
 
         if (cookies == null) {
@@ -68,5 +76,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         return null;
+    }
+
+    private String extractBearerToken(HttpServletRequest request) {
+        String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+
+        if (authorizationHeader != null && authorizationHeader.startsWith(BEARER_PREFIX)) {
+            return authorizationHeader.substring(BEARER_PREFIX.length());
+        }
+
+        return null;
+    }
+
+    private boolean shouldAuthenticateWithAccessToken() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        return authentication == null || !(authentication.getPrincipal() instanceof AuthenticatedMember);
     }
 }

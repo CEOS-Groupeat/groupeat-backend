@@ -48,7 +48,7 @@ public class CartService {
         List<Long> optionIds = request.optionIds() == null ? List.of() : request.optionIds();
 
         List<MenuOption> selectedOptions = menuOptionRepository.findAllById(optionIds);
-        if (selectedOptions.size() != request.optionIds().size()) {
+        if (selectedOptions.size() != optionIds.size()) {
             throw new GeneralException(StoreErrorStatus.INVALID_MENU_OPTION);
         }
 

@@ -4,6 +4,7 @@ import com.groupeat.domain.cart.dto.request.CartCalculateRequest;
 import com.groupeat.domain.cart.dto.response.CartCalculateResponse;
 import com.groupeat.domain.cart.entity.CartItem;
 import com.groupeat.domain.cart.entity.CartItemOption;
+import com.groupeat.domain.cart.exception.CartErrorStatus;
 import com.groupeat.domain.cart.repository.CartItemOptionRepository;
 import com.groupeat.domain.cart.repository.CartItemRepository;
 import com.groupeat.domain.cart.service.CartCalculateService;
@@ -82,7 +83,12 @@ public class OrderService {
         // 결제 금액 & orderId, 픽업시간
         int finalPaymentAmount = (int) (calculated.finalPaymentAmount() * request.paymentMethod().getPaymentRatio());
         String generatedOrderId = "ORDER_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
-        LocalDateTime pickupDateTime = cartItems.get(0).getPickupDateTime();
+
+        if (cartItems.isEmpty()) {
+            throw new GeneralException(CartErrorStatus.EMPTY_CART_SELECTION);
+        }
+
+        LocalDateTime pickupDateTime = cartItems.getFirst().getPickupDateTime();
 
         // Order 먼저 DB에 저장하여 ID 확보
         Order order = OrderConverter.toOrder(

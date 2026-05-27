@@ -10,11 +10,13 @@ import com.groupeat.domain.cart.service.CartCalculateService;
 import com.groupeat.domain.orders.converter.OrderConverter;
 import com.groupeat.domain.orders.dto.request.OrderCreateRequest;
 import com.groupeat.domain.orders.dto.response.OrderCreateResponse;
+import com.groupeat.domain.orders.dto.response.OrderDetailResponse;
 import com.groupeat.domain.orders.dto.response.OrderListResponse;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.entity.OrderItem;
 import com.groupeat.domain.orders.entity.OrderItemOption;
 import com.groupeat.domain.orders.enums.OrderStatus;
+import com.groupeat.domain.orders.exception.OrderErrorStatus;
 import com.groupeat.domain.orders.repository.OrderItemOptionRepository;
 import com.groupeat.domain.orders.repository.OrderItemRepository;
 import com.groupeat.domain.orders.repository.OrderQueryRepository;
@@ -153,5 +155,14 @@ public class OrderService {
                 .collect(Collectors.groupingBy(item -> item.getOrder().getId()));
 
         return OrderConverter.toOrderListResponse(orders, totalElements, hasNext, itemsByOrderId);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderDetailResponse getOrderDetail(Long memberId, Long orderId) {
+
+        Order order = orderRepository.findByIdAndMemberIdWithItems(orderId, memberId)
+                .orElseThrow(() -> new GeneralException(OrderErrorStatus.ORDER_NOT_FOUND));
+
+        return OrderConverter.toOrderDetailResponse(order, order.getOrderItems());
     }
 }

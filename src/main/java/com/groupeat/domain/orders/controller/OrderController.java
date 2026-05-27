@@ -3,6 +3,7 @@ package com.groupeat.domain.orders.controller;
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
 import com.groupeat.domain.orders.dto.request.OrderCreateRequest;
 import com.groupeat.domain.orders.dto.response.OrderCreateResponse;
+import com.groupeat.domain.orders.dto.response.OrderDetailResponse;
 import com.groupeat.domain.orders.dto.response.OrderListResponse;
 import com.groupeat.domain.orders.enums.OrderListFilterType;
 import com.groupeat.domain.orders.enums.OrderStatus;
@@ -47,6 +48,16 @@ public class OrderController {
         List<OrderStatus> statusList = (filter == null || filter == OrderListFilterType.ALL) ? null : filter.getMappedStatuses();
 
         OrderListResponse response = orderService.getOrderList(member.memberId(), statusList, lastOrderId, size);
+        return ApiResponse.onSuccess(response);
+    }
+
+    @GetMapping("/{orderId}")
+    @Operation(summary = "주문 상세 내역 조회", description = "특정 주문의 상세 정보(메뉴, 옵션, 결제정보 등)를 조회합니다.")
+    public ApiResponse<OrderDetailResponse> getOrderDetail(
+            @AuthenticationPrincipal AuthenticatedMember member,
+            @PathVariable @Parameter(description = "조회할 주문 ID") Long orderId
+    ) {
+        OrderDetailResponse response = orderService.getOrderDetail(member.memberId(), orderId);
         return ApiResponse.onSuccess(response);
     }
 }

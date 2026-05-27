@@ -3,6 +3,7 @@ package com.groupeat.domain.orders.converter;
 import com.groupeat.domain.cart.entity.CartItem;
 import com.groupeat.domain.orders.dto.request.OrderCreateRequest;
 import com.groupeat.domain.orders.dto.response.OrderCreateResponse;
+import com.groupeat.domain.orders.dto.response.OrderDetailResponse;
 import com.groupeat.domain.orders.dto.response.OrderListResponse;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.entity.OrderItem;
@@ -118,6 +119,30 @@ public class OrderConverter {
                 .paymentAmount(order.getPaymentAmount())
                 .orderStatus(order.getOrderStatus())
                 .paymentMethod(order.getPaymentMethod())
+                .build();
+    }
+
+    public static OrderDetailResponse toOrderDetailResponse(Order order, List<OrderItem> orderItems) {
+
+        List<OrderDetailResponse.OrderDetailItemDTO> itemDTOs = orderItems.stream()
+                .map(item -> OrderDetailResponse.OrderDetailItemDTO.builder()
+                        .menuName(item.getMenuName())
+                        .quantity(item.getQuantity())
+                        .build())
+                .toList();
+
+        return OrderDetailResponse.builder()
+                .orderId(order.getId())
+                .orderStatus(order.getOrderStatus())
+                .customerName(order.getCustomerName())
+                .customerPhone(order.getCustomerPhone())
+                .pickupDate(order.getPickupDateTime().toLocalDate())
+                .pickupTime(order.getPickupDateTime().toLocalTime())
+                .items(itemDTOs)
+                .paymentAmount(order.getPaymentAmount())
+                .paymentMethod(order.getPaymentMethod())
+                .orderDate(order.getCreatedAt().toLocalDate())
+                .orderTime(order.getCreatedAt().toLocalTime())
                 .build();
     }
 }

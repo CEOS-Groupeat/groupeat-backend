@@ -9,7 +9,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public enum OrderListFilterType {
     ALL("전체", List.of()),
-    ACCEPTED("승인 완료", List.of(OrderStatus.PAID, OrderStatus.ACCEPTED)),
+    PAID("결제 완료(승인 대기)", List.of(OrderStatus.PAID)),
+    ACCEPTED("승인 완료", List.of(OrderStatus.ACCEPTED)),
     COMPLETED("픽업 완료", List.of(OrderStatus.COMPLETED)),
     REJECTED("거절", List.of(OrderStatus.REJECTED));
 

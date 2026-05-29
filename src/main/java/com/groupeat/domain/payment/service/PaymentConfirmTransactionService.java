@@ -38,7 +38,7 @@ public class PaymentConfirmTransactionService {
             return PreparedPaymentConfirm.alreadyConfirmed(PaymentConverter.toConfirmResponse(payment));
         }
 
-        validateConfirmableStatus(payment, request.paymentKey());
+        validateConfirmableStatus(payment);
         payment.markInProgress(request.paymentKey());
         return PreparedPaymentConfirm.ready(payment.getId(), payment.getOrderId(), payment.getPaidAmount());
     }
@@ -91,14 +91,9 @@ public class PaymentConfirmTransactionService {
         }
     }
 
-    // READY 또는 같은 paymentKey로 진행 중인 결제만 승인 요청 허용
-    private void validateConfirmableStatus(Payment payment, String requestPaymentKey) {
+    // 승인 요청은 아직 처리되지 않은 READY 상태에서만 허용
+    private void validateConfirmableStatus(Payment payment) {
         if (payment.getPaymentStatus() == PaymentStatus.READY) {
-            return;
-        }
-
-        if (payment.getPaymentStatus() == PaymentStatus.IN_PROGRESS
-                && Objects.equals(payment.getPaymentKey(), requestPaymentKey)) {
             return;
         }
 

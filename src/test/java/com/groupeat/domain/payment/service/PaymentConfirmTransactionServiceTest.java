@@ -103,6 +103,18 @@ class PaymentConfirmTransactionServiceTest {
         assertThat(response.status()).isEqualTo(PaymentStatus.DONE);
     }
 
+    // 이미 승인 진행 중인 결제는 중복 승인 요청을 차단한다.
+    @Test
+    void prepareConfirm_inProgressPayment_throwsInvalidStatus() {
+        Payment payment = inProgressPayment();
+        when(paymentRepository.findByOrderId(ORDER_ID)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentConfirmTransactionService.prepareConfirm(MEMBER_ID, confirmRequest(AMOUNT)))
+                .isInstanceOfSatisfying(GeneralException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(PaymentErrorStatus.PAYMENT_INVALID_STATUS)
+                );
+    }
+
     // 토스 승인 성공 응답을 결제 완료 상태로 저장한다.
     @Test
     void approvePayment_updatesPaymentToDone() {

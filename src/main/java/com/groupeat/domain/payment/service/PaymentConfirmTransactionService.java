@@ -58,6 +58,7 @@ public class PaymentConfirmTransactionService {
                 tossResponse.receipt() != null ? tossResponse.receipt().url() : null,
                 tossResponse.card() != null ? tossResponse.card().approveNo() : null
         );
+        markOrderPaid(payment);
         return PaymentConverter.toConfirmResponse(payment);
     }
 
@@ -98,6 +99,14 @@ public class PaymentConfirmTransactionService {
         }
 
         throw new GeneralException(PaymentErrorStatus.PAYMENT_INVALID_STATUS);
+    }
+
+    private void markOrderPaid(Payment payment) {
+        if (payment.getOrder() == null) {
+            return;
+        }
+
+        payment.getOrder().markPaid();
     }
 
     // 토스 응답의 OffsetDateTime을 엔티티에서 사용하는 LocalDateTime으로 변환

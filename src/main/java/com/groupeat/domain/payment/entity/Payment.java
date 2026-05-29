@@ -1,5 +1,6 @@
 package com.groupeat.domain.payment.entity;
 
+import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.payment.enums.PaymentProvider;
 import com.groupeat.domain.payment.enums.PaymentStatus;
 import com.groupeat.domain.payment.enums.PaymentType;
@@ -22,9 +23,9 @@ public class Payment extends BaseEntity {
     @Column(name = "payment_pk")
     private Long id;
 
-    // TODO : 실제로 Order 머지되면 연관관계 설정하기
-    @Column(name = "order_pk")
-    private Long orderPk;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_pk", nullable = false)
+    private Order order;
 
     @Column(name = "order_id", nullable = false, unique = true, length = 64)
     private String orderId;
@@ -94,6 +95,25 @@ public class Payment extends BaseEntity {
 
     @Column(name = "failure_message", columnDefinition = "TEXT")
     private String failureMessage;
+
+    public static Payment ready(
+            Order order,
+            Long memberId,
+            PaymentType paymentType,
+            Integer totalOrderAmount,
+            Integer paidAmount
+    ) {
+        return Payment.builder()
+                .order(order)
+                .orderId(order.getOrderId())
+                .memberId(memberId)
+                .paymentType(paymentType)
+                .paymentProvider(PaymentProvider.TOSS)
+                .totalOrderAmount(totalOrderAmount)
+                .paidAmount(paidAmount)
+                .remainingAmount(totalOrderAmount - paidAmount)
+                .build();
+    }
 
     // 결제 승인 진행 중
     public void markInProgress(String paymentKey) {

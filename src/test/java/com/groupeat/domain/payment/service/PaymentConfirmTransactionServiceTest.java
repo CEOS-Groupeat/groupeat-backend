@@ -1,5 +1,7 @@
 package com.groupeat.domain.payment.service;
 
+import com.groupeat.domain.orders.entity.Order;
+import com.groupeat.domain.orders.enums.OrderStatus;
 import com.groupeat.domain.payment.dto.PreparedPaymentConfirm;
 import com.groupeat.domain.payment.dto.request.PaymentConfirmRequest;
 import com.groupeat.domain.payment.dto.response.PaymentConfirmResponse;
@@ -133,6 +135,18 @@ class PaymentConfirmTransactionServiceTest {
         assertThat(payment.getCardApproveNo()).isEqualTo("00000000");
     }
 
+    // 토스 승인 성공 시 주문 상태도 결제 완료로 변경한다.
+    @Test
+    void approvePayment_updatesOrderToPaid() {
+        Order order = pendingOrder();
+        Payment payment = inProgressPaymentWithOrder(order);
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
+
+        paymentConfirmTransactionService.approvePayment(PAYMENT_ID, tossDoneResponse(ORDER_ID, AMOUNT));
+
+        assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PAID);
+    }
+
     // 결제 실패 코드와 메시지를 저장하고 실패 상태로 변경한다.
     @Test
     void failPayment_updatesPaymentToFailed() {
@@ -170,10 +184,35 @@ class PaymentConfirmTransactionServiceTest {
         return payment;
     }
 
+    private Payment inProgressPaymentWithOrder(Order order) {
+        Payment payment = Payment.builder()
+                .id(PAYMENT_ID)
+                .order(order)
+                .orderId(ORDER_ID)
+                .memberId(MEMBER_ID)
+                .paymentType(PaymentType.PREPAID)
+                .paymentProvider(PaymentProvider.TOSS)
+                .totalOrderAmount(AMOUNT)
+                .paidAmount(AMOUNT)
+                .remainingAmount(0)
+                .paymentStatus(PaymentStatus.READY)
+                .build();
+        payment.markInProgress(PAYMENT_KEY);
+        return payment;
+    }
+
     private Payment donePayment() {
         Payment payment = readyPayment();
         payment.approve(PAYMENT_KEY, "카드", null, "transaction-key", true, "https://receipt.test", "00000000");
         return payment;
+    }
+
+    private Order pendingOrder() {
+        return Order.builder()
+                .orderId(ORDER_ID)
+                .memberId(MEMBER_ID)
+                .orderStatus(OrderStatus.PENDING)
+                .build();
     }
 
     private TossPaymentConfirmResponse tossDoneResponse(String orderId, Integer totalAmount) {

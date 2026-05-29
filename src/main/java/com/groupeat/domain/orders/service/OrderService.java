@@ -8,8 +8,6 @@ import com.groupeat.domain.cart.exception.CartErrorStatus;
 import com.groupeat.domain.cart.repository.CartItemOptionRepository;
 import com.groupeat.domain.cart.repository.CartItemRepository;
 import com.groupeat.domain.cart.service.CartCalculateService;
-import com.groupeat.domain.member.entity.Member;
-import com.groupeat.domain.member.repository.MemberRepository;
 import com.groupeat.domain.orders.converter.OrderConverter;
 import com.groupeat.domain.orders.dto.request.OrderCreateRequest;
 import com.groupeat.domain.orders.dto.response.OrderCreateResponse;
@@ -24,7 +22,9 @@ import com.groupeat.domain.orders.repository.OrderItemOptionRepository;
 import com.groupeat.domain.orders.repository.OrderItemRepository;
 import com.groupeat.domain.orders.repository.OrderQueryRepository;
 import com.groupeat.domain.orders.repository.OrderRepository;
-import com.groupeat.domain.signup.exception.SignupErrorStatus;
+import com.groupeat.domain.payment.entity.Payment;
+import com.groupeat.domain.payment.enums.PaymentType;
+import com.groupeat.domain.payment.repository.PaymentRepository;
 import com.groupeat.domain.store.entity.Menu;
 import com.groupeat.domain.store.entity.MenuOption;
 import com.groupeat.domain.store.entity.Store;
@@ -38,7 +38,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,14 +54,13 @@ public class OrderService {
     private final OrderQueryRepository orderQueryRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderItemOptionRepository orderItemOptionRepository;
+    private final PaymentRepository paymentRepository;
 
     private final CartItemRepository cartItemRepository;
     private final CartItemOptionRepository cartItemOptionRepository;
     private final StoreRepository storeRepository;
     private final MenuRepository menuRepository;
     private final MenuOptionRepository menuOptionRepository;
-
-    private final MemberRepository memberRepository;
 
     private final CartCalculateService cartCalculateService;
 
@@ -116,6 +114,14 @@ public class OrderService {
                 finalPaymentAmount, pickupDate, pickupTime, request
         );
         Order savedOrder = orderRepository.save(order);
+        Payment payment = Payment.ready(
+                savedOrder,
+                memberId,
+                PaymentType.valueOf(request.paymentMethod().name()),
+                calculated.finalPaymentAmount(),
+                finalPaymentAmount
+        );
+        Payment savedPayment = paymentRepository.save(payment);
 
         // OrderItem 및 Option 매핑 및 저장
         Map<Long, CartCalculateResponse.CalculatedItem> calcMap = calculated.calculatedItems().stream()
@@ -150,7 +156,7 @@ public class OrderService {
         }
         cartItemRepository.deleteAllByIdInBatch(cartItemIds);
 
-        return OrderConverter.toOrderCreateResponse(savedOrder);
+        return OrderConverter.toOrderCreateResponse(savedOrder, savedPayment.getId());
     }
 
     @Transactional(readOnly = true)

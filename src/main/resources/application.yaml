@@ -68,6 +68,11 @@ jwt:
   access-secret: ${JWT_ACCESS_SECRET}
   refresh-secret: ${JWT_REFRESH_SECRET}
 
+toss:
+  payments:
+    secret-key: ${TOSS_SECRET_KEY}
+    confirm-url: https://api.tosspayments.com/v1/payments/confirm
+
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}

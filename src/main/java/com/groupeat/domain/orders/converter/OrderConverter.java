@@ -66,9 +66,9 @@ public class OrderConverter {
     }
 
     // 응답 DTO 생성
-    public static OrderCreateResponse toOrderCreateResponse(Order order) {
+    public static OrderCreateResponse toOrderCreateResponse(Order order, Long paymentId) {
         return OrderCreateResponse.builder()
-                .paymentId(order.getId())
+                .paymentId(paymentId)
                 .orderId(order.getOrderId())
                 .amount(order.getPaymentAmount())
                 .customerName(order.getCustomerName())

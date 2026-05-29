@@ -74,4 +74,7 @@ public class Order extends BaseEntity {
     @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();
 
+    public void markPaid() {
+        this.orderStatus = OrderStatus.PAID;
+    }
 }

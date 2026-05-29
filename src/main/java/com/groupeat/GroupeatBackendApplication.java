@@ -2,6 +2,7 @@ package com.groupeat;
 
 import com.groupeat.domain.auth.config.AuthCookieProperties;
 import com.groupeat.domain.auth.config.OAuth2RedirectProperties;
+import com.groupeat.domain.payment.config.TossPaymentProperties;
 import com.groupeat.global.config.CorsProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -13,7 +14,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @EnableConfigurationProperties({
 		OAuth2RedirectProperties.class,
 		AuthCookieProperties.class,
-		CorsProperties.class
+		CorsProperties.class,
+		TossPaymentProperties.class
 })
 public class GroupeatBackendApplication {
 

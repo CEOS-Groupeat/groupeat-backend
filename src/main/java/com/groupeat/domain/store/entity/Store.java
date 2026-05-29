@@ -1,5 +1,7 @@
 package com.groupeat.domain.store.entity;
 
+import com.groupeat.domain.store.enums.StoreCategory;
+import com.groupeat.domain.store.enums.StoreRegion;
 import com.groupeat.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;

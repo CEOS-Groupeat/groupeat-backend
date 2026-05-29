@@ -37,6 +37,7 @@ public class CartCalculateService {
 
     public CartCalculateResponse calculate(Long memberId, CartCalculateRequest request) {
         List<Long> targetIds = request.cartItemIds();
+
         if (targetIds == null || targetIds.isEmpty()) {
             throw new GeneralException(CartErrorStatus.EMPTY_CART_SELECTION);
         }
@@ -52,7 +53,6 @@ public class CartCalculateService {
             }
         }
 
-        // 다중 가게 선택 검증(한 번에 한 가게에서만 주문 가능)
         List<Long> storeIds = cartItems.stream().map(CartItem::getStoreId).distinct().toList();
         if (storeIds.size() > 1) {
             throw new GeneralException(CartErrorStatus.MULTIPLE_STORE_NOT_ALLOWED);
@@ -72,6 +72,16 @@ public class CartCalculateService {
                 allOptions.stream().map(CartItemOption::getMenuOptionId).distinct().toList()
         ).stream().collect(Collectors.toMap(MenuOption::getId, o -> o));
 
+        return this.calculateWithEntities(cartItems, store, menuMap, optionsMap, realOptionsMap);
+    }
+
+    public CartCalculateResponse calculateWithEntities(
+            List<CartItem> cartItems,
+            Store store,
+            Map<Long, Menu> menuMap,
+            Map<Long, List<CartItemOption>> optionsMap,
+            Map<Long, MenuOption> realOptionsMap
+    ) {
         int totalQuantity = cartItems.stream().mapToInt(CartItem::getQuantity).sum();
         int discountRate = (store.getDiscountConditionQuantity() != null && totalQuantity >= store.getDiscountConditionQuantity())
                 ? store.getDiscountRate() : 0;

@@ -1,6 +1,6 @@
 package com.groupeat.global.config.converter;
 
-import com.groupeat.domain.store.entity.StoreRegion;
+import com.groupeat.domain.store.enums.StoreRegion;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 

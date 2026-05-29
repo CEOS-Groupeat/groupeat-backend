@@ -48,7 +48,7 @@ public class CartService {
         List<Long> optionIds = request.optionIds() == null ? List.of() : request.optionIds();
 
         List<MenuOption> selectedOptions = menuOptionRepository.findAllById(optionIds);
-        if (selectedOptions.size() != request.optionIds().size()) {
+        if (selectedOptions.size() != optionIds.size()) {
             throw new GeneralException(StoreErrorStatus.INVALID_MENU_OPTION);
         }
 
@@ -66,23 +66,11 @@ public class CartService {
         Cart cart = getOrCreateCart(memberId);
 
         // CartItem 생성 및 저장
-        CartItem cartItem = CartItem.builder()
-                .cart(cart)
-                .storeId(request.storeId())
-                .menuId(request.menuId())
-                .quantity(request.quantity())
-                .build();
-
+        CartItem cartItem = CartConverter.toCartItem(cart, request);
         CartItem savedCartItem = cartItemRepository.save(cartItem);
 
-        // 옵션이 있다면 생성 및 저장
-        if (!optionIds.isEmpty()) {
-            List<CartItemOption> options = request.optionIds().stream()
-                    .map(optionId -> CartItemOption.builder()
-                            .cartItem(savedCartItem)
-                            .menuOptionId(optionId)
-                            .build())
-                    .toList();
+        List<CartItemOption> options = CartConverter.toCartItemOptions(savedCartItem, optionIds);
+        if (!options.isEmpty()) {
             cartItemOptionRepository.saveAll(options);
         }
         return getCartList(memberId);

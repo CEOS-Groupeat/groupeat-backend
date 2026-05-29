@@ -62,7 +62,8 @@ public class CartConverter {
                 .storeId(request.storeId())
                 .menuId(request.menuId())
                 .quantity(request.quantity())
-                .pickupDateTime(request.pickupDateTime())
+                .pickupDate(request.pickupDate())
+                .pickupTime(request.pickupTime())
                 .build();
     }
 

@@ -7,7 +7,8 @@ import com.groupeat.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,8 +55,11 @@ public class Order extends BaseEntity {
     @Column(name = "requests", columnDefinition = "TEXT")
     private String requests;
 
-    @Column(name = "pickup_datetime", nullable = false)
-    private LocalDateTime pickupDateTime;
+    @Column(name = "pickup_date", nullable = false)
+    private LocalDate pickupDate;
+
+    @Column(name = "pickup_time", nullable = false)
+    private LocalTime pickupTime;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false)

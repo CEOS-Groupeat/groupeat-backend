@@ -12,9 +12,9 @@ import com.groupeat.domain.orders.enums.OrderStatus;
 import com.groupeat.domain.store.entity.Menu;
 import com.groupeat.domain.store.entity.MenuOption;
 import com.groupeat.domain.store.entity.Store;
-import org.springframework.data.domain.Slice;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
@@ -45,7 +45,7 @@ public class OrderConverter {
     public static Order toOrder(
             String orderId, Long memberId, Store store,
             int totalOriginalPrice, int totalDiscountAmount, int paymentAmount,
-            LocalDateTime pickupDateTime, OrderCreateRequest request
+            LocalDate pickupDate, LocalTime pickupTime, OrderCreateRequest request
     ) {
         return Order.builder()
                 .orderId(orderId)
@@ -58,7 +58,8 @@ public class OrderConverter {
                 .customerPhone(request.customerPhone())
                 .groupName(request.groupName())
                 .requests(request.requests())
-                .pickupDateTime(pickupDateTime)
+                .pickupDate(pickupDate)
+                .pickupTime(pickupTime)
                 .paymentMethod(request.paymentMethod())
                 .orderStatus(OrderStatus.PENDING)
                 .build();
@@ -111,8 +112,8 @@ public class OrderConverter {
 
                 .orderDate(order.getCreatedAt().toLocalDate())
                 .orderTime(order.getCreatedAt().toLocalTime())
-                .pickupDate(order.getPickupDateTime().toLocalDate())
-                .pickupTime(order.getPickupDateTime().toLocalTime())
+                .pickupDate(order.getPickupDate())
+                .pickupTime(order.getPickupTime())
 
                 .menuSummary(menuSummary)
                 .totalOriginalPrice(order.getTotalOriginalPrice())
@@ -136,8 +137,8 @@ public class OrderConverter {
                 .orderStatus(order.getOrderStatus())
                 .customerName(order.getCustomerName())
                 .customerPhone(order.getCustomerPhone())
-                .pickupDate(order.getPickupDateTime().toLocalDate())
-                .pickupTime(order.getPickupDateTime().toLocalTime())
+                .pickupDate(order.getPickupDate())
+                .pickupTime(order.getPickupTime())
                 .items(itemDTOs)
                 .paymentAmount(order.getPaymentAmount())
                 .paymentMethod(order.getPaymentMethod())

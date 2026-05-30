@@ -9,10 +9,13 @@ import com.groupeat.domain.cart.repository.CartItemOptionRepository;
 import com.groupeat.domain.cart.repository.CartItemRepository;
 import com.groupeat.domain.cart.service.CartCalculateService;
 import com.groupeat.domain.orders.converter.OrderConverter;
+import com.groupeat.domain.orders.dto.request.OrderCancelRequest;
 import com.groupeat.domain.orders.dto.request.OrderCreateRequest;
+import com.groupeat.domain.orders.dto.response.OrderCancelResponse;
 import com.groupeat.domain.orders.dto.response.OrderCreateResponse;
 import com.groupeat.domain.orders.dto.response.OrderDetailResponse;
 import com.groupeat.domain.orders.dto.response.OrderListResponse;
+import com.groupeat.domain.orders.enums.OrderCancelledBy;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.entity.OrderItem;
 import com.groupeat.domain.orders.entity.OrderItemOption;
@@ -38,6 +41,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +53,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class OrderService {
+
+    private static final int FULL_REFUND_RATE = 100;
+    private static final int HALF_REFUND_RATE = 50;
 
     private final OrderRepository orderRepository;
     private final OrderQueryRepository orderQueryRepository;
@@ -193,5 +200,56 @@ public class OrderService {
                 .orElseThrow(() -> new GeneralException(OrderErrorStatus.ORDER_NOT_FOUND));
 
         return OrderConverter.toOrderDetailResponse(order, order.getOrderItems());
+    }
+
+    public OrderCancelResponse cancelOrder(Long memberId, Long orderId, OrderCancelRequest request) {
+        Order order = orderRepository.findByIdAndMemberId(orderId, memberId)
+                .orElseThrow(() -> new GeneralException(OrderErrorStatus.ORDER_NOT_FOUND));
+
+        validateCustomerCancelable(order);
+
+        int refundRate = calculateCustomerCancelRefundRate(order);
+        int refundAmount = calculateRefundAmount(order.getPaymentAmount(), refundRate);
+        LocalDateTime cancelledAt = LocalDateTime.now();
+
+        order.cancel(
+                request.cancelReason(),
+                OrderCancelledBy.CUSTOMER,
+                memberId,
+                refundRate,
+                refundAmount,
+                cancelledAt
+        );
+
+        // TODO: 결제 취소 API 연동 시 refundAmount 기준으로 선결제금/예약금을 환불한다.
+        return new OrderCancelResponse(order.getId(), order.getOrderStatus(), refundRate, refundAmount, cancelledAt);
+    }
+
+    private void validateCustomerCancelable(Order order) {
+        if (order.getOrderStatus() == OrderStatus.PENDING
+                || order.getOrderStatus() == OrderStatus.PAID
+                || order.getOrderStatus() == OrderStatus.ACCEPTED) {
+            return;
+        }
+
+        throw new GeneralException(OrderErrorStatus.ORDER_CANCEL_NOT_ALLOWED);
+    }
+
+    private int calculateCustomerCancelRefundRate(Order order) {
+        Integer minOrderDays = order.getStore().getMinOrderDays();
+        if (minOrderDays == null) {
+            return HALF_REFUND_RATE;
+        }
+
+        LocalDate refundDeadline = order.getPickupDate().minusDays(minOrderDays);
+        if (!LocalDate.now().isAfter(refundDeadline)) {
+            return FULL_REFUND_RATE;
+        }
+
+        return HALF_REFUND_RATE;
+    }
+
+    private int calculateRefundAmount(Integer paymentAmount, int refundRate) {
+        return paymentAmount * refundRate / 100;
     }
 }

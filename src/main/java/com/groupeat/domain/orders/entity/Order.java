@@ -1,6 +1,7 @@
 package com.groupeat.domain.orders.entity;
 
 import com.groupeat.domain.orders.enums.OrderStatus;
+import com.groupeat.domain.orders.enums.OrderCancelledBy;
 import com.groupeat.domain.orders.enums.PaymentMethod;
 import com.groupeat.domain.store.entity.Store;
 import com.groupeat.global.entity.BaseEntity;
@@ -8,6 +9,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,11 +72,47 @@ public class Order extends BaseEntity {
     @Builder.Default
     private OrderStatus orderStatus = OrderStatus.PENDING;
 
+    @Column(name = "cancel_reason", length = 100)
+    private String cancelReason;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancelled_by")
+    private OrderCancelledBy cancelledBy;
+
+    @Column(name = "cancelled_by_member_id")
+    private Long cancelledByMemberId;
+
+    @Column(name = "cancel_refund_rate")
+    private Integer cancelRefundRate;
+
+    @Column(name = "cancel_refund_amount")
+    private Integer cancelRefundAmount;
+
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();
 
     public void markPaid() {
         this.orderStatus = OrderStatus.PAID;
+    }
+
+    public void cancel(
+            String cancelReason,
+            OrderCancelledBy cancelledBy,
+            Long cancelledByMemberId,
+            Integer cancelRefundRate,
+            Integer cancelRefundAmount,
+            LocalDateTime cancelledAt
+    ) {
+        this.orderStatus = OrderStatus.CANCELLED;
+        this.cancelReason = cancelReason;
+        this.cancelledBy = cancelledBy;
+        this.cancelledByMemberId = cancelledByMemberId;
+        this.cancelRefundRate = cancelRefundRate;
+        this.cancelRefundAmount = cancelRefundAmount;
+        this.cancelledAt = cancelledAt;
     }
 }

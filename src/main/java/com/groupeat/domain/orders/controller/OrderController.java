@@ -1,7 +1,9 @@
 package com.groupeat.domain.orders.controller;
 
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
+import com.groupeat.domain.orders.dto.request.OrderCancelRequest;
 import com.groupeat.domain.orders.dto.request.OrderCreateRequest;
+import com.groupeat.domain.orders.dto.response.OrderCancelResponse;
 import com.groupeat.domain.orders.dto.response.OrderCreateResponse;
 import com.groupeat.domain.orders.dto.response.OrderDetailResponse;
 import com.groupeat.domain.orders.dto.response.OrderListResponse;
@@ -58,6 +60,17 @@ public class OrderController {
             @PathVariable @Parameter(description = "조회할 주문 ID") Long orderId
     ) {
         OrderDetailResponse response = orderService.getOrderDetail(member.memberId(), orderId);
+        return ApiResponse.onSuccess(response);
+    }
+
+    @PatchMapping("/{orderId}/cancel")
+    @Operation(summary = "주문 취소", description = "로그인한 회원이 본인의 주문을 취소합니다.")
+    public ApiResponse<OrderCancelResponse> cancelOrder(
+            @AuthenticationPrincipal AuthenticatedMember member,
+            @PathVariable @Parameter(description = "취소할 주문 ID") Long orderId,
+            @Valid @RequestBody OrderCancelRequest request
+    ) {
+        OrderCancelResponse response = orderService.cancelOrder(member.memberId(), orderId, request);
         return ApiResponse.onSuccess(response);
     }
 }

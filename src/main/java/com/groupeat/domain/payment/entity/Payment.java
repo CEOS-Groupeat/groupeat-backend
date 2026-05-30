@@ -111,8 +111,22 @@ public class Payment extends BaseEntity {
                 .paymentProvider(PaymentProvider.TOSS)
                 .totalOrderAmount(totalOrderAmount)
                 .paidAmount(paidAmount)
-                .remainingAmount(totalOrderAmount - paidAmount)
+                .remainingAmount(calculateRemainingAmount(paymentType, totalOrderAmount, paidAmount))
                 .build();
+    }
+
+    private static Integer calculateRemainingAmount(
+            PaymentType paymentType,
+            Integer totalOrderAmount,
+            Integer paidAmount
+    ) {
+        // 현장결제는 현재 PG 결제 없이 매장에서 전체 금액을 결제한다.
+        // 예약금 PG 결제 도입 후에도 현장 결제 대상 금액은 전체 주문 금액으로 유지한다.
+        if (paymentType == PaymentType.ON_SITE) {
+            return totalOrderAmount;
+        }
+
+        return totalOrderAmount - paidAmount;
     }
 
     // 결제 승인 진행 중

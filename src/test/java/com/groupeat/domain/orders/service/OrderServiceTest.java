@@ -3,6 +3,7 @@ package com.groupeat.domain.orders.service;
 import com.groupeat.domain.cart.repository.CartItemOptionRepository;
 import com.groupeat.domain.cart.repository.CartItemRepository;
 import com.groupeat.domain.cart.service.CartCalculateService;
+import com.groupeat.domain.orders.dto.OrderCancelPreparation;
 import com.groupeat.domain.orders.dto.request.OrderCancelRequest;
 import com.groupeat.domain.orders.dto.response.OrderCancelResponse;
 import com.groupeat.domain.orders.entity.Order;
@@ -13,6 +14,7 @@ import com.groupeat.domain.orders.repository.OrderItemOptionRepository;
 import com.groupeat.domain.orders.repository.OrderItemRepository;
 import com.groupeat.domain.orders.repository.OrderQueryRepository;
 import com.groupeat.domain.orders.repository.OrderRepository;
+import com.groupeat.domain.payment.dto.PaymentCancelResult;
 import com.groupeat.domain.payment.repository.PaymentRepository;
 import com.groupeat.domain.store.entity.Store;
 import com.groupeat.domain.store.repository.MenuOptionRepository;
@@ -36,24 +38,14 @@ class OrderServiceTest {
     private static final Long ORDER_ID = 10L;
 
     private OrderRepository orderRepository;
-    private OrderService orderService;
+    private PaymentRepository paymentRepository;
+    private OrderCancelTransactionService orderCancelTransactionService;
 
     @BeforeEach
     void setUp() {
         orderRepository = mock(OrderRepository.class);
-        orderService = new OrderService(
-                orderRepository,
-                mock(OrderQueryRepository.class),
-                mock(OrderItemRepository.class),
-                mock(OrderItemOptionRepository.class),
-                mock(PaymentRepository.class),
-                mock(CartItemRepository.class),
-                mock(CartItemOptionRepository.class),
-                mock(StoreRepository.class),
-                mock(MenuRepository.class),
-                mock(MenuOptionRepository.class),
-                mock(CartCalculateService.class)
-        );
+        paymentRepository = mock(PaymentRepository.class);
+        orderCancelTransactionService = new OrderCancelTransactionService(orderRepository, paymentRepository);
     }
 
     @Test
@@ -61,7 +53,15 @@ class OrderServiceTest {
         Order order = order(OrderStatus.PAID, LocalDate.now().plusDays(3), 2);
         when(orderRepository.findByIdAndMemberId(ORDER_ID, MEMBER_ID)).thenReturn(Optional.of(order));
 
-        OrderCancelResponse response = orderService.cancelOrder(MEMBER_ID, ORDER_ID, new OrderCancelRequest("일정 변경"));
+        OrderCancelPreparation preparation = orderCancelTransactionService.prepareCustomerCancel(MEMBER_ID, ORDER_ID);
+        OrderCancelResponse response = orderCancelTransactionService.cancelCustomerOrder(
+                MEMBER_ID,
+                ORDER_ID,
+                "일정 변경",
+                preparation.refundRate(),
+                preparation.refundAmount(),
+                PaymentCancelResult.skipped()
+        );
 
         assertThat(response.orderStatus()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(response.refundRate()).isEqualTo(100);
@@ -79,7 +79,15 @@ class OrderServiceTest {
         Order order = order(OrderStatus.ACCEPTED, LocalDate.now().plusDays(1), 2);
         when(orderRepository.findByIdAndMemberId(ORDER_ID, MEMBER_ID)).thenReturn(Optional.of(order));
 
-        OrderCancelResponse response = orderService.cancelOrder(MEMBER_ID, ORDER_ID, new OrderCancelRequest("일정 변경"));
+        OrderCancelPreparation preparation = orderCancelTransactionService.prepareCustomerCancel(MEMBER_ID, ORDER_ID);
+        OrderCancelResponse response = orderCancelTransactionService.cancelCustomerOrder(
+                MEMBER_ID,
+                ORDER_ID,
+                "일정 변경",
+                preparation.refundRate(),
+                preparation.refundAmount(),
+                PaymentCancelResult.skipped()
+        );
 
         assertThat(response.refundRate()).isEqualTo(50);
         assertThat(response.refundAmount()).isEqualTo(5000);
@@ -92,7 +100,7 @@ class OrderServiceTest {
         Order order = order(OrderStatus.COMPLETED, LocalDate.now().plusDays(3), 2);
         when(orderRepository.findByIdAndMemberId(ORDER_ID, MEMBER_ID)).thenReturn(Optional.of(order));
 
-        assertThatThrownBy(() -> orderService.cancelOrder(MEMBER_ID, ORDER_ID, new OrderCancelRequest("일정 변경")))
+        assertThatThrownBy(() -> orderCancelTransactionService.prepareCustomerCancel(MEMBER_ID, ORDER_ID))
                 .isInstanceOf(GeneralException.class)
                 .extracting("code")
                 .isEqualTo(OrderErrorStatus.ORDER_CANCEL_NOT_ALLOWED);

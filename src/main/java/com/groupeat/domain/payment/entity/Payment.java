@@ -162,10 +162,19 @@ public class Payment extends BaseEntity {
         this.paymentStatus = PaymentStatus.FAILED;
     }
 
-    // 결제 취소
-    public void cancel(Integer refundedAmount, LocalDateTime canceledAt) {
+    // 결제 전액 취소
+    public void cancel(Integer refundedAmount, LocalDateTime canceledAt, String lastTransactionKey) {
         this.refundedAmount = refundedAmount;
         this.canceledAt = canceledAt;
+        this.lastTransactionKey = lastTransactionKey;
         this.paymentStatus = PaymentStatus.CANCELED;
+    }
+
+    // 결제 부분 취소
+    public void partialCancel(Integer refundedAmount, LocalDateTime canceledAt, String lastTransactionKey) {
+        this.refundedAmount = refundedAmount;
+        this.canceledAt = canceledAt;
+        this.lastTransactionKey = lastTransactionKey;
+        this.paymentStatus = PaymentStatus.PARTIAL_CANCELED;
     }
 }

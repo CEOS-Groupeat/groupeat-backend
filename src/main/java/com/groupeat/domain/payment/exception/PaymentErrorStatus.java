@@ -15,7 +15,8 @@ public enum PaymentErrorStatus implements BaseErrorCode {
     PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "PAYMENT4001", "결제 요청 금액이 일치하지 않습니다."),
     PAYMENT_INVALID_STATUS(HttpStatus.BAD_REQUEST, "PAYMENT4002", "현재 상태에서는 결제를 승인할 수 없습니다."),
     PAYMENT_ALREADY_CONFIRMED(HttpStatus.BAD_REQUEST, "PAYMENT4003", "이미 승인된 결제입니다."),
-    TOSS_CONFIRM_FAILED(HttpStatus.BAD_GATEWAY, "PAYMENT5020", "토스페이먼츠 결제 승인에 실패했습니다.");
+    TOSS_CONFIRM_FAILED(HttpStatus.BAD_GATEWAY, "PAYMENT5020", "토스페이먼츠 결제 승인에 실패했습니다."),
+    TOSS_CANCEL_FAILED(HttpStatus.BAD_GATEWAY, "PAYMENT5021", "토스페이먼츠 결제 취소에 실패했습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

@@ -71,7 +71,7 @@ public class Settlement extends BaseEntity {
                 .ownerId(store.getOwnerId())
                 .orderAmount(orderAmount)
                 .platformFeeAmount(platformFeeAmount)
-                .payoutAmount(orderAmount - platformFeeAmount)
+                .payoutAmount(orderAmount - platformFeeAmount) // 전체 금액 - 수수료 금액
                 .chargeAmount(0)
                 .settlementType(SettlementType.PAYOUT)
                 .build();
@@ -91,7 +91,7 @@ public class Settlement extends BaseEntity {
                 .orderAmount(orderAmount)
                 .platformFeeAmount(platformFeeAmount)
                 .payoutAmount(0)
-                .chargeAmount(platformFeeAmount)
+                .chargeAmount(platformFeeAmount) // 수수료 금액만 청구
                 .settlementType(SettlementType.FEE_CHARGE)
                 .build();
     }

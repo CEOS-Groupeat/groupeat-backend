@@ -96,4 +96,14 @@ public class OrderController {
         OrderStatusChangeResponse response = orderService.rejectOrder(member.memberId(), member.memberType(), orderId, request);
         return ApiResponse.onSuccess(response);
     }
+
+    @PatchMapping("/{orderId}/complete-pickup")
+    @Operation(summary = "픽업 완료", description = "사업자가 본인 가게의 확정 주문을 픽업 완료 처리합니다.")
+    public ApiResponse<OrderStatusChangeResponse> completePickup(
+            @AuthenticationPrincipal AuthenticatedMember member,
+            @PathVariable @Parameter(description = "픽업 완료 처리할 주문 ID") Long orderId
+    ) {
+        OrderStatusChangeResponse response = orderService.completePickup(member.memberId(), member.memberType(), orderId);
+        return ApiResponse.onSuccess(response);
+    }
 }

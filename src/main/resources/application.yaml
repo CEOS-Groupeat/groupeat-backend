@@ -89,6 +89,9 @@ app:
       business-login-success-path: /owner/home
       signup-path: /signup
       signup-in-progress-path: /signup/customer
+  settlement:
+    # TODO: 정산 수수료 정책 확정 후 운영 설정으로 조정
+    platform-fee-rate: ${PLATFORM_FEE_RATE:5}
   swagger:
     prod-server-url: ${SWAGGER_PROD_SERVER_URL:https://api.groupeat.co.kr}
 

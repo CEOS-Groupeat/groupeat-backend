@@ -12,6 +12,10 @@ import com.groupeat.domain.payment.enums.PaymentProvider;
 import com.groupeat.domain.payment.enums.PaymentStatus;
 import com.groupeat.domain.payment.enums.PaymentType;
 import com.groupeat.domain.payment.repository.PaymentRepository;
+import com.groupeat.domain.settlement.entity.Settlement;
+import com.groupeat.domain.settlement.enums.SettlementType;
+import com.groupeat.domain.settlement.repository.SettlementRepository;
+import com.groupeat.domain.settlement.service.SettlementFeeCalculator;
 import com.groupeat.domain.store.entity.Store;
 import com.groupeat.global.exception.GeneralException;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,8 +28,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 class OrderOwnerActionTransactionServiceTest {
 
@@ -34,13 +38,22 @@ class OrderOwnerActionTransactionServiceTest {
 
     private OrderRepository orderRepository;
     private PaymentRepository paymentRepository;
+    private SettlementRepository settlementRepository;
+    private SettlementFeeCalculator settlementFeeCalculator;
     private OrderOwnerActionTransactionService orderOwnerActionTransactionService;
 
     @BeforeEach
     void setUp() {
         orderRepository = mock(OrderRepository.class);
         paymentRepository = mock(PaymentRepository.class);
-        orderOwnerActionTransactionService = new OrderOwnerActionTransactionService(orderRepository, paymentRepository);
+        settlementRepository = mock(SettlementRepository.class);
+        settlementFeeCalculator = mock(SettlementFeeCalculator.class);
+        orderOwnerActionTransactionService = new OrderOwnerActionTransactionService(
+                orderRepository,
+                paymentRepository,
+                settlementRepository,
+                settlementFeeCalculator
+        );
     }
 
     @Test
@@ -101,6 +114,31 @@ class OrderOwnerActionTransactionServiceTest {
 
         assertThat(preparation.refundAmount()).isEqualTo(10000);
         assertThat(preparation.payment()).isEqualTo(payment);
+    }
+
+    @Test
+    void completePickup_changesStatusAndCreatesPayoutSettlementForPrepaidOrder() {
+        Order order = order(OrderStatus.ACCEPTED);
+        Payment payment = payment(order);
+        when(orderRepository.findByIdAndStoreOwnerId(ORDER_ID, OWNER_ID)).thenReturn(Optional.of(order));
+        when(paymentRepository.findByOrderId(order.getOrderId())).thenReturn(Optional.of(payment));
+        when(settlementRepository.existsByOrderId(order.getId())).thenReturn(false);
+        when(settlementFeeCalculator.calculate(10000)).thenReturn(500);
+        when(settlementRepository.save(any(Settlement.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        OrderStatusChangeResponse response = orderOwnerActionTransactionService.completePickup(OWNER_ID, ORDER_ID);
+
+        assertThat(response.orderStatus()).isEqualTo(OrderStatus.COMPLETED);
+        assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.COMPLETED);
+        assertThat(order.getPickupCompletedAt()).isNotNull();
+
+        verify(settlementRepository).save(argThat(settlement ->
+                settlement.getSettlementType() == SettlementType.PAYOUT
+                        && settlement.getOrderAmount().equals(10000)
+                        && settlement.getPlatformFeeAmount().equals(500)
+                        && settlement.getPayoutAmount().equals(9500)
+                        && settlement.getChargeAmount().equals(0)
+        ));
     }
 
     private Order order(OrderStatus orderStatus) {

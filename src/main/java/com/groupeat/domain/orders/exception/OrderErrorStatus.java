@@ -16,6 +16,7 @@ public enum OrderErrorStatus implements BaseErrorCode {
     ORDER_CANCEL_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "ORDER4003", "현재 상태에서는 주문을 취소할 수 없습니다."),
     ORDER_ACCEPT_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "ORDER4004", "현재 상태에서는 주문을 승인할 수 없습니다."),
     ORDER_REJECT_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "ORDER4005", "현재 상태에서는 주문을 거절할 수 없습니다."),
+    ORDER_PICKUP_COMPLETE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "ORDER4006", "현재 상태에서는 픽업 완료 처리할 수 없습니다."),
     BUSINESS_MEMBER_REQUIRED(HttpStatus.FORBIDDEN, "ORDER4030", "사업자 회원만 처리할 수 있는 주문 요청입니다.");
 
     private final HttpStatus httpStatus;

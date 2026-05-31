@@ -255,6 +255,12 @@ public class OrderService {
         );
     }
 
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public OrderStatusChangeResponse completePickup(Long ownerId, MemberType memberType, Long orderId) {
+        validateBusinessMember(memberType);
+        return orderOwnerActionTransactionService.completePickup(ownerId, orderId);
+    }
+
     private void validateBusinessMember(MemberType memberType) {
         if (memberType == MemberType.BUSINESS) {
             return;

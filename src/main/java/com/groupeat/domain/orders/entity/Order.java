@@ -100,6 +100,9 @@ public class Order extends BaseEntity {
     @Column(name = "rejected_at")
     private LocalDateTime rejectedAt;
 
+    @Column(name = "pickup_completed_at")
+    private LocalDateTime pickupCompletedAt;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();
@@ -134,5 +137,10 @@ public class Order extends BaseEntity {
         this.orderStatus = OrderStatus.REJECTED;
         this.rejectReason = rejectReason;
         this.rejectedAt = rejectedAt;
+    }
+
+    public void completePickup(LocalDateTime pickupCompletedAt) {
+        this.orderStatus = OrderStatus.COMPLETED;
+        this.pickupCompletedAt = pickupCompletedAt;
     }
 }

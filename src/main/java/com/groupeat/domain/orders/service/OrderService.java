@@ -10,12 +10,15 @@ import com.groupeat.domain.cart.repository.CartItemRepository;
 import com.groupeat.domain.cart.service.CartCalculateService;
 import com.groupeat.domain.orders.converter.OrderConverter;
 import com.groupeat.domain.orders.dto.OrderCancelPreparation;
+import com.groupeat.domain.orders.dto.OrderRejectPreparation;
 import com.groupeat.domain.orders.dto.request.OrderCancelRequest;
 import com.groupeat.domain.orders.dto.request.OrderCreateRequest;
+import com.groupeat.domain.orders.dto.request.OrderRejectRequest;
 import com.groupeat.domain.orders.dto.response.OrderCancelResponse;
 import com.groupeat.domain.orders.dto.response.OrderCreateResponse;
 import com.groupeat.domain.orders.dto.response.OrderDetailResponse;
 import com.groupeat.domain.orders.dto.response.OrderListResponse;
+import com.groupeat.domain.orders.dto.response.OrderStatusChangeResponse;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.entity.OrderItem;
 import com.groupeat.domain.orders.entity.OrderItemOption;
@@ -25,10 +28,12 @@ import com.groupeat.domain.orders.repository.OrderItemOptionRepository;
 import com.groupeat.domain.orders.repository.OrderItemRepository;
 import com.groupeat.domain.orders.repository.OrderQueryRepository;
 import com.groupeat.domain.orders.repository.OrderRepository;
+import com.groupeat.domain.payment.dto.PaymentCancelResult;
 import com.groupeat.domain.payment.entity.Payment;
 import com.groupeat.domain.payment.enums.PaymentType;
 import com.groupeat.domain.payment.repository.PaymentRepository;
 import com.groupeat.domain.payment.service.PaymentCancelService;
+import com.groupeat.domain.member.enums.MemberType;
 import com.groupeat.domain.store.entity.Menu;
 import com.groupeat.domain.store.entity.MenuOption;
 import com.groupeat.domain.store.entity.Store;
@@ -70,6 +75,7 @@ public class OrderService {
     private final CartCalculateService cartCalculateService;
     private final PaymentCancelService paymentCancelService;
     private final OrderCancelTransactionService orderCancelTransactionService;
+    private final OrderOwnerActionTransactionService orderOwnerActionTransactionService;
 
     @Transactional
     public OrderCreateResponse createOrder(Long memberId, OrderCreateRequest request) {
@@ -206,13 +212,54 @@ public class OrderService {
     public OrderCancelResponse cancelOrder(Long memberId, Long orderId, OrderCancelRequest request) {
         OrderCancelPreparation preparation = orderCancelTransactionService.prepareCustomerCancel(memberId, orderId);
 
+        PaymentCancelResult paymentCancelResult = paymentCancelService.cancel(
+                preparation.payment(),
+                request.cancelReason(),
+                preparation.refundAmount()
+        );
+
         return orderCancelTransactionService.cancelCustomerOrder(
                 memberId,
                 orderId,
                 request.cancelReason(),
                 preparation.refundRate(),
                 preparation.refundAmount(),
-                paymentCancelService.cancel(preparation.payment(), request.cancelReason(), preparation.refundAmount())
+                paymentCancelResult
         );
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public OrderStatusChangeResponse acceptOrder(Long ownerId, MemberType memberType, Long orderId) {
+        validateBusinessMember(memberType);
+        return orderOwnerActionTransactionService.acceptOrder(ownerId, orderId);
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public OrderStatusChangeResponse rejectOrder(Long ownerId, MemberType memberType, Long orderId, OrderRejectRequest request) {
+        validateBusinessMember(memberType);
+
+        OrderRejectPreparation preparation = orderOwnerActionTransactionService.prepareRejectOrder(ownerId, orderId);
+
+        PaymentCancelResult paymentCancelResult = paymentCancelService.cancel(
+                preparation.payment(),
+                request.rejectReason(),
+                preparation.refundAmount()
+        );
+
+        return orderOwnerActionTransactionService.rejectOrder(
+                ownerId,
+                orderId,
+                request.rejectReason(),
+                preparation.refundAmount(),
+                paymentCancelResult
+        );
+    }
+
+    private void validateBusinessMember(MemberType memberType) {
+        if (memberType == MemberType.BUSINESS) {
+            return;
+        }
+
+        throw new GeneralException(OrderErrorStatus.BUSINESS_MEMBER_REQUIRED);
     }
 }

@@ -91,6 +91,15 @@ public class Order extends BaseEntity {
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
 
+    @Column(name = "accepted_at")
+    private LocalDateTime acceptedAt;
+
+    @Column(name = "reject_reason", length = 100)
+    private String rejectReason;
+
+    @Column(name = "rejected_at")
+    private LocalDateTime rejectedAt;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();
@@ -114,5 +123,16 @@ public class Order extends BaseEntity {
         this.cancelRefundRate = cancelRefundRate;
         this.cancelRefundAmount = cancelRefundAmount;
         this.cancelledAt = cancelledAt;
+    }
+
+    public void accept(LocalDateTime acceptedAt) {
+        this.orderStatus = OrderStatus.ACCEPTED;
+        this.acceptedAt = acceptedAt;
+    }
+
+    public void reject(String rejectReason, LocalDateTime rejectedAt) {
+        this.orderStatus = OrderStatus.REJECTED;
+        this.rejectReason = rejectReason;
+        this.rejectedAt = rejectedAt;
     }
 }

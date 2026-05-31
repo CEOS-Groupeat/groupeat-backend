@@ -11,6 +11,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Optional<Order> findByIdAndMemberId(Long orderId, Long memberId);
 
+    Optional<Order> findByIdAndStoreOwnerId(Long orderId, Long ownerId);
+
     // OrderItem 리스트를 한 번에 패치 조인
     @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.orderItems WHERE o.id = :orderId AND o.memberId = :memberId")
     Optional<Order> findByIdAndMemberIdWithItems(

@@ -43,6 +43,7 @@ import com.groupeat.domain.store.repository.MenuRepository;
 import com.groupeat.domain.store.repository.StoreRepository;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,6 +58,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional
 public class OrderService {
 
@@ -218,14 +220,25 @@ public class OrderService {
                 preparation.refundAmount()
         );
 
-        return orderCancelTransactionService.cancelCustomerOrder(
-                memberId,
-                orderId,
-                request.cancelReason(),
-                preparation.refundRate(),
-                preparation.refundAmount(),
-                paymentCancelResult
-        );
+        try {
+            return orderCancelTransactionService.cancelCustomerOrder(
+                    memberId,
+                    orderId,
+                    request.cancelReason(),
+                    preparation.refundRate(),
+                    preparation.refundAmount(),
+                    paymentCancelResult
+            );
+        } catch (RuntimeException e) {
+            logPaymentCancelPersistenceFailure(
+                    "customer cancel",
+                    orderId,
+                    preparation.payment(),
+                    paymentCancelResult,
+                    e
+            );
+            throw e;
+        }
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -246,13 +259,24 @@ public class OrderService {
                 preparation.refundAmount()
         );
 
-        return orderOwnerActionTransactionService.rejectOrder(
-                ownerId,
-                orderId,
-                request.rejectReason(),
-                preparation.refundAmount(),
-                paymentCancelResult
-        );
+        try {
+            return orderOwnerActionTransactionService.rejectOrder(
+                    ownerId,
+                    orderId,
+                    request.rejectReason(),
+                    preparation.refundAmount(),
+                    paymentCancelResult
+            );
+        } catch (RuntimeException e) {
+            logPaymentCancelPersistenceFailure(
+                    "owner reject",
+                    orderId,
+                    preparation.payment(),
+                    paymentCancelResult,
+                    e
+            );
+            throw e;
+        }
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -267,5 +291,29 @@ public class OrderService {
         }
 
         throw new GeneralException(OrderErrorStatus.BUSINESS_MEMBER_REQUIRED);
+    }
+
+    private void logPaymentCancelPersistenceFailure(
+            String action,
+            Long orderId,
+            Payment payment,
+            PaymentCancelResult paymentCancelResult,
+            RuntimeException exception
+    ) {
+        if (!paymentCancelResult.canceled()) {
+            return;
+        }
+
+        log.error(
+                "Payment cancel succeeded but order persistence failed. action={}, orderId={}, paymentId={}, paymentKey={}, refundedAmount={}, canceledAt={}, lastTransactionKey={}",
+                action,
+                orderId,
+                payment != null ? payment.getId() : null,
+                payment != null ? payment.getPaymentKey() : null,
+                paymentCancelResult.refundedAmount(),
+                paymentCancelResult.canceledAt(),
+                paymentCancelResult.lastTransactionKey(),
+                exception
+        );
     }
 }

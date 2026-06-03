@@ -5,6 +5,7 @@ import com.groupeat.domain.orders.dto.request.OrderCreateRequest;
 import com.groupeat.domain.orders.dto.response.OrderCreateResponse;
 import com.groupeat.domain.orders.dto.response.OrderDetailResponse;
 import com.groupeat.domain.orders.dto.response.OrderListResponse;
+import com.groupeat.domain.orders.dto.response.OrderStatusChangeResponse;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.entity.OrderItem;
 import com.groupeat.domain.orders.entity.OrderItemOption;
@@ -14,6 +15,7 @@ import com.groupeat.domain.store.entity.MenuOption;
 import com.groupeat.domain.store.entity.Store;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
@@ -145,5 +147,13 @@ public class OrderConverter {
                 .orderDate(order.getCreatedAt().toLocalDate())
                 .orderTime(order.getCreatedAt().toLocalTime())
                 .build();
+    }
+
+    public static OrderStatusChangeResponse toOrderStatusChangeResponse(Order order, LocalDateTime processedAt) {
+        return new OrderStatusChangeResponse(
+                order.getId(),
+                order.getOrderStatus(),
+                processedAt
+        );
     }
 }

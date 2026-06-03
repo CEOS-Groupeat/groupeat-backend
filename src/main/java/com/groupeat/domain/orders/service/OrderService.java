@@ -9,10 +9,16 @@ import com.groupeat.domain.cart.repository.CartItemOptionRepository;
 import com.groupeat.domain.cart.repository.CartItemRepository;
 import com.groupeat.domain.cart.service.CartCalculateService;
 import com.groupeat.domain.orders.converter.OrderConverter;
+import com.groupeat.domain.orders.dto.OrderCancelPreparation;
+import com.groupeat.domain.orders.dto.OrderRejectPreparation;
+import com.groupeat.domain.orders.dto.request.OrderCancelRequest;
 import com.groupeat.domain.orders.dto.request.OrderCreateRequest;
+import com.groupeat.domain.orders.dto.request.OrderRejectRequest;
+import com.groupeat.domain.orders.dto.response.OrderCancelResponse;
 import com.groupeat.domain.orders.dto.response.OrderCreateResponse;
 import com.groupeat.domain.orders.dto.response.OrderDetailResponse;
 import com.groupeat.domain.orders.dto.response.OrderListResponse;
+import com.groupeat.domain.orders.dto.response.OrderStatusChangeResponse;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.entity.OrderItem;
 import com.groupeat.domain.orders.entity.OrderItemOption;
@@ -22,9 +28,12 @@ import com.groupeat.domain.orders.repository.OrderItemOptionRepository;
 import com.groupeat.domain.orders.repository.OrderItemRepository;
 import com.groupeat.domain.orders.repository.OrderQueryRepository;
 import com.groupeat.domain.orders.repository.OrderRepository;
+import com.groupeat.domain.payment.dto.PaymentCancelResult;
 import com.groupeat.domain.payment.entity.Payment;
 import com.groupeat.domain.payment.enums.PaymentType;
 import com.groupeat.domain.payment.repository.PaymentRepository;
+import com.groupeat.domain.payment.service.PaymentCancelService;
+import com.groupeat.domain.member.enums.MemberType;
 import com.groupeat.domain.store.entity.Menu;
 import com.groupeat.domain.store.entity.MenuOption;
 import com.groupeat.domain.store.entity.Store;
@@ -34,7 +43,9 @@ import com.groupeat.domain.store.repository.MenuRepository;
 import com.groupeat.domain.store.repository.StoreRepository;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -47,6 +58,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional
 public class OrderService {
 
@@ -63,6 +75,9 @@ public class OrderService {
     private final MenuOptionRepository menuOptionRepository;
 
     private final CartCalculateService cartCalculateService;
+    private final PaymentCancelService paymentCancelService;
+    private final OrderCancelTransactionService orderCancelTransactionService;
+    private final OrderOwnerActionTransactionService orderOwnerActionTransactionService;
 
     @Transactional
     public OrderCreateResponse createOrder(Long memberId, OrderCreateRequest request) {
@@ -193,5 +208,112 @@ public class OrderService {
                 .orElseThrow(() -> new GeneralException(OrderErrorStatus.ORDER_NOT_FOUND));
 
         return OrderConverter.toOrderDetailResponse(order, order.getOrderItems());
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public OrderCancelResponse cancelOrder(Long memberId, Long orderId, OrderCancelRequest request) {
+        OrderCancelPreparation preparation = orderCancelTransactionService.prepareCustomerCancel(memberId, orderId);
+
+        PaymentCancelResult paymentCancelResult = paymentCancelService.cancel(
+                preparation.payment(),
+                request.cancelReason(),
+                preparation.refundAmount()
+        );
+
+        try {
+            return orderCancelTransactionService.cancelCustomerOrder(
+                    memberId,
+                    orderId,
+                    request.cancelReason(),
+                    preparation.refundRate(),
+                    preparation.refundAmount(),
+                    paymentCancelResult
+            );
+        } catch (RuntimeException e) {
+            logPaymentCancelPersistenceFailure(
+                    "customer cancel",
+                    orderId,
+                    preparation.payment(),
+                    paymentCancelResult,
+                    e
+            );
+            throw e;
+        }
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public OrderStatusChangeResponse acceptOrder(Long ownerId, MemberType memberType, Long orderId) {
+        validateBusinessMember(memberType);
+        return orderOwnerActionTransactionService.acceptOrder(ownerId, orderId);
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public OrderStatusChangeResponse rejectOrder(Long ownerId, MemberType memberType, Long orderId, OrderRejectRequest request) {
+        validateBusinessMember(memberType);
+
+        OrderRejectPreparation preparation = orderOwnerActionTransactionService.prepareRejectOrder(ownerId, orderId);
+
+        PaymentCancelResult paymentCancelResult = paymentCancelService.cancel(
+                preparation.payment(),
+                request.rejectReason(),
+                preparation.refundAmount()
+        );
+
+        try {
+            return orderOwnerActionTransactionService.rejectOrder(
+                    ownerId,
+                    orderId,
+                    request.rejectReason(),
+                    preparation.refundAmount(),
+                    paymentCancelResult
+            );
+        } catch (RuntimeException e) {
+            logPaymentCancelPersistenceFailure(
+                    "owner reject",
+                    orderId,
+                    preparation.payment(),
+                    paymentCancelResult,
+                    e
+            );
+            throw e;
+        }
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public OrderStatusChangeResponse completePickup(Long ownerId, MemberType memberType, Long orderId) {
+        validateBusinessMember(memberType);
+        return orderOwnerActionTransactionService.completePickup(ownerId, orderId);
+    }
+
+    private void validateBusinessMember(MemberType memberType) {
+        if (memberType == MemberType.BUSINESS) {
+            return;
+        }
+
+        throw new GeneralException(OrderErrorStatus.BUSINESS_MEMBER_REQUIRED);
+    }
+
+    private void logPaymentCancelPersistenceFailure(
+            String action,
+            Long orderId,
+            Payment payment,
+            PaymentCancelResult paymentCancelResult,
+            RuntimeException exception
+    ) {
+        if (!paymentCancelResult.canceled()) {
+            return;
+        }
+
+        log.error(
+                "Payment cancel succeeded but order persistence failed. action={}, orderId={}, paymentId={}, paymentKey={}, refundedAmount={}, canceledAt={}, lastTransactionKey={}",
+                action,
+                orderId,
+                payment != null ? payment.getId() : null,
+                payment != null ? payment.getPaymentKey() : null,
+                paymentCancelResult.refundedAmount(),
+                paymentCancelResult.canceledAt(),
+                paymentCancelResult.lastTransactionKey(),
+                exception
+        );
     }
 }

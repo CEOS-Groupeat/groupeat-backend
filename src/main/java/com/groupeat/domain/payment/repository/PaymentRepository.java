@@ -12,5 +12,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Payment> findByOrderId(String orderId);
 
+    Optional<Payment> findFirstByOrderId(String orderId);
+
     Optional<Payment> findByPaymentKey(String paymentKey);
 }

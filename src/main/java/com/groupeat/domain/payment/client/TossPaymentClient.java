@@ -3,6 +3,7 @@ package com.groupeat.domain.payment.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.groupeat.domain.payment.config.TossPaymentProperties;
+import com.groupeat.domain.payment.dto.toss.TossPaymentCancelRequest;
 import com.groupeat.domain.payment.dto.toss.TossPaymentConfirmRequest;
 import com.groupeat.domain.payment.dto.toss.TossPaymentConfirmResponse;
 import com.groupeat.domain.payment.dto.toss.TossPaymentErrorResponse;
@@ -32,6 +33,27 @@ public class TossPaymentClient {
             return restClientBuilder.build()
                     .post()
                     .uri(properties.confirmUrl())
+                    .header(HttpHeaders.AUTHORIZATION, createAuthorizationHeader())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .body(TossPaymentConfirmResponse.class);
+        } catch (RestClientResponseException e) {
+            TossPaymentErrorResponse errorResponse = parseErrorResponse(e);
+            throw new TossPaymentException(
+                    e.getStatusCode(),
+                    errorResponse.code(),
+                    errorResponse.message()
+            );
+        }
+    }
+
+    // 토스페이먼츠 결제 취소 요청
+    public TossPaymentConfirmResponse cancelPayment(String paymentKey, TossPaymentCancelRequest request) {
+        try {
+            return restClientBuilder.build()
+                    .post()
+                    .uri(properties.cancelBaseUrl() + "/" + paymentKey + "/cancel")
                     .header(HttpHeaders.AUTHORIZATION, createAuthorizationHeader())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request)

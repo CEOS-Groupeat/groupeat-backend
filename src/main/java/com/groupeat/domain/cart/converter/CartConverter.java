@@ -28,18 +28,32 @@ public class CartConverter {
             List<CartItem> storeItems = entry.getValue();
             Store store = storeMap.get(storeId);
 
-            int totalStoreQuantity = storeItems.stream().mapToInt(CartItem::getQuantity).sum();
-            int discountRate = (store != null
-                    && store.getDiscountConditionQuantity() != null
-                    && store.getDiscountRate() != null
-                    && totalStoreQuantity >= store.getDiscountConditionQuantity())
-                    ? store.getDiscountRate() : 0;
+            // 가게 내의 아이템들을 '픽업 날짜+시간'을 기준으로 수량  합산
+            Map<String, Integer> quantityByDateTime = storeItems.stream()
+                    .collect(Collectors.groupingBy(
+                            item -> item.getPickupDate().toString() + "T" + item.getPickupTime().toString(),
+                            Collectors.summingInt(CartItem::getQuantity)
+                    ));
 
             List<CartListResponse.CartItemDTO> itemDTOs = storeItems.stream()
-                    .filter(item -> menuMap.get(item.getMenuId()) != null) 
+                    .filter(item -> menuMap.get(item.getMenuId()) != null)
                     .map(item -> {
                         Menu menu = menuMap.get(item.getMenuId());
                         List<CartItemOption> options = cartItemOptionsMap.getOrDefault(item.getId(), List.of());
+
+                        // 현재 순회 중인 아이템의 '픽업 날짜+시간' 키 생성
+                        String dateTimeKey = item.getPickupDate().toString() + "T" + item.getPickupTime().toString();
+
+                        // 위에서 미리 계산해둔 해당 시간대의 총 수량 가져오기
+                        int totalDateTimeQuantity = quantityByDateTime.getOrDefault(dateTimeKey, 0);
+
+                        // 해당 시간대의 총 수량이 할인 조건을 만족하는지 판별하여 할인율 적용
+                        int discountRate = (store != null
+                                && store.getDiscountConditionQuantity() != null
+                                && store.getDiscountRate() != null
+                                && totalDateTimeQuantity >= store.getDiscountConditionQuantity())
+                                ? store.getDiscountRate() : 0;
+
                         return buildCartItemDTO(item, menu, options, menuOptionMap, discountRate);
                     }).toList();
 

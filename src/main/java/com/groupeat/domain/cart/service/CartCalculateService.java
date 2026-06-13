@@ -58,6 +58,15 @@ public class CartCalculateService {
             throw new GeneralException(CartErrorStatus.MULTIPLE_STORE_NOT_ALLOWED);
         }
 
+        // 픽업 날짜/시간이 하나로 일치하는지 검증
+        long dateTimeCount = cartItems.stream()
+                .map(item -> item.getPickupDate().toString() + "T" + item.getPickupTime().toString())
+                .distinct()
+                .count();
+        if (dateTimeCount > 1) {
+            throw new GeneralException(CartErrorStatus.DIFFERENT_PICKUP_TIME);
+        }
+
         Store store = storeRepository.findById(storeIds.get(0))
                 .orElseThrow(() -> new GeneralException(StoreErrorStatus.STORE_NOT_FOUND));
 
@@ -76,15 +85,17 @@ public class CartCalculateService {
     }
 
     public CartCalculateResponse calculateWithEntities(
-            List<CartItem> cartItems,
-            Store store,
-            Map<Long, Menu> menuMap,
-            Map<Long, List<CartItemOption>> optionsMap,
-            Map<Long, MenuOption> realOptionsMap
+            List<CartItem> cartItems, Store store, Map<Long, Menu> menuMap,
+            Map<Long, List<CartItemOption>> optionsMap, Map<Long, MenuOption> realOptionsMap
     ) {
         int totalQuantity = cartItems.stream().mapToInt(CartItem::getQuantity).sum();
-        int discountRate = (store.getDiscountConditionQuantity() != null && totalQuantity >= store.getDiscountConditionQuantity())
-                ? store.getDiscountRate() : 0;
+
+        // 날짜/시간별로 수량 합산
+        Map<String, Integer> quantityByDateTime = cartItems.stream()
+                .collect(Collectors.groupingBy(
+                        item -> item.getPickupDate().toString() + "T" + item.getPickupTime().toString(),
+                        Collectors.summingInt(CartItem::getQuantity)
+                ));
 
         int totalOriginalPrice = 0;
         int totalDiscountAmount = 0;
@@ -96,8 +107,16 @@ public class CartCalculateService {
 
             int unitPrice = menu.getBasePrice() + options.stream()
                     .mapToInt(opt -> realOptionsMap.get(opt.getMenuOptionId()).getAdditionalPrice()).sum();
-
             int itemOriginalPrice = unitPrice * item.getQuantity();
+
+            // 현재 아이템의 그룹 수량을 기반으로 실제 할인율 도출
+            String dateTimeKey = item.getPickupDate().toString() + "T" + item.getPickupTime().toString();
+            int totalGroupQuantity = quantityByDateTime.getOrDefault(dateTimeKey, 0);
+
+            int discountRate = (store.getDiscountConditionQuantity() != null
+                    && totalGroupQuantity >= store.getDiscountConditionQuantity())
+                    ? store.getDiscountRate() : 0;
+
             int itemDiscountAmount = (int) (itemOriginalPrice * (discountRate / 100.0));
             int itemFinalPrice = itemOriginalPrice - itemDiscountAmount;
 

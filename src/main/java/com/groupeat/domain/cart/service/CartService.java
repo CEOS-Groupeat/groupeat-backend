@@ -65,14 +65,41 @@ public class CartService {
 
         Cart cart = getOrCreateCart(memberId);
 
-        // CartItem 생성 및 저장
-        CartItem cartItem = CartConverter.toCartItem(cart, request);
-        CartItem savedCartItem = cartItemRepository.save(cartItem);
+        // 기존 장바구니에 동일한 메뉴, 날짜, 시간이 있는지 검색
+        List<CartItem> existingItems = cartItemRepository.findByCartIdAndMenuIdAndPickupDateAndPickupTime(
+                cart.getId(), request.menuId(), request.pickupDate(), request.pickupTime()
+        );
 
-        List<CartItemOption> options = CartConverter.toCartItemOptions(savedCartItem, optionIds);
-        if (!options.isEmpty()) {
-            cartItemOptionRepository.saveAll(options);
+        CartItem matchedItem = null;
+
+        // 검색된 아이템들 중 '옵션'까지 완벽하게 동일한 아이템이 있는지 검증합니다.
+        List<Long> requestedOptionIds = optionIds.stream().sorted().toList();
+
+        for (CartItem item : existingItems) {
+            // 기존 아이템의 옵션 ID들을 가져와서 오름차순 정렬
+            List<Long> existingOptionIds = cartItemOptionRepository.findByCartItemId(item.getId())
+                    .stream().map(CartItemOption::getMenuOptionId).sorted().toList();
+
+            if (existingOptionIds.equals(requestedOptionIds)) {
+                matchedItem = item;
+                break;
+            }
         }
+
+        if (matchedItem != null) {
+            // 완전히 동일한 아이템이 이미 있다면 수량만 증가
+            matchedItem.updateQuantity(matchedItem.getQuantity() + request.quantity());
+        } else {
+            // 동일한 아이템이 없다면 새로 생성
+            CartItem cartItem = CartConverter.toCartItem(cart, request);
+            CartItem savedCartItem = cartItemRepository.save(cartItem);
+
+            List<CartItemOption> options = CartConverter.toCartItemOptions(savedCartItem, optionIds);
+            if (!options.isEmpty()) {
+                cartItemOptionRepository.saveAll(options);
+            }
+        }
+
         return getCartList(memberId);
     }
 

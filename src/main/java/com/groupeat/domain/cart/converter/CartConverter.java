@@ -62,6 +62,7 @@ public class CartConverter {
             return CartListResponse.StoreCartDTO.builder()
                     .storeId(storeId)
                     .storeName(store != null ? store.getStoreName() : "알 수 없는 가게")
+                    .storeCategory(store != null && store.getCategory() != null ? store.getCategory().getDescription() : null)
                     .cartItems(itemDTOs)
                     .storeTotalPrice(storeTotalPrice)
                     .build();

@@ -3,6 +3,7 @@ package com.groupeat.domain.cart.controller;
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
 import com.groupeat.domain.cart.dto.request.CartCalculateRequest;
 import com.groupeat.domain.cart.dto.request.CartItemAddRequest;
+import com.groupeat.domain.cart.dto.request.CartItemBulkAddRequest;
 import com.groupeat.domain.cart.dto.response.CartCalculateResponse;
 import com.groupeat.domain.cart.dto.response.CartListResponse;
 import com.groupeat.domain.cart.service.CartCalculateService;
@@ -25,12 +26,12 @@ public class CartController {
     private final CartCalculateService cartCalculateService;
 
     @PostMapping("/items")
-    @Operation(summary = "장바구니 메뉴 담기", description = "장바구니에 새로운 메뉴와 옵션을 추가합니다.")
-    public ApiResponse<CartListResponse> addCartItem(
+    @Operation(summary = "장바구니 메뉴 여러 개 한 번에 담기", description = "바텀 시트에서 선택한 여러 메뉴와 옵션을 한 번에 장바구니에 추가(또는 병합)합니다.")
+    public ApiResponse<CartListResponse> addCartItems(
             @AuthenticationPrincipal AuthenticatedMember member,
-            @Valid @RequestBody CartItemAddRequest request
+            @Valid @RequestBody CartItemBulkAddRequest request
     ) {
-        CartListResponse response = cartService.addCartItem(member.memberId(), request);
+        CartListResponse response = cartService.addCartItems(member.memberId(), request);
         return ApiResponse.onSuccess(response);
     }
 

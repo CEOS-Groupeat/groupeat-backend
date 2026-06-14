@@ -2,6 +2,7 @@ package com.groupeat.domain.cart.service;
 
 import com.groupeat.domain.cart.converter.CartConverter;
 import com.groupeat.domain.cart.dto.request.CartItemAddRequest;
+import com.groupeat.domain.cart.dto.request.CartItemBulkAddRequest;
 import com.groupeat.domain.cart.dto.response.CartListResponse;
 import com.groupeat.domain.cart.entity.Cart;
 import com.groupeat.domain.cart.entity.CartItem;
@@ -40,63 +41,84 @@ public class CartService {
     private final MenuOptionRepository menuOptionRepository;
 
     // 장바구니에 메뉴 담기
-    public CartListResponse addCartItem(Long memberId, CartItemAddRequest request) {
-
-        Menu menu = menuRepository.findById(request.menuId())
-                .orElseThrow(() -> new GeneralException(StoreErrorStatus.MENU_NOT_FOUND));
-
-        List<Long> optionIds = request.optionIds() == null ? List.of() : request.optionIds();
-
-        List<MenuOption> selectedOptions = menuOptionRepository.findAllById(optionIds);
-        if (selectedOptions.size() != optionIds.size()) {
-            throw new GeneralException(StoreErrorStatus.INVALID_MENU_OPTION);
-        }
-
-        if (!optionIds.isEmpty()) {
-            long validCount = menuOptionRepository.countValidOptions(optionIds, menu.getId());
-            if (validCount != optionIds.size()) {
-                throw new GeneralException(StoreErrorStatus.INVALID_MENU_OPTION_MAPPING);
-            }
-        }
-
-        if (!menu.getStore().getId().equals(request.storeId())) {
-            throw new GeneralException(StoreErrorStatus.STORE_NOT_FOUND);
-        }
-
+    @Transactional
+    public CartListResponse addCartItems(Long memberId, CartItemBulkAddRequest bulkRequest) {
         Cart cart = getOrCreateCart(memberId);
 
-        // 기존 장바구니에 동일한 메뉴, 날짜, 시간이 있는지 검색
-        List<CartItem> existingItems = cartItemRepository.findByCartIdAndMenuIdAndPickupDateAndPickupTime(
-                cart.getId(), request.menuId(), request.pickupDate(), request.pickupTime()
-        );
+        List<Long> requestMenuIds = bulkRequest.cartItems().stream()
+                .map(CartItemAddRequest::menuId).distinct().toList();
 
-        CartItem matchedItem = null;
+        List<Long> requestOptionIds = bulkRequest.cartItems().stream()
+                .filter(req -> req.optionIds() != null)
+                .flatMap(req -> req.optionIds().stream())
+                .distinct().toList();
 
-        // 검색된 아이템들 중 '옵션'까지 완벽하게 동일한 아이템이 있는지 검증합니다.
-        List<Long> requestedOptionIds = optionIds.stream().sorted().toList();
+        // 메뉴 가져오기
+        Map<Long, Menu> menuMap = menuRepository.findAllById(requestMenuIds).stream()
+                .collect(Collectors.toMap(Menu::getId, m -> m));
 
-        for (CartItem item : existingItems) {
-            // 기존 아이템의 옵션 ID들을 가져와서 오름차순 정렬
-            List<Long> existingOptionIds = cartItemOptionRepository.findByCartItemId(item.getId())
-                    .stream().map(CartItemOption::getMenuOptionId).sorted().toList();
+        // 옵션 가져오기
+        Map<Long, MenuOption> optionMap = menuOptionRepository.findAllById(requestOptionIds).stream()
+                .collect(Collectors.toMap(MenuOption::getId, o -> o));
 
-            if (existingOptionIds.equals(requestedOptionIds)) {
-                matchedItem = item;
-                break;
+        // 항목 검사
+        for (CartItemAddRequest request : bulkRequest.cartItems()) {
+
+            Menu menu = menuMap.get(request.menuId());
+            if (menu == null) {
+                throw new GeneralException(StoreErrorStatus.MENU_NOT_FOUND);
             }
-        }
 
-        if (matchedItem != null) {
+            if (!menu.getStore().getId().equals(request.storeId())) {
+                throw new GeneralException(StoreErrorStatus.STORE_NOT_FOUND);
+            }
+
+            List<Long> optionIds = request.optionIds() == null ? List.of() : request.optionIds();
+            if (!optionIds.isEmpty()) {
+                boolean allOptionsExist = optionIds.stream().allMatch(optionMap::containsKey);
+                if (!allOptionsExist) {
+                    throw new GeneralException(StoreErrorStatus.INVALID_MENU_OPTION);
+                }
+
+                // 해당 옵션이 특정 메뉴의 옵션인지 검증
+                boolean isValidMapping = optionIds.stream()
+                        .map(optionMap::get)
+                        .allMatch(opt -> opt.getOptionGroup().getMenu().getId().equals(menu.getId()));
+                if (!isValidMapping) {
+                    throw new GeneralException(StoreErrorStatus.INVALID_MENU_OPTION_MAPPING);
+                }
+            }
+
+            // 장바구니 병합 로직 -> 기존 장바구니에 동일한 메뉴, 날짜, 시간이 있는지 검색
+            List<CartItem> existingItems = cartItemRepository.findByCartIdAndMenuIdAndPickupDateAndPickupTime(
+                    cart.getId(), request.menuId(), request.pickupDate(), request.pickupTime()
+            );
+
+            CartItem matchedItem = null;
+            List<Long> requestedSortedOptionIds = optionIds.stream().sorted().toList();
+
+            // 검색된 아이템들 중 옵션까지 완벽하게 동일한 아이템이 있는지 검증
+            for (CartItem item : existingItems) {
+                List<Long> existingOptionIds = cartItemOptionRepository.findByCartItemId(item.getId())
+                        .stream().map(CartItemOption::getMenuOptionId).sorted().toList();
+
+                if (existingOptionIds.equals(requestedSortedOptionIds)) {
+                    matchedItem = item;
+                    break;
+                }
+            }
+
             // 완전히 동일한 아이템이 이미 있다면 수량만 증가
-            matchedItem.updateQuantity(matchedItem.getQuantity() + request.quantity());
-        } else {
-            // 동일한 아이템이 없다면 새로 생성
-            CartItem cartItem = CartConverter.toCartItem(cart, request);
-            CartItem savedCartItem = cartItemRepository.save(cartItem);
+            if (matchedItem != null) {
+                matchedItem.updateQuantity(matchedItem.getQuantity() + request.quantity());
+            } else { // 동일한 아이템이 없다면 새로 생성
+                CartItem cartItem = CartConverter.toCartItem(cart, request);
+                CartItem savedCartItem = cartItemRepository.save(cartItem);
 
-            List<CartItemOption> options = CartConverter.toCartItemOptions(savedCartItem, optionIds);
-            if (!options.isEmpty()) {
-                cartItemOptionRepository.saveAll(options);
+                List<CartItemOption> options = CartConverter.toCartItemOptions(savedCartItem, optionIds);
+                if (!options.isEmpty()) {
+                    cartItemOptionRepository.saveAll(options);
+                }
             }
         }
 

@@ -70,7 +70,7 @@ public class CartService {
             }
 
             if (!menu.getStore().getId().equals(request.storeId())) {
-                throw new GeneralException(StoreErrorStatus.STORE_NOT_FOUND);
+                throw new GeneralException(StoreErrorStatus.MENU_NOT_MATCH_STORE);
             }
 
             List<Long> optionIds = request.optionIds() == null ? List.of() : request.optionIds();

@@ -75,6 +75,10 @@ public class CartService {
 
             List<Long> optionIds = request.optionIds() == null ? List.of() : request.optionIds();
             if (!optionIds.isEmpty()) {
+                if (optionIds.size() != optionIds.stream().distinct().count()) {
+                    throw new GeneralException(StoreErrorStatus.INVALID_MENU_OPTION);
+                }
+
                 boolean allOptionsExist = optionIds.stream().allMatch(optionMap::containsKey);
                 if (!allOptionsExist) {
                     throw new GeneralException(StoreErrorStatus.INVALID_MENU_OPTION);
@@ -176,7 +180,7 @@ public class CartService {
 
     // 장바구니가 없으면 새로 생성
     private Cart getOrCreateCart(Long memberId) {
-        return cartRepository.findByMemberId(memberId)
+        return cartRepository.findByMemberIdWithPessimisticLock(memberId)
                 .orElseGet(() -> cartRepository.save(Cart.builder().memberId(memberId).build()));
     }
 }

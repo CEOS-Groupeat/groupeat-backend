@@ -16,7 +16,8 @@ public enum StoreErrorStatus implements BaseErrorCode {
     INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "STORE4001", "지원하지 않는 카테고리입니다."),
     INVALID_REGION(HttpStatus.BAD_REQUEST, "STORE4002", "지원하지 않는 지역입니다."),
     INVALID_MENU_OPTION(HttpStatus.BAD_REQUEST, "STORE4003", "유효하지 않은 메뉴 옵션입니다."),
-    INVALID_MENU_OPTION_MAPPING(HttpStatus.BAD_REQUEST, "STORE4004", "해당 메뉴에 속하지 않는 옵션입니다.");
+    INVALID_MENU_OPTION_MAPPING(HttpStatus.BAD_REQUEST, "STORE4004", "해당 메뉴에 속하지 않는 옵션입니다."),
+    MENU_NOT_MATCH_STORE(HttpStatus.BAD_REQUEST, "STORE4005", "요청하신 가게의 메뉴가 아닙니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

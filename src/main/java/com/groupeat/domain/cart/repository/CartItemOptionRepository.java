@@ -10,4 +10,7 @@ public interface CartItemOptionRepository extends JpaRepository<CartItemOption, 
 
     // 장바구니 항목 ID로 엮인 옵션들을 한 번에 지우는 메서드
     void deleteAllByCartItemId(Long cartItemId);
+
+    // 특정 장바구니 아이템의 옵션들 찾기
+    List<CartItemOption> findByCartItemId(Long cartItemId);
 }

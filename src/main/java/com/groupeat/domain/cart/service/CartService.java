@@ -2,6 +2,7 @@ package com.groupeat.domain.cart.service;
 
 import com.groupeat.domain.cart.converter.CartConverter;
 import com.groupeat.domain.cart.dto.request.CartItemAddRequest;
+import com.groupeat.domain.cart.dto.request.CartItemBulkAddRequest;
 import com.groupeat.domain.cart.dto.response.CartListResponse;
 import com.groupeat.domain.cart.entity.Cart;
 import com.groupeat.domain.cart.entity.CartItem;
@@ -40,39 +41,91 @@ public class CartService {
     private final MenuOptionRepository menuOptionRepository;
 
     // 장바구니에 메뉴 담기
-    public CartListResponse addCartItem(Long memberId, CartItemAddRequest request) {
+    @Transactional
+    public CartListResponse addCartItems(Long memberId, CartItemBulkAddRequest bulkRequest) {
+        Cart cart = getOrCreateCart(memberId);
 
-        Menu menu = menuRepository.findById(request.menuId())
-                .orElseThrow(() -> new GeneralException(StoreErrorStatus.MENU_NOT_FOUND));
+        List<Long> requestMenuIds = bulkRequest.cartItems().stream()
+                .map(CartItemAddRequest::menuId).distinct().toList();
 
-        List<Long> optionIds = request.optionIds() == null ? List.of() : request.optionIds();
+        List<Long> requestOptionIds = bulkRequest.cartItems().stream()
+                .filter(req -> req.optionIds() != null)
+                .flatMap(req -> req.optionIds().stream())
+                .distinct().toList();
 
-        List<MenuOption> selectedOptions = menuOptionRepository.findAllById(optionIds);
-        if (selectedOptions.size() != optionIds.size()) {
-            throw new GeneralException(StoreErrorStatus.INVALID_MENU_OPTION);
-        }
+        // 메뉴 가져오기
+        Map<Long, Menu> menuMap = menuRepository.findAllById(requestMenuIds).stream()
+                .collect(Collectors.toMap(Menu::getId, m -> m));
 
-        if (!optionIds.isEmpty()) {
-            long validCount = menuOptionRepository.countValidOptions(optionIds, menu.getId());
-            if (validCount != optionIds.size()) {
-                throw new GeneralException(StoreErrorStatus.INVALID_MENU_OPTION_MAPPING);
+        // 옵션 가져오기
+        Map<Long, MenuOption> optionMap = menuOptionRepository.findAllById(requestOptionIds).stream()
+                .collect(Collectors.toMap(MenuOption::getId, o -> o));
+
+        // 항목 검사
+        for (CartItemAddRequest request : bulkRequest.cartItems()) {
+
+            Menu menu = menuMap.get(request.menuId());
+            if (menu == null) {
+                throw new GeneralException(StoreErrorStatus.MENU_NOT_FOUND);
+            }
+
+            if (!menu.getStore().getId().equals(request.storeId())) {
+                throw new GeneralException(StoreErrorStatus.MENU_NOT_MATCH_STORE);
+            }
+
+            List<Long> optionIds = request.optionIds() == null ? List.of() : request.optionIds();
+            if (!optionIds.isEmpty()) {
+                if (optionIds.size() != optionIds.stream().distinct().count()) {
+                    throw new GeneralException(StoreErrorStatus.INVALID_MENU_OPTION);
+                }
+
+                boolean allOptionsExist = optionIds.stream().allMatch(optionMap::containsKey);
+                if (!allOptionsExist) {
+                    throw new GeneralException(StoreErrorStatus.INVALID_MENU_OPTION);
+                }
+
+                // 해당 옵션이 특정 메뉴의 옵션인지 검증
+                boolean isValidMapping = optionIds.stream()
+                        .map(optionMap::get)
+                        .allMatch(opt -> opt.getOptionGroup().getMenu().getId().equals(menu.getId()));
+                if (!isValidMapping) {
+                    throw new GeneralException(StoreErrorStatus.INVALID_MENU_OPTION_MAPPING);
+                }
+            }
+
+            // 장바구니 병합 로직 -> 기존 장바구니에 동일한 메뉴, 날짜, 시간이 있는지 검색
+            List<CartItem> existingItems = cartItemRepository.findByCartIdAndMenuIdAndPickupDateAndPickupTime(
+                    cart.getId(), request.menuId(), request.pickupDate(), request.pickupTime()
+            );
+
+            CartItem matchedItem = null;
+            List<Long> requestedSortedOptionIds = optionIds.stream().sorted().toList();
+
+            // 검색된 아이템들 중 옵션까지 완벽하게 동일한 아이템이 있는지 검증
+            for (CartItem item : existingItems) {
+                List<Long> existingOptionIds = cartItemOptionRepository.findByCartItemId(item.getId())
+                        .stream().map(CartItemOption::getMenuOptionId).sorted().toList();
+
+                if (existingOptionIds.equals(requestedSortedOptionIds)) {
+                    matchedItem = item;
+                    break;
+                }
+            }
+
+            // 완전히 동일한 아이템이 이미 있다면 수량만 증가
+            if (matchedItem != null) {
+                matchedItem.updateQuantity(matchedItem.getQuantity() + request.quantity());
+            } else { // 동일한 아이템이 없다면 새로 생성
+                CartItem cartItem = CartConverter.toCartItem(cart, request);
+                CartItem savedCartItem = cartItemRepository.save(cartItem);
+
+                List<CartItemOption> options = CartConverter.toCartItemOptions(savedCartItem, optionIds);
+                if (!options.isEmpty()) {
+                    cartItemOptionRepository.saveAll(options);
+                }
             }
         }
 
-        if (!menu.getStore().getId().equals(request.storeId())) {
-            throw new GeneralException(StoreErrorStatus.STORE_NOT_FOUND);
-        }
-
-        Cart cart = getOrCreateCart(memberId);
-
-        // CartItem 생성 및 저장
-        CartItem cartItem = CartConverter.toCartItem(cart, request);
-        CartItem savedCartItem = cartItemRepository.save(cartItem);
-
-        List<CartItemOption> options = CartConverter.toCartItemOptions(savedCartItem, optionIds);
-        if (!options.isEmpty()) {
-            cartItemOptionRepository.saveAll(options);
-        }
         return getCartList(memberId);
     }
 
@@ -127,7 +180,7 @@ public class CartService {
 
     // 장바구니가 없으면 새로 생성
     private Cart getOrCreateCart(Long memberId) {
-        return cartRepository.findByMemberId(memberId)
+        return cartRepository.findByMemberIdWithPessimisticLock(memberId)
                 .orElseGet(() -> cartRepository.save(Cart.builder().memberId(memberId).build()));
     }
 }

@@ -1,5 +1,6 @@
 package com.groupeat.domain.orders.controller;
 
+import com.groupeat.domain.orders.dto.response.OwnerOrderDetailResponse;
 import com.groupeat.domain.orders.dto.response.OwnerOrderListResponse;
 import com.groupeat.domain.orders.dto.response.OwnerOrderListResponse.OwnerOrderListDTO;
 import com.groupeat.domain.orders.enums.OrderStatus;
@@ -32,6 +33,17 @@ public class OwnerOrderController {
             @RequestParam(defaultValue = "20") int size
     ) {
         OwnerOrderListResponse.OwnerOrderListDTO response = ownerOrderService.getOwnerOrderListByTab(ownerId, tab, lastOrderId, size);
+        return ApiResponse.onSuccess(response);
+    }
+
+    @GetMapping("/{orderId}")
+    @Operation(summary = "사장님 주문 상세 조회",
+            description = "특정 주문의 상세 정보(주문자, 주문상품, 결제 내역)를 조회합니다.")
+    public ApiResponse<OwnerOrderDetailResponse.OrderDetailDTO> getOwnerOrderDetail(
+            @Parameter(description = "사장님 식별자 ID") @RequestParam Long ownerId,
+            @Parameter(description = "조회할 주문 ID") @PathVariable Long orderId
+    ) {
+        OwnerOrderDetailResponse.OrderDetailDTO response = ownerOrderService.getOwnerOrderDetail(ownerId, orderId);
         return ApiResponse.onSuccess(response);
     }
 }

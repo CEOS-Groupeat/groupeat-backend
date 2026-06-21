@@ -3,14 +3,20 @@ package com.groupeat.domain.orders.service;
 import com.groupeat.domain.member.entity.Member;
 import com.groupeat.domain.member.enums.MemberType;
 import com.groupeat.domain.member.repository.MemberRepository;
+import com.groupeat.domain.orders.converter.OwnerOrderDetailConverter;
 import com.groupeat.domain.orders.converter.OwnerOrderListConverter;
+import com.groupeat.domain.orders.dto.response.OwnerOrderDetailResponse;
 import com.groupeat.domain.orders.dto.response.OwnerOrderListResponse;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.entity.OrderItem;
 import com.groupeat.domain.orders.enums.OrderStatus;
 import com.groupeat.domain.orders.enums.OrderTab;
+import com.groupeat.domain.orders.exception.OrderErrorStatus;
 import com.groupeat.domain.orders.repository.OrderItemRepository;
 import com.groupeat.domain.orders.repository.OrderQueryRepository;
+import com.groupeat.domain.orders.repository.OrderRepository;
+import com.groupeat.domain.payment.entity.Payment;
+import com.groupeat.domain.payment.repository.PaymentRepository;
 import com.groupeat.domain.signup.exception.SignupErrorStatus;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +35,10 @@ import java.util.stream.Collectors;
 public class OwnerOrderService {
 
     private final OrderQueryRepository orderQueryRepository;
+    private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final MemberRepository memberRepository;
+    private final PaymentRepository paymentRepository;
 
     public OwnerOrderListResponse.OwnerOrderListDTO getOwnerOrderListByTab(
             Long ownerId, OrderTab tab, Long lastOrderId, int size
@@ -73,6 +81,19 @@ public class OwnerOrderService {
         return OwnerOrderListConverter.toOwnerOrderListDTO(
                 orders, totalElements, hasNext, nextCursor, itemsByOrderId, reorderMemberIds, tab.isConfirmedTab()
         );
+    }
+
+    public OwnerOrderDetailResponse.OrderDetailDTO getOwnerOrderDetail(Long ownerId, Long orderId) {
+        // 사장님 계정 유효성 검증
+        validateOwner(ownerId);
+
+        // 주문 데이터 조회
+        Order order = orderRepository.findByIdAndOwnerIdWithItems(orderId, ownerId)
+                .orElseThrow(() -> new GeneralException(OrderErrorStatus.ORDER_NOT_FOUND));
+
+        Payment payment = paymentRepository.findFirstByOrderId(order.getOrderId()).orElse(null);
+
+        return OwnerOrderDetailConverter.toOrderDetailDTO(order, payment);
     }
 
     private void validateOwner(Long ownerId) {

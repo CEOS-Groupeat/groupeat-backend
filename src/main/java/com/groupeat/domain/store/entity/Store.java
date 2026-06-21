@@ -20,14 +20,28 @@ public class Store extends BaseEntity {
     @Column(name = "store_id")
     private Long id;
 
+    // 사업자 회원(Member)의 id
     @Column(name = "owner_id", nullable = false)
     private Long ownerId;
 
     @Column(nullable = false, length = 100)
     private String storeName;
 
+    // 카카오 주소 검색 결과에서 선택한 도로명/지번 주소
     @Column(nullable = false)
     private String address;
+
+    // 주소의 구 단위 정보, 예: 마포구
+    @Column(name = "district", length = 50)
+    private String district;
+
+    // 주소의 동 단위 정보, 예: 상수동
+    @Column(name = "neighborhood", length = 50)
+    private String neighborhood;
+
+    // 사용자가 직접 입력하는 층/호수 등 상세주소
+    @Column(name = "detail_address")
+    private String detailAddress;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "category", length = 50)

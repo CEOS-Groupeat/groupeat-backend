@@ -93,4 +93,30 @@ public class Store extends BaseEntity {
 
     @Column(name = "max_price")
     private Integer maxPrice;
+
+    public void updateOwnerStoreInfo(
+            String storeName,
+            String imageUrl,
+            String address,
+            String district,
+            String neighborhood,
+            String detailAddress,
+            StoreCategory category,
+            String phoneNumber,
+            String description,
+            Integer discountConditionQuantity,
+            Integer discountRate
+    ) {
+        this.storeName = storeName;
+        this.imageUrl = imageUrl;
+        this.address = address;
+        this.district = district;
+        this.neighborhood = neighborhood;
+        this.detailAddress = detailAddress;
+        this.category = category;
+        this.phoneNumber = phoneNumber;
+        this.description = description;
+        this.discountConditionQuantity = discountConditionQuantity;
+        this.discountRate = discountRate;
+    }
 }

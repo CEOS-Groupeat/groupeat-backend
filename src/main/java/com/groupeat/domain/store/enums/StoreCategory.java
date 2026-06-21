@@ -24,7 +24,7 @@ public enum StoreCategory {
             return null;
         }
         return Stream.of(StoreCategory.values())
-                .filter(category -> category.getDescription().equals(description))
+                .filter(category -> category.name().equals(description) || category.getDescription().equals(description))
                 .findFirst()
                 .orElseThrow(() -> new GeneralException(StoreErrorStatus.INVALID_CATEGORY));
     }

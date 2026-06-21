@@ -37,6 +37,9 @@ public class Store extends BaseEntity {
     @Column(name = "region", length = 50)
     private StoreRegion region;
 
+    @Column(length = 20)
+    private String dong;
+
     @Column(name = "phone_number", nullable = false, length = 20)
     private String phoneNumber;
 

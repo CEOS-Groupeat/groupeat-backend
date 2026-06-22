@@ -6,8 +6,6 @@ import com.groupeat.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalTime;
-
 @Entity
 @Getter
 @Builder
@@ -69,18 +67,6 @@ public class Store extends BaseEntity {
 
     @Column(name = "image_url")
     private String imageUrl;
-
-    @Column(name = "pickup_open_time")
-    private LocalTime pickupOpenTime;
-
-    @Column(name = "pickup_close_time")
-    private LocalTime pickupCloseTime;
-
-    @Column(name = "closed_days")
-    private String closedDays;
-
-    @Column(name = "min_order_days")
-    private Integer minOrderDays;
 
     @Column(name = "discount_condition_quantity")
     private Integer discountConditionQuantity;

@@ -17,7 +17,6 @@ import com.groupeat.global.exception.GeneralException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -203,10 +202,6 @@ class OwnerMenuServiceTest {
                 .description("신선한 재료로 당일 제조합니다.")
                 .orderProcess("1. 예약 주문 2. 픽업")
                 .imageUrl("https://example.com/store-main.jpg")
-                .pickupOpenTime(LocalTime.of(10, 0))
-                .pickupCloseTime(LocalTime.of(17, 0))
-                .closedDays("MONDAY")
-                .minOrderDays(3)
                 .discountConditionQuantity(50)
                 .discountRate(5)
                 .minPrice(5000)

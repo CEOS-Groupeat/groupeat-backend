@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public interface StoreOrderScheduleRepository extends JpaRepository<StoreOrderSchedule, Long> {
@@ -27,6 +28,19 @@ public interface StoreOrderScheduleRepository extends JpaRepository<StoreOrderSc
 
     @EntityGraph(attributePaths = "days")
     Optional<StoreOrderSchedule> findFirstByStore_OwnerIdAndDeletedAtIsNullOrderByStartDateDesc(Long businessMemberId);
+
+    @EntityGraph(attributePaths = "days")
+    Optional<StoreOrderSchedule> findFirstByStore_IdAndDeletedAtIsNullOrderByStartDateDesc(Long storeId);
+
+    @EntityGraph(attributePaths = "days")
+    @Query("""
+            SELECT s
+            FROM StoreOrderSchedule s
+            WHERE s.store.id IN :storeIds
+              AND s.deletedAt IS NULL
+            ORDER BY s.startDate DESC
+            """)
+    List<StoreOrderSchedule> findActiveSchedulesByStoreIds(@Param("storeIds") List<Long> storeIds);
 
     boolean existsByStore_IdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
             Long storeId,

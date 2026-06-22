@@ -1,6 +1,7 @@
 package com.groupeat.domain.store.service;
 
 import com.groupeat.domain.store.dto.response.PickupTimeResponse;
+import com.groupeat.domain.store.dto.response.StoreDetailResponse;
 import com.groupeat.domain.store.entity.Store;
 import com.groupeat.domain.store.entity.StoreOrderSchedule;
 import com.groupeat.domain.store.entity.StoreOrderScheduleDay;
@@ -37,6 +38,47 @@ class StoreServiceTest {
         storeRepository = mock(StoreRepository.class);
         storeOrderScheduleRepository = mock(StoreOrderScheduleRepository.class);
         storeService = new StoreService(storeRepository, storeOrderScheduleRepository);
+    }
+
+    @Test
+    void getStoreInfo_returnsScheduleSummary() {
+        Store store = store();
+        StoreOrderSchedule schedule = schedule(
+                store,
+                LocalDate.of(2026, 5, 20),
+                LocalDate.of(2027, 5, 20),
+                3,
+                List.of(
+                        StoreOrderScheduleDay.createAvailable(
+                                DayOfWeek.MONDAY,
+                                10,
+                                100,
+                                LocalTime.of(10, 0),
+                                LocalTime.of(17, 0),
+                                30
+                        ),
+                        StoreOrderScheduleDay.createAvailable(
+                                DayOfWeek.WEDNESDAY,
+                                10,
+                                100,
+                                LocalTime.of(9, 0),
+                                LocalTime.of(18, 0),
+                                30
+                        ),
+                        StoreOrderScheduleDay.createUnavailable(DayOfWeek.TUESDAY)
+                )
+        );
+        when(storeRepository.findActiveStoreById(STORE_ID)).thenReturn(Optional.of(store));
+        when(storeOrderScheduleRepository.findFirstByStore_IdAndDeletedAtIsNullOrderByStartDateDesc(STORE_ID))
+                .thenReturn(Optional.of(schedule));
+
+        StoreDetailResponse response = storeService.getStoreInfo(STORE_ID);
+
+        assertThat(response.storeId()).isEqualTo(STORE_ID);
+        assertThat(response.closedDays()).isEqualTo("TUESDAY");
+        assertThat(response.pickupOpenTime()).isEqualTo(LocalTime.of(9, 0));
+        assertThat(response.pickupCloseTime()).isEqualTo(LocalTime.of(18, 0));
+        assertThat(response.minOrderDays()).isEqualTo(3);
     }
 
     @Test

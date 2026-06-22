@@ -29,8 +29,11 @@ public class StoreService {
     public StoreDetailResponse getStoreInfo(Long storeId) {
         Store store = storeRepository.findActiveStoreById(storeId)
                 .orElseThrow(() -> new GeneralException(StoreErrorStatus.STORE_NOT_FOUND));
+        StoreOrderSchedule schedule = storeOrderScheduleRepository
+                .findFirstByStore_IdAndDeletedAtIsNullOrderByStartDateDesc(storeId)
+                .orElse(null);
 
-        return StoreConverter.toStoreDetailResponse(store);
+        return StoreConverter.toStoreDetailResponse(store, schedule);
     }
 
     public PickupTimeResponse getAvailablePickupTimes(Long storeId, LocalDate date) {

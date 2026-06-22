@@ -92,7 +92,7 @@ public class OrderQueryRepository {
                         store.ownerId.eq(ownerId),
                         order.memberId.in(memberIds),
                         order.orderStatus.eq(OrderStatus.COMPLETED),
-                        order.id.notIn(currentOrderIds)
+                        orderIdNotIn(currentOrderIds)
                 )
                 .fetch();
 
@@ -110,5 +110,11 @@ public class OrderQueryRepository {
 
     private BooleanExpression pickupDateEq(LocalDate pickupDate) {
         return pickupDate != null ? order.pickupDate.eq(pickupDate) : null;
+    }
+
+    // currentOrderIds가 비어있지 않을 때만 notIn 조건 적용
+    private BooleanExpression orderIdNotIn(List<Long> currentOrderIds) {
+        return (currentOrderIds != null && !currentOrderIds.isEmpty()) ?
+                order.id.notIn(currentOrderIds) : null;
     }
 }

@@ -1,6 +1,7 @@
 package com.groupeat.domain.store.converter;
 
 import com.groupeat.domain.store.dto.response.MenuListResponse;
+import com.groupeat.domain.store.dto.response.OwnerMenuResponse;
 import com.groupeat.domain.store.entity.Menu;
 
 import java.util.List;
@@ -35,5 +36,15 @@ public class MenuConverter {
                 .collect(Collectors.toList());
 
         return MenuListResponse.builder().menus(menuDetails).build();
+    }
+
+    public static OwnerMenuResponse toOwnerMenuResponse(Menu menu) {
+        return OwnerMenuResponse.builder()
+                .menuId(menu.getId())
+                .name(menu.getName())
+                .basePrice(menu.getBasePrice())
+                .description(menu.getDescription())
+                .imageUrl(menu.getImageUrl())
+                .build();
     }
 }

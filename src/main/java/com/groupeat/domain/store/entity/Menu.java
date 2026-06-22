@@ -40,4 +40,16 @@ public class Menu extends BaseEntity {
     @OneToMany(mappedBy = "menu", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<MenuOptionGroup> optionGroups = new ArrayList<>();
+
+    public void updateOwnerMenuInfo(
+            String name,
+            Integer basePrice,
+            String description,
+            String imageUrl
+    ) {
+        this.name = name;
+        this.basePrice = basePrice;
+        this.description = description;
+        this.imageUrl = imageUrl;
+    }
 }

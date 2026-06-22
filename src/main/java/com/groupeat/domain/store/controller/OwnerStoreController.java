@@ -2,11 +2,14 @@ package com.groupeat.domain.store.controller;
 
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
 import com.groupeat.domain.store.dto.request.OwnerMenuRequest;
+import com.groupeat.domain.store.dto.request.OwnerStoreOrderScheduleRequest;
 import com.groupeat.domain.store.dto.request.OwnerStoreUpdateRequest;
 import com.groupeat.domain.store.dto.response.MenuListResponse;
 import com.groupeat.domain.store.dto.response.OwnerMenuResponse;
+import com.groupeat.domain.store.dto.response.OwnerStoreOrderScheduleResponse;
 import com.groupeat.domain.store.dto.response.OwnerStoreResponse;
 import com.groupeat.domain.store.service.OwnerMenuService;
+import com.groupeat.domain.store.service.OwnerStoreOrderScheduleService;
 import com.groupeat.domain.store.service.OwnerStoreService;
 import com.groupeat.global.apiPayload.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,6 +34,7 @@ public class OwnerStoreController {
 
     private final OwnerStoreService ownerStoreService;
     private final OwnerMenuService ownerMenuService;
+    private final OwnerStoreOrderScheduleService ownerStoreOrderScheduleService;
 
     @Operation(summary = "내 가게 조회", description = "로그인한 사업자 회원의 가게 정보를 조회합니다.")
     @GetMapping
@@ -48,6 +52,25 @@ public class OwnerStoreController {
             @Valid @RequestBody OwnerStoreUpdateRequest request
     ) {
         OwnerStoreResponse result = ownerStoreService.updateMyStore(member, request);
+        return ApiResponse.onSuccess(result);
+    }
+
+    @Operation(summary = "내 가게 주문 가능 일정 조회", description = "로그인한 사업자 회원의 가게 주문 가능 일정 설정을 조회합니다.")
+    @GetMapping("/order-schedule")
+    public ApiResponse<OwnerStoreOrderScheduleResponse> getMyStoreOrderSchedule(
+            @AuthenticationPrincipal AuthenticatedMember member
+    ) {
+        OwnerStoreOrderScheduleResponse result = ownerStoreOrderScheduleService.getMyOrderSchedule(member);
+        return ApiResponse.onSuccess(result);
+    }
+
+    @Operation(summary = "내 가게 주문 가능 일정 저장", description = "로그인한 사업자 회원의 가게 주문 가능 일정 설정을 저장합니다.")
+    @PutMapping("/order-schedule")
+    public ApiResponse<OwnerStoreOrderScheduleResponse> saveMyStoreOrderSchedule(
+            @AuthenticationPrincipal AuthenticatedMember member,
+            @Valid @RequestBody OwnerStoreOrderScheduleRequest request
+    ) {
+        OwnerStoreOrderScheduleResponse result = ownerStoreOrderScheduleService.saveMyOrderSchedule(member, request);
         return ApiResponse.onSuccess(result);
     }
 

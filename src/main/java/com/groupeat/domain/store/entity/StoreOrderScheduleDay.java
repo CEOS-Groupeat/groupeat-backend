@@ -38,7 +38,7 @@ import java.time.LocalTime;
 )
 public class StoreOrderScheduleDay extends BaseEntity {
 
-    public static final int DEFAULT_INTERVAL_MINUTES = 30; // 30분 간격이 디폴트
+    public static final int DEFAULT_INTERVAL_MINUTES = 30;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -54,7 +54,7 @@ public class StoreOrderScheduleDay extends BaseEntity {
     private DayOfWeek dayOfWeek;
 
     @Column(name = "available", nullable = false)
-    private boolean available; // 휴무 여부
+    private boolean available;
 
     @Column(name = "min_order_quantity")
     private Integer minOrderQuantity;
@@ -71,6 +71,33 @@ public class StoreOrderScheduleDay extends BaseEntity {
     @Builder.Default
     @Column(name = "interval_minutes", nullable = false)
     private Integer intervalMinutes = DEFAULT_INTERVAL_MINUTES;
+
+    public static StoreOrderScheduleDay createAvailable(
+            DayOfWeek dayOfWeek,
+            Integer minOrderQuantity,
+            Integer maxOrderQuantity,
+            LocalTime pickupOpenTime,
+            LocalTime pickupCloseTime,
+            Integer intervalMinutes
+    ) {
+        return StoreOrderScheduleDay.builder()
+                .dayOfWeek(dayOfWeek)
+                .available(true)
+                .minOrderQuantity(minOrderQuantity)
+                .maxOrderQuantity(maxOrderQuantity)
+                .pickupOpenTime(pickupOpenTime)
+                .pickupCloseTime(pickupCloseTime)
+                .intervalMinutes(intervalMinutes != null ? intervalMinutes : DEFAULT_INTERVAL_MINUTES)
+                .build();
+    }
+
+    public static StoreOrderScheduleDay createUnavailable(DayOfWeek dayOfWeek) {
+        return StoreOrderScheduleDay.builder()
+                .dayOfWeek(dayOfWeek)
+                .available(false)
+                .intervalMinutes(DEFAULT_INTERVAL_MINUTES)
+                .build();
+    }
 
     void assignSchedule(StoreOrderSchedule schedule) {
         this.schedule = schedule;

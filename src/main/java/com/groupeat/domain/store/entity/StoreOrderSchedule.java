@@ -63,6 +63,23 @@ public class StoreOrderSchedule extends BaseEntity {
     @Builder.Default
     private List<StoreOrderScheduleDay> days = new ArrayList<>();
 
+    public static StoreOrderSchedule create(
+            Store store,
+            LocalDate startDate,
+            LocalDate endDate,
+            Integer minOrderDays,
+            List<StoreOrderScheduleDay> days
+    ) {
+        StoreOrderSchedule schedule = StoreOrderSchedule.builder()
+                .store(store)
+                .startDate(startDate)
+                .endDate(endDate)
+                .minOrderDays(minOrderDays)
+                .build();
+        schedule.replaceDays(days);
+        return schedule;
+    }
+
     public void updatePeriod(
             LocalDate startDate,
             LocalDate endDate,

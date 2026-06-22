@@ -26,9 +26,9 @@ public interface StoreOrderScheduleRepository extends JpaRepository<StoreOrderSc
     );
 
     @EntityGraph(attributePaths = "days")
-    Optional<StoreOrderSchedule> findFirstByStoreOwnerIdAndDeletedAtIsNullOrderByStartDateDesc(Long businessMemberId);
+    Optional<StoreOrderSchedule> findFirstByStore_OwnerIdAndDeletedAtIsNullOrderByStartDateDesc(Long businessMemberId);
 
-    boolean existsByStoreIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+    boolean existsByStore_IdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
             Long storeId,
             LocalDate endDate,
             LocalDate startDate

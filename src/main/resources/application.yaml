@@ -67,6 +67,7 @@ jwt:
   signup-secret: ${JWT_SIGNUP_SECRET}
   access-secret: ${JWT_ACCESS_SECRET}
   refresh-secret: ${JWT_REFRESH_SECRET}
+  business-secret: ${JWT_BUSINESS_SECRET}
 
 toss:
   payments:

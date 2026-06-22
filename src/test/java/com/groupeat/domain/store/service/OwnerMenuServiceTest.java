@@ -133,6 +133,7 @@ class OwnerMenuServiceTest {
         assertThat(menu.getDeletedAt()).isNotNull();
         assertThat(store.getMinPrice()).isEqualTo(5000);
         assertThat(store.getMaxPrice()).isEqualTo(5000);
+        verify(menuRepository).flush();
     }
 
     @Test

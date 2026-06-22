@@ -102,6 +102,8 @@ public class ImageUploadService {
             case "image/png" -> "png";
             case "image/webp" -> "webp";
             case "image/gif" -> "gif";
+            case "image/heic" -> "heic";
+            case "image/heif" -> "heif";
             default -> throw new GeneralException(UploadErrorStatus.INVALID_IMAGE_CONTENT_TYPE);
         };
 

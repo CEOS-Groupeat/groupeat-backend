@@ -73,6 +73,7 @@ public class OwnerMenuService {
         Menu menu = findOwnedMenu(store.getId(), menuId);
 
         menu.markAsDeleted();
+        menuRepository.flush();
         refreshStoreMenuPriceRange(store);
     }
 

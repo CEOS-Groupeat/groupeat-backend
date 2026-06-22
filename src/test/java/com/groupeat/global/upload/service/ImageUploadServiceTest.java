@@ -81,6 +81,28 @@ class ImageUploadServiceTest {
     }
 
     @Test
+    void createPresignedUrl_heicImage_returnsHeicObjectKey() {
+        ImagePresignedUrlResponse response = imageUploadService.createPresignedUrl(
+                ImageUploadDomain.MENU,
+                request("photo.heic", "image/heic")
+        );
+
+        assertThat(response.objectKey()).startsWith("public/menus/");
+        assertThat(response.objectKey()).endsWith(".heic");
+    }
+
+    @Test
+    void createPresignedUrl_heifImage_returnsHeifObjectKey() {
+        ImagePresignedUrlResponse response = imageUploadService.createPresignedUrl(
+                ImageUploadDomain.MENU,
+                request("photo.heif", "image/heif")
+        );
+
+        assertThat(response.objectKey()).startsWith("public/menus/");
+        assertThat(response.objectKey()).endsWith(".heif");
+    }
+
+    @Test
     void createPresignedUrl_invalidContentType_throwsException() {
         assertThatThrownBy(() -> imageUploadService.createPresignedUrl(
                 ImageUploadDomain.MENU,

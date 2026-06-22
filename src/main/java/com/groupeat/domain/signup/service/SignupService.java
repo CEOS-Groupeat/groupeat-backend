@@ -1,6 +1,8 @@
 package com.groupeat.domain.signup.service;
 
 import com.groupeat.domain.business.entity.BusinessProfile;
+import com.groupeat.domain.business.jwt.BusinessValidationTokenPayload;
+import com.groupeat.domain.business.jwt.BusinessValidationTokenProvider;
 import com.groupeat.domain.business.repository.BusinessProfileRepository;
 import com.groupeat.domain.auth.jwt.SignupTokenPayload;
 import com.groupeat.domain.auth.jwt.SignupTokenProvider;
@@ -33,11 +35,13 @@ public class SignupService {
     private final SignupTokenProvider signupTokenProvider;
     private final PhoneVerificationService phoneVerificationService;
     private final TermsAgreementValidator termsAgreementValidator;
+    private final BusinessValidationTokenProvider businessValidationTokenProvider;
 
     private final MemberRepository memberRepository;
     private final SocialAccountRepository socialAccountRepository;
     private final MemberTermsAgreementRepository memberTermsAgreementRepository;
     private final BusinessProfileRepository businessProfileRepository;
+
 
     // 공통 회원가입
     public CommonSignupResponse signupCommon(CommonSignupRequest request) {
@@ -117,7 +121,11 @@ public class SignupService {
 
         validateBusinessSignupAvailable(member);
 
-        validateBusinessUniqueFields(request);
+        // 프론트엔드가 보낸 토큰을 파싱하여 사업자번호 추출
+        BusinessValidationTokenPayload payload = businessValidationTokenProvider.getPayload(request.businessValidationToken());
+        String validBusinessNumber = payload.businessRegistrationNumber();
+
+        validateBusinessUniqueFields(request, validBusinessNumber);
 
         termsAgreementValidator.validateRequiredTermsAgreed(
                 TermsTargetType.BUSINESS,
@@ -139,7 +147,7 @@ public class SignupService {
                 request.representativeName(),
                 request.businessName(),
                 request.openedDate(),
-                request.businessRegistrationNumber(),
+                validBusinessNumber,
                 request.businessRegistrationCertificateUrl()
         );
 
@@ -225,7 +233,7 @@ public class SignupService {
         }
     }
 
-    private void validateBusinessUniqueFields(BusinessSignupRequest request) {
+    private void validateBusinessUniqueFields(BusinessSignupRequest request, String validBusinessNumber) {
         if (memberRepository.existsByEmail(request.email())) {
             throw new GeneralException(SignupErrorStatus.EMAIL_ALREADY_EXISTS);
         }
@@ -233,8 +241,8 @@ public class SignupService {
         if (businessProfileRepository.existsByMemberId(request.memberId())) {
             throw new GeneralException(SignupErrorStatus.BUSINESS_PROFILE_ALREADY_EXISTS);
         }
-
-        if (businessProfileRepository.existsByBusinessRegistrationNumber(request.businessRegistrationNumber())) {
+        
+        if (businessProfileRepository.existsByBusinessRegistrationNumber(validBusinessNumber)) {
             throw new GeneralException(SignupErrorStatus.BUSINESS_REGISTRATION_NUMBER_ALREADY_EXISTS);
         }
     }

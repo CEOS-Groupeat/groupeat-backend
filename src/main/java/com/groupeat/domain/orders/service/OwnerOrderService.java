@@ -61,10 +61,12 @@ public class OwnerOrderService {
         );
 
         // 다음 페이지 존재 여부 계산 로직
-        boolean hasNext = orders.size() > size;
-        if (hasNext) {
-            orders.remove(size);
+        boolean hasNext = false;
+        if (orders.size() > size) {
+            hasNext = true;
+            orders = orders.subList(0, size);
         }
+
         // 리스트가 비어있지 않다면 마지막 주문의 ID를 다음 커서로 지정
         Long nextCursor = orders.isEmpty() ? null : orders.get(orders.size() - 1).getId();
 

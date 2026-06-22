@@ -65,6 +65,7 @@ public class ImageUploadService {
 
     private String createImageUrl(String objectKey) {
         String cloudfrontDomain = s3Properties.cloudfrontDomain();
+        // TODO: private 파일 조회 정책 확정 후 presigned GET URL 발급 흐름 추가 필요
         if (objectKey.startsWith(PUBLIC_PREFIX) && cloudfrontDomain != null && !cloudfrontDomain.isBlank()) {
             return normalizeCloudfrontDomain(cloudfrontDomain) + "/" + objectKey;
         }

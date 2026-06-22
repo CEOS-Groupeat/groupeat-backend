@@ -22,6 +22,7 @@ import java.util.UUID;
 public class ImageUploadService {
 
     private static final String S3_URL_FORMAT = "https://%s.s3.%s.amazonaws.com/%s";
+    private static final String PUBLIC_PREFIX = "public/";
 
     private final S3Presigner s3Presigner;
     private final S3Properties s3Properties;
@@ -53,13 +54,31 @@ public class ImageUploadService {
                 .build();
 
         PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
-        String imageUrl = S3_URL_FORMAT.formatted(s3Properties.bucket(), region, objectKey);
+        String imageUrl = createImageUrl(objectKey);
 
         return ImagePresignedUrlResponse.builder()
                 .uploadUrl(presignedRequest.url().toString())
                 .imageUrl(imageUrl)
                 .objectKey(objectKey)
                 .build();
+    }
+
+    private String createImageUrl(String objectKey) {
+        String cloudfrontDomain = s3Properties.cloudfrontDomain();
+        if (objectKey.startsWith(PUBLIC_PREFIX) && cloudfrontDomain != null && !cloudfrontDomain.isBlank()) {
+            return normalizeCloudfrontDomain(cloudfrontDomain) + "/" + objectKey;
+        }
+
+        return S3_URL_FORMAT.formatted(s3Properties.bucket(), region, objectKey);
+    }
+
+    private String normalizeCloudfrontDomain(String cloudfrontDomain) {
+        String normalizedDomain = cloudfrontDomain.trim();
+        if (!normalizedDomain.startsWith("http://") && !normalizedDomain.startsWith("https://")) {
+            normalizedDomain = "https://" + normalizedDomain;
+        }
+
+        return normalizedDomain.replaceAll("/$", "");
     }
 
     private String createObjectKey(ImageUploadDomain domain, String extension) {

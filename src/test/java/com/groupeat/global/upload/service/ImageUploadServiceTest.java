@@ -35,7 +35,7 @@ class ImageUploadServiceTest {
         s3Presigner = mock(S3Presigner.class);
         imageUploadService = new ImageUploadService(
                 s3Presigner,
-                new S3Properties("groupeat-test-bucket", 10),
+                new S3Properties("groupeat-test-bucket", 10, "d2f1i7fluhpn2d.cloudfront.net"),
                 "ap-northeast-2"
         );
 
@@ -64,7 +64,7 @@ class ImageUploadServiceTest {
         assertThat(response.objectKey()).startsWith("public/menus/");
         assertThat(response.objectKey()).endsWith(".jpg");
         assertThat(response.imageUrl())
-                .startsWith("https://groupeat-test-bucket.s3.ap-northeast-2.amazonaws.com/public/menus/");
+                .startsWith("https://d2f1i7fluhpn2d.cloudfront.net/public/menus/");
     }
 
     @Test
@@ -76,6 +76,8 @@ class ImageUploadServiceTest {
 
         assertThat(response.objectKey()).startsWith("private/business-documents/");
         assertThat(response.objectKey()).endsWith(".png");
+        assertThat(response.imageUrl())
+                .startsWith("https://groupeat-test-bucket.s3.ap-northeast-2.amazonaws.com/private/business-documents/");
     }
 
     @Test

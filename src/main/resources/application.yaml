@@ -104,6 +104,7 @@ aws:
   s3:
     bucket: ${AWS_S3_BUCKET}
     presigned-url-expiration-minutes: ${AWS_S3_PRESIGNED_URL_EXPIRATION_MINUTES:10}
+    cloudfront-domain: ${AWS_CLOUDFRONT_DOMAIN:}
 
 logging:
   level:

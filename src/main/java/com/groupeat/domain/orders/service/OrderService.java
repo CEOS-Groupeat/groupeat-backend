@@ -78,6 +78,7 @@ public class OrderService {
     private final PaymentCancelService paymentCancelService;
     private final OrderCancelTransactionService orderCancelTransactionService;
     private final OrderOwnerActionTransactionService orderOwnerActionTransactionService;
+    private final OrderScheduleValidationService orderScheduleValidationService;
 
     @Transactional
     public OrderCreateResponse createOrder(Long memberId, OrderCreateRequest request) {
@@ -103,6 +104,10 @@ public class OrderService {
         Long storeId = cartItems.get(0).getStoreId();
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new GeneralException(StoreErrorStatus.STORE_NOT_FOUND));
+        int totalQuantity = cartItems.stream()
+                .mapToInt(CartItem::getQuantity)
+                .sum();
+        orderScheduleValidationService.validateOrderCreation(storeId, pickupDate, pickupTime, totalQuantity);
 
         Map<Long, Menu> menuMap = menuRepository.findAllById(cartItems.stream().map(CartItem::getMenuId).toList())
                 .stream().collect(Collectors.toMap(Menu::getId, m -> m));

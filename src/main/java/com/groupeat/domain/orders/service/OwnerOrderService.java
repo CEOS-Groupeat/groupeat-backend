@@ -9,9 +9,11 @@ import com.groupeat.domain.orders.dto.response.OwnerOrderDetailResponse;
 import com.groupeat.domain.orders.dto.response.OwnerOrderListResponse;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.entity.OrderItem;
+import com.groupeat.domain.orders.entity.OrderItemOption;
 import com.groupeat.domain.orders.enums.OrderStatus;
 import com.groupeat.domain.orders.enums.OrderTab;
 import com.groupeat.domain.orders.exception.OrderErrorStatus;
+import com.groupeat.domain.orders.repository.OrderItemOptionRepository;
 import com.groupeat.domain.orders.repository.OrderItemRepository;
 import com.groupeat.domain.orders.repository.OrderQueryRepository;
 import com.groupeat.domain.orders.repository.OrderRepository;
@@ -37,6 +39,7 @@ public class OwnerOrderService {
     private final OrderQueryRepository orderQueryRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
+    private final OrderItemOptionRepository orderItemOptionRepository;
     private final MemberRepository memberRepository;
     private final PaymentRepository paymentRepository;
 
@@ -92,6 +95,15 @@ public class OwnerOrderService {
                 .orElseThrow(() -> new GeneralException(OrderErrorStatus.ORDER_NOT_FOUND));
 
         Payment payment = paymentRepository.findFirstByOrderId(order.getOrderId()).orElse(null);
+
+        List<Long> orderItemIds = order.getOrderItems().stream()
+                .map(OrderItem::getId)
+                .collect(Collectors.toList());
+
+        // IN 쿼리로 연관된 옵션들을 한 방에 조회 후 Map으로 그룹화
+        List<OrderItemOption> allOptions = orderItemOptionRepository.findByOrderItemIdIn(orderItemIds);
+        Map<Long, List<OrderItemOption>> optionsByOrderItemId = allOptions.stream()
+                .collect(Collectors.groupingBy(opt -> opt.getOrderItem().getId()));
 
         return OwnerOrderDetailConverter.toOrderDetailDTO(order, payment);
     }

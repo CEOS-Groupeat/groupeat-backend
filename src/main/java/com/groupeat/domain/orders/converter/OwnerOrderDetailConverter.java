@@ -3,14 +3,16 @@ package com.groupeat.domain.orders.converter;
 import com.groupeat.domain.orders.dto.response.OwnerOrderDetailResponse;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.entity.OrderItem;
+import com.groupeat.domain.orders.entity.OrderItemOption;
 import com.groupeat.domain.payment.entity.Payment;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class OwnerOrderDetailConverter {
 
-    public static OwnerOrderDetailResponse.OrderDetailDTO toOrderDetailDTO(Order order, Payment payment) {
+    public static OwnerOrderDetailResponse.OrderDetailDTO toOrderDetailDTO(Order order, Payment payment, Map<Long, List<OrderItemOption>> optionsByOrderItemId) {
 
         // 주문자 정보 매핑
         OwnerOrderDetailResponse.OrdererInfoDTO ordererInfo = OwnerOrderDetailResponse.OrdererInfoDTO.builder()
@@ -24,6 +26,8 @@ public class OwnerOrderDetailConverter {
         // 주문 상품 정보 매핑
         List<OwnerOrderDetailResponse.OrderMenuDTO> orderMenus = order.getOrderItems().stream()
                 .map(item -> {
+                    List<OrderItemOption> options = optionsByOrderItemId.getOrDefault(item.getId(), List.of());
+
                     List<OwnerOrderDetailResponse.OrderMenuOptionDTO> optionDTOs = item.getOrderItemOptions().stream()
                             .map(opt -> OwnerOrderDetailResponse.OrderMenuOptionDTO.builder()
                                     .optionName(opt.getOptionName())

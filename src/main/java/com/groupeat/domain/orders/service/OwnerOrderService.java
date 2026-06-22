@@ -82,7 +82,7 @@ public class OwnerOrderService {
         Set<Long> reorderMemberIds = orderQueryRepository.findReorderMemberIds(ownerId, memberIds, orderIds);
 
         return OwnerOrderListConverter.toOwnerOrderListDTO(
-                orders, totalElements, hasNext, nextCursor, itemsByOrderId, reorderMemberIds, tab.isConfirmedTab()
+                orders, totalElements, hasNext, nextCursor, itemsByOrderId, reorderMemberIds, tab
         );
     }
 
@@ -105,7 +105,7 @@ public class OwnerOrderService {
         Map<Long, List<OrderItemOption>> optionsByOrderItemId = allOptions.stream()
                 .collect(Collectors.groupingBy(opt -> opt.getOrderItem().getId()));
 
-        return OwnerOrderDetailConverter.toOrderDetailDTO(order, payment);
+        return OwnerOrderDetailConverter.toOrderDetailDTO(order, payment, optionsByOrderItemId);
     }
 
     private void validateOwner(Long ownerId) {

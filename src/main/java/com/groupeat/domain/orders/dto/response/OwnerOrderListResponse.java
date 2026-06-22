@@ -56,7 +56,10 @@ public class OwnerOrderListResponse {
             Boolean isReorder,
 
             @Schema(description = "결제 방식 (확정 탭에서만 노출, 그 외엔 null)", example = "PREPAID")
-            PaymentMethod paymentMethod
+            PaymentMethod paymentMethod,
+
+            @Schema(description = "승인 마감까지 남은 시간 (대기 중 탭에서만 노출, 그 외엔 null)", example = "18")
+            Integer remainingHours
     ) {}
 
     @Builder

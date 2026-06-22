@@ -119,4 +119,9 @@ public class Store extends BaseEntity {
         this.discountConditionQuantity = discountConditionQuantity;
         this.discountRate = discountRate;
     }
+
+    public void updateMenuPriceRange(Integer minPrice, Integer maxPrice) {
+        this.minPrice = minPrice;
+        this.maxPrice = maxPrice;
+    }
 }

@@ -67,12 +67,18 @@ jwt:
   signup-secret: ${JWT_SIGNUP_SECRET}
   access-secret: ${JWT_ACCESS_SECRET}
   refresh-secret: ${JWT_REFRESH_SECRET}
+  business-secret: ${JWT_BUSINESS_SECRET}
 
 toss:
   payments:
     secret-key: ${TOSS_SECRET_KEY}
     confirm-url: https://api.tosspayments.com/v1/payments/confirm
     cancel-base-url: https://api.tosspayments.com/v1/payments
+
+nts:
+  api:
+    base-url: "https://api.odcloud.kr/api/nts-businessman/v1"
+    service-key: ${NTS_SERVICE_KEY}
 
 app:
   cors:

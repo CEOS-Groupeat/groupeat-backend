@@ -69,7 +69,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     }
 
     private String buildSignupInProgressRedirectUrl(Member member) {
-        return oAuth2RedirectProperties.signupInProgressUrl()
+        return oAuth2RedirectProperties.signupInProgressUrl(member.getMemberType())
                 + "?memberId=" + member.getId()
                 + "&memberType=" + member.getMemberType()
                 + "&nextStep=" + getNextStep(member.getMemberType());

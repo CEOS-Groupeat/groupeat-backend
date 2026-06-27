@@ -10,6 +10,7 @@ import com.groupeat.domain.payment.dto.PaymentCancelResult;
 import com.groupeat.domain.payment.entity.Payment;
 import com.groupeat.domain.payment.enums.PaymentStatus;
 import com.groupeat.domain.payment.repository.PaymentRepository;
+import com.groupeat.domain.store.repository.StoreOrderScheduleRepository;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class OrderCancelTransactionService {
 
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
+    private final StoreOrderScheduleRepository storeOrderScheduleRepository;
 
     @Transactional(readOnly = true)
     public OrderCancelPreparation prepareCustomerCancel(Long memberId, Long orderId) {
@@ -94,7 +96,10 @@ public class OrderCancelTransactionService {
     }
 
     private int calculateCustomerCancelRefundRate(Order order) {
-        Integer minOrderDays = order.getStore().getMinOrderDays();
+        Integer minOrderDays = storeOrderScheduleRepository
+                .findActiveScheduleByStoreIdAndDate(order.getStore().getId(), order.getPickupDate())
+                .map(schedule -> schedule.getMinOrderDays())
+                .orElse(null);
         if (minOrderDays == null) {
             return HALF_REFUND_RATE;
         }

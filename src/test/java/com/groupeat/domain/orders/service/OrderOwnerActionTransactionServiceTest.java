@@ -40,6 +40,7 @@ class OrderOwnerActionTransactionServiceTest {
     private PaymentRepository paymentRepository;
     private SettlementRepository settlementRepository;
     private SettlementFeeCalculator settlementFeeCalculator;
+    private OrderScheduleValidationService orderScheduleValidationService;
     private OrderOwnerActionTransactionService orderOwnerActionTransactionService;
 
     @BeforeEach
@@ -48,35 +49,39 @@ class OrderOwnerActionTransactionServiceTest {
         paymentRepository = mock(PaymentRepository.class);
         settlementRepository = mock(SettlementRepository.class);
         settlementFeeCalculator = mock(SettlementFeeCalculator.class);
+        orderScheduleValidationService = mock(OrderScheduleValidationService.class);
         orderOwnerActionTransactionService = new OrderOwnerActionTransactionService(
                 orderRepository,
                 paymentRepository,
                 settlementRepository,
-                settlementFeeCalculator
+                settlementFeeCalculator,
+                orderScheduleValidationService
         );
     }
 
     @Test
     void acceptOrder_changesStatusToAccepted() {
         Order order = order(OrderStatus.PAID);
-        when(orderRepository.findByIdAndStoreOwnerId(ORDER_ID, OWNER_ID)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdAndStoreOwnerIdWithItems(ORDER_ID, OWNER_ID)).thenReturn(Optional.of(order));
 
         OrderStatusChangeResponse response = orderOwnerActionTransactionService.acceptOrder(OWNER_ID, ORDER_ID);
 
         assertThat(response.orderStatus()).isEqualTo(OrderStatus.ACCEPTED);
         assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.ACCEPTED);
         assertThat(order.getAcceptedAt()).isNotNull();
+        verify(orderScheduleValidationService).validateOrderAcceptance(order);
     }
 
     @Test
     void acceptOrder_rejectsInvalidStatus() {
         Order order = order(OrderStatus.ACCEPTED);
-        when(orderRepository.findByIdAndStoreOwnerId(ORDER_ID, OWNER_ID)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdAndStoreOwnerIdWithItems(ORDER_ID, OWNER_ID)).thenReturn(Optional.of(order));
 
         assertThatThrownBy(() -> orderOwnerActionTransactionService.acceptOrder(OWNER_ID, ORDER_ID))
                 .isInstanceOf(GeneralException.class)
                 .extracting("code")
                 .isEqualTo(OrderErrorStatus.ORDER_ACCEPT_NOT_ALLOWED);
+        verify(orderScheduleValidationService, never()).validateOrderAcceptance(any(Order.class));
     }
 
     @Test

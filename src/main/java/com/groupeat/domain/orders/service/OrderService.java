@@ -9,6 +9,8 @@ import com.groupeat.domain.cart.repository.CartItemOptionRepository;
 import com.groupeat.domain.cart.repository.CartItemRepository;
 import com.groupeat.domain.cart.service.CartCalculateService;
 import com.groupeat.domain.orders.converter.OrderConverter;
+import com.groupeat.domain.orders.converter.OrderDetailConverter;
+import com.groupeat.domain.orders.converter.OrderListConverter;
 import com.groupeat.domain.orders.dto.OrderCancelPreparation;
 import com.groupeat.domain.orders.dto.OrderRejectPreparation;
 import com.groupeat.domain.orders.dto.request.OrderCancelRequest;
@@ -190,7 +192,7 @@ public class OrderService {
         }
 
         if (orders.isEmpty()) {
-            return OrderListResponse.builder().orders(List.of()).totalElements(totalElements).hasNext(false).build();
+            return OrderListResponse.builder().orderList(List.of()).totalElements(totalElements).hasNext(false).build();
         }
 
         List<Long> orderIds = orders.stream().map(Order::getId).toList();
@@ -198,16 +200,23 @@ public class OrderService {
         Map<Long, List<OrderItem>> itemsByOrderId = allItems.stream()
                 .collect(Collectors.groupingBy(item -> item.getOrder().getId()));
 
-        return OrderConverter.toOrderListResponse(orders, totalElements, hasNext, itemsByOrderId);
+        return OrderListConverter.toOrderListResponse(orders, totalElements, hasNext, itemsByOrderId);
     }
 
     @Transactional(readOnly = true)
-    public OrderDetailResponse getOrderDetail(Long memberId, Long orderId) {
+    public OrderDetailResponse.OrderDetailDTO getOrderDetail(Long memberId, Long orderId) {
 
         Order order = orderRepository.findByIdAndMemberIdWithItems(orderId, memberId)
                 .orElseThrow(() -> new GeneralException(OrderErrorStatus.ORDER_NOT_FOUND));
 
-        return OrderConverter.toOrderDetailResponse(order, order.getOrderItems());
+        Payment payment = paymentRepository.findReadOnlyByOrderId(order.getOrderId()).orElse(null);
+
+        List<Long> orderItemIds = order.getOrderItems().stream().map(OrderItem::getId).toList();
+        List<OrderItemOption> allOptions = orderItemOptionRepository.findByOrderItemIdIn(orderItemIds);
+        Map<Long, List<OrderItemOption>> optionsByOrderItemId = allOptions.stream()
+                .collect(Collectors.groupingBy(opt -> opt.getOrderItem().getId()));
+
+        return OrderDetailConverter.toOrderDetailDTO(order, payment, optionsByOrderItemId);
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)

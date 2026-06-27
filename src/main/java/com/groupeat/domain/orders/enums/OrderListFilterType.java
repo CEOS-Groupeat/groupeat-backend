@@ -8,11 +8,9 @@ import java.util.List;
 @Getter
 @RequiredArgsConstructor
 public enum OrderListFilterType {
-    ALL("전체", List.of()),
-    PAID("결제 완료(승인 대기)", List.of(OrderStatus.PAID)),
-    ACCEPTED("승인 완료", List.of(OrderStatus.ACCEPTED)),
-    COMPLETED("픽업 완료", List.of(OrderStatus.COMPLETED)),
-    REJECTED("거절", List.of(OrderStatus.REJECTED));
+    ALL("전체", null),
+    IN_PROGRESS("진행 중", List.of(OrderStatus.PAID, OrderStatus.ACCEPTED)),
+    PAST("과거 내역", List.of(OrderStatus.COMPLETED, OrderStatus.REJECTED, OrderStatus.CANCELLED));
 
     private final String description;
     private final List<OrderStatus> mappedStatuses;

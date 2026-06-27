@@ -28,6 +28,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("memberId") Long memberId
     );
 
+    @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.orderItems WHERE o.id = :orderId AND o.store.ownerId = :ownerId")
+    Optional<Order> findByIdAndOwnerIdWithItems(
+            @Param("orderId") Long orderId,
+            @Param("ownerId") Long ownerId
+    );
+
     @Query("""
             SELECT COALESCE(SUM(oi.quantity), 0)
             FROM Order o

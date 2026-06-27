@@ -23,9 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,6 +42,22 @@ public class CartService {
     @Transactional
     public CartListResponse addCartItems(Long memberId, CartItemBulkAddRequest bulkRequest) {
         Cart cart = getOrCreateCart(memberId);
+        List<CartItem> cartItems = new ArrayList<>(cartItemRepository.findAllByCartId(cart.getId()));
+
+        List<Long> cartItemIds = cartItems.stream().map(CartItem::getId).toList();
+        Map<Long, List<Long>> cartItemOptionMap = new HashMap<>();
+
+        if (!cartItemIds.isEmpty()) {
+            List<CartItemOption> allOptions = cartItemOptionRepository.findAllByCartItemIdIn(cartItemIds);
+            Map<Long, List<Long>> groupedOptions = allOptions.stream()
+                    .collect(Collectors.groupingBy(
+                            option -> option.getCartItem().getId(),
+                            Collectors.mapping(CartItemOption::getMenuOptionId, Collectors.toList())
+                    ));
+
+            cartItemOptionMap.putAll(groupedOptions);
+            cartItemOptionMap.values().forEach(Collections::sort);
+        }
 
         List<Long> requestMenuIds = bulkRequest.cartItems().stream()
                 .map(CartItemAddRequest::menuId).distinct().toList();
@@ -63,6 +77,7 @@ public class CartService {
 
         // 항목 검사
         for (CartItemAddRequest request : bulkRequest.cartItems()) {
+            validateCartItemDateTime(cartItems, request);
 
             Menu menu = menuMap.get(request.menuId());
             if (menu == null) {
@@ -93,31 +108,30 @@ public class CartService {
                 }
             }
 
-            // 장바구니 병합 로직 -> 기존 장바구니에 동일한 메뉴, 날짜, 시간이 있는지 검색
-            List<CartItem> existingItems = cartItemRepository.findByCartIdAndMenuIdAndPickupDateAndPickupTime(
-                    cart.getId(), request.menuId(), request.pickupDate(), request.pickupTime()
-            );
-
-            CartItem matchedItem = null;
             List<Long> requestedSortedOptionIds = optionIds.stream().sorted().toList();
 
-            // 검색된 아이템들 중 옵션까지 완벽하게 동일한 아이템이 있는지 검증
-            for (CartItem item : existingItems) {
-                List<Long> existingOptionIds = cartItemOptionRepository.findByCartItemId(item.getId())
-                        .stream().map(CartItemOption::getMenuOptionId).sorted().toList();
-
-                if (existingOptionIds.equals(requestedSortedOptionIds)) {
-                    matchedItem = item;
-                    break;
-                }
-            }
+            // 장바구니 병합 로직 -> 기존 장바구니에 동일한 메뉴, 날짜, 시간이 있는지 검색
+            CartItem matchedItem = cartItems.stream()
+                    .filter(item -> item.getMenuId().equals(request.menuId()))
+                    .filter(item -> item.getPickupDate().equals(request.pickupDate()))
+                    .filter(item -> item.getPickupTime().equals(request.pickupTime()))
+                    .filter(item -> {
+                        List<Long> existingOptionIds = cartItemOptionMap.getOrDefault(item.getId(), List.of());
+                        return existingOptionIds.equals(requestedSortedOptionIds);
+                    })
+                    .findFirst()
+                    .orElse(null);
 
             // 완전히 동일한 아이템이 이미 있다면 수량만 증가
             if (matchedItem != null) {
                 matchedItem.updateQuantity(matchedItem.getQuantity() + request.quantity());
-            } else { // 동일한 아이템이 없다면 새로 생성
+            } else {
+                // 동일한 아이템이 없다면 새로 생성
                 CartItem cartItem = CartConverter.toCartItem(cart, request);
                 CartItem savedCartItem = cartItemRepository.save(cartItem);
+
+                cartItems.add(savedCartItem);
+                cartItemOptionMap.put(savedCartItem.getId(), requestedSortedOptionIds);
 
                 List<CartItemOption> options = CartConverter.toCartItemOptions(savedCartItem, optionIds);
                 if (!options.isEmpty()) {
@@ -182,5 +196,19 @@ public class CartService {
     private Cart getOrCreateCart(Long memberId) {
         return cartRepository.findByMemberIdWithPessimisticLock(memberId)
                 .orElseGet(() -> cartRepository.save(Cart.builder().memberId(memberId).build()));
+    }
+
+    private void validateCartItemDateTime(List<CartItem> cartItems, CartItemAddRequest request) {
+        if (cartItems.isEmpty()) {
+            return;
+        }
+
+        boolean isSameDateTime = cartItems.stream()
+                .allMatch(item -> item.getPickupDate().equals(request.pickupDate())
+                        && item.getPickupTime().equals(request.pickupTime()));
+
+        if (!isSameDateTime) {
+            throw new GeneralException(CartErrorStatus.CART_DATETIME_MISMATCH);
+        }
     }
 }

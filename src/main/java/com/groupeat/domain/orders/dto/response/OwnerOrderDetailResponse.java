@@ -1,6 +1,5 @@
 package com.groupeat.domain.orders.dto.response;
 
-import com.groupeat.domain.orders.enums.OrderStatus;
 import com.groupeat.domain.orders.enums.PaymentMethod;
 import com.groupeat.domain.payment.enums.PaymentProvider;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -9,7 +8,8 @@ import lombok.Builder;
 import java.time.LocalDate;
 import java.util.List;
 
-public class OrderDetailResponse {
+public class OwnerOrderDetailResponse {
+
     @Builder
     public record OrderDetailDTO(
             @Schema(description = "주문자 정보")
@@ -19,10 +19,7 @@ public class OrderDetailResponse {
             List<OrderMenuDTO> orderMenus,
 
             @Schema(description = "결제 정보")
-            PaymentInfoDTO paymentInfo,
-
-            @Schema(description = "주문 상태", example = "PENDING")
-            OrderStatus orderStatus
+            PaymentInfoDTO paymentInfo
     ) {}
 
     @Builder

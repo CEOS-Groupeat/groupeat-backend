@@ -1,7 +1,9 @@
 package com.groupeat.domain.orders.service;
 
 import com.groupeat.domain.member.entity.Member;
+import com.groupeat.domain.member.enums.MemberStatus;
 import com.groupeat.domain.member.enums.MemberType;
+import com.groupeat.domain.member.exceptoin.MemberErrorStatus;
 import com.groupeat.domain.member.repository.MemberRepository;
 import com.groupeat.domain.orders.converter.OwnerOrderDetailConverter;
 import com.groupeat.domain.orders.converter.OwnerOrderListConverter;
@@ -114,6 +116,11 @@ public class OwnerOrderService {
         // 해당 ID를 가진 회원이 DB에 존재하는지 확인
         Member member = memberRepository.findById(ownerId)
                 .orElseThrow(() -> new GeneralException(SignupErrorStatus.MEMBER_NOT_FOUND));
+
+        // 해당 회원 계정이 사용 가능 계정인지 확인
+        if (member.getMemberStatus() != MemberStatus.ACTIVE) {
+            throw new GeneralException(MemberErrorStatus.MEMBER_NOT_ACTIVE);
+        }
 
         // 그 회원이 BUSINESS 권한을 가진 계정인지 확인
         if (member.getMemberType() != MemberType.BUSINESS) {

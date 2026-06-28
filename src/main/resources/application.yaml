@@ -94,7 +94,8 @@ app:
       customer-login-success-path: /customer/home
       business-login-success-path: /owner/home
       signup-path: /signup
-      signup-in-progress-path: /signup/customer
+      customer-signup-in-progress-path: /signup/customer
+      business-signup-in-progress-path: /signup/business
   settlement:
     # TODO: 정산 수수료 정책 확정 후 운영 설정으로 조정
     platform-fee-rate: ${PLATFORM_FEE_RATE:5}
@@ -104,6 +105,13 @@ app:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+aws:
+  region: ${AWS_REGION:ap-northeast-2}
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    presigned-url-expiration-minutes: ${AWS_S3_PRESIGNED_URL_EXPIRATION_MINUTES:10}
+    cloudfront-domain: ${AWS_CLOUDFRONT_DOMAIN:}
 
 logging:
   level:

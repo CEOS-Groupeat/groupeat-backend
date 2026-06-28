@@ -10,7 +10,8 @@ public record OAuth2RedirectProperties(
         String customerLoginSuccessPath,
         String businessLoginSuccessPath,
         String signupPath,
-        String signupInProgressPath
+        String customerSignupInProgressPath,
+        String businessSignupInProgressPath
 ) {
 
     public String loginSuccessUrl(MemberType memberType) {
@@ -24,8 +25,11 @@ public record OAuth2RedirectProperties(
         return buildUrl(signupPath);
     }
 
-    public String signupInProgressUrl() {
-        return buildUrl(signupInProgressPath);
+    public String signupInProgressUrl(MemberType memberType) {
+        return switch (memberType) {
+            case CUSTOMER -> buildUrl(customerSignupInProgressPath);
+            case BUSINESS -> buildUrl(businessSignupInProgressPath);
+        };
     }
 
     private String buildUrl(String path) {

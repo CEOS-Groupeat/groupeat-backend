@@ -30,13 +30,15 @@ public class OrderOwnerActionTransactionService {
     private final PaymentRepository paymentRepository;
     private final SettlementRepository settlementRepository;
     private final SettlementFeeCalculator settlementFeeCalculator;
+    private final OrderScheduleValidationService orderScheduleValidationService;
 
     @Transactional
     public OrderStatusChangeResponse acceptOrder(Long ownerId, Long orderId) {
-        Order order = orderRepository.findByIdAndStoreOwnerId(orderId, ownerId)
+        Order order = orderRepository.findByIdAndStoreOwnerIdWithItems(orderId, ownerId)
                 .orElseThrow(() -> new GeneralException(OrderErrorStatus.ORDER_NOT_FOUND));
 
         validateAcceptable(order);
+        orderScheduleValidationService.validateOrderAcceptance(order);
 
         LocalDateTime acceptedAt = LocalDateTime.now();
         order.accept(acceptedAt);

@@ -32,8 +32,11 @@ public record CartListResponse(
             @Schema(description = "장바구니 항목 ID", example = "100")
             Long cartItemId,
 
-            @Schema(description = "메뉴명 및 옵션 요약 (UI 노출용)", example = "반반 세트 1 (햄치즈 샌드위치, 참치 김밥)")
-            String menuSummary,
+            @Schema(description = "메뉴명", example = "반반 세트 1")
+            String menuName,
+
+            @Schema(description = "선택한 옵션명 목록", example = "[\"햄치즈 샌드위치\", \"참치 김밥\"]")
+            List<String> optionNames,
 
             @Schema(description = "메뉴 이미지", example = "https://...")
             String imageUrl,

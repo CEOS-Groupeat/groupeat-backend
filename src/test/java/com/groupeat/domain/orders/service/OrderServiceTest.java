@@ -17,6 +17,8 @@ import com.groupeat.domain.orders.repository.OrderRepository;
 import com.groupeat.domain.payment.dto.PaymentCancelResult;
 import com.groupeat.domain.payment.repository.PaymentRepository;
 import com.groupeat.domain.store.entity.Store;
+import com.groupeat.domain.store.entity.StoreOrderSchedule;
+import com.groupeat.domain.store.repository.StoreOrderScheduleRepository;
 import com.groupeat.domain.store.repository.MenuOptionRepository;
 import com.groupeat.domain.store.repository.MenuRepository;
 import com.groupeat.domain.store.repository.StoreRepository;
@@ -39,19 +41,29 @@ class OrderServiceTest {
 
     private OrderRepository orderRepository;
     private PaymentRepository paymentRepository;
+    private StoreOrderScheduleRepository storeOrderScheduleRepository;
     private OrderCancelTransactionService orderCancelTransactionService;
 
     @BeforeEach
     void setUp() {
         orderRepository = mock(OrderRepository.class);
         paymentRepository = mock(PaymentRepository.class);
-        orderCancelTransactionService = new OrderCancelTransactionService(orderRepository, paymentRepository);
+        storeOrderScheduleRepository = mock(StoreOrderScheduleRepository.class);
+        orderCancelTransactionService = new OrderCancelTransactionService(
+                orderRepository,
+                paymentRepository,
+                storeOrderScheduleRepository
+        );
     }
 
     @Test
     void cancelOrder_fullRefundBeforeStoreCancelDeadline() {
-        Order order = order(OrderStatus.PAID, LocalDate.now().plusDays(3), 2);
+        Order order = order(OrderStatus.PAID, LocalDate.now().plusDays(3));
         when(orderRepository.findByIdAndMemberId(ORDER_ID, MEMBER_ID)).thenReturn(Optional.of(order));
+        when(storeOrderScheduleRepository.findActiveScheduleByStoreIdAndDate(
+                order.getStore().getId(),
+                order.getPickupDate()
+        )).thenReturn(Optional.of(schedule(order.getStore(), order.getPickupDate(), 2)));
 
         OrderCancelPreparation preparation = orderCancelTransactionService.prepareCustomerCancel(MEMBER_ID, ORDER_ID);
         OrderCancelResponse response = orderCancelTransactionService.cancelCustomerOrder(
@@ -76,8 +88,12 @@ class OrderServiceTest {
 
     @Test
     void cancelOrder_halfRefundAfterStoreCancelDeadline() {
-        Order order = order(OrderStatus.ACCEPTED, LocalDate.now().plusDays(1), 2);
+        Order order = order(OrderStatus.ACCEPTED, LocalDate.now().plusDays(1));
         when(orderRepository.findByIdAndMemberId(ORDER_ID, MEMBER_ID)).thenReturn(Optional.of(order));
+        when(storeOrderScheduleRepository.findActiveScheduleByStoreIdAndDate(
+                order.getStore().getId(),
+                order.getPickupDate()
+        )).thenReturn(Optional.of(schedule(order.getStore(), order.getPickupDate(), 2)));
 
         OrderCancelPreparation preparation = orderCancelTransactionService.prepareCustomerCancel(MEMBER_ID, ORDER_ID);
         OrderCancelResponse response = orderCancelTransactionService.cancelCustomerOrder(
@@ -97,7 +113,7 @@ class OrderServiceTest {
 
     @Test
     void cancelOrder_rejectsInvalidOrderStatus() {
-        Order order = order(OrderStatus.COMPLETED, LocalDate.now().plusDays(3), 2);
+        Order order = order(OrderStatus.COMPLETED, LocalDate.now().plusDays(3));
         when(orderRepository.findByIdAndMemberId(ORDER_ID, MEMBER_ID)).thenReturn(Optional.of(order));
 
         assertThatThrownBy(() -> orderCancelTransactionService.prepareCustomerCancel(MEMBER_ID, ORDER_ID))
@@ -106,13 +122,12 @@ class OrderServiceTest {
                 .isEqualTo(OrderErrorStatus.ORDER_CANCEL_NOT_ALLOWED);
     }
 
-    private Order order(OrderStatus orderStatus, LocalDate pickupDate, Integer minOrderDays) {
+    private Order order(OrderStatus orderStatus, LocalDate pickupDate) {
         Store store = Store.builder()
                 .ownerId(2L)
                 .storeName("테스트 가게")
                 .address("서울시")
                 .phoneNumber("02-1234-5678")
-                .minOrderDays(minOrderDays)
                 .build();
 
         return Order.builder()
@@ -130,5 +145,15 @@ class OrderServiceTest {
                 .paymentMethod(com.groupeat.domain.orders.enums.PaymentMethod.PREPAID)
                 .orderStatus(orderStatus)
                 .build();
+    }
+
+    private StoreOrderSchedule schedule(Store store, LocalDate pickupDate, Integer minOrderDays) {
+        return StoreOrderSchedule.create(
+                store,
+                pickupDate.minusDays(1),
+                pickupDate.plusDays(1),
+                minOrderDays,
+                java.util.List.of()
+        );
     }
 }

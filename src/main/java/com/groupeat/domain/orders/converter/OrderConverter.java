@@ -77,77 +77,7 @@ public class OrderConverter {
                 .build();
     }
 
-    public static OrderListResponse toOrderListResponse(
-            List<Order> orders,
-            long totalElements,
-            boolean hasNext,
-            Map<Long, List<OrderItem>> itemsByOrderId
-    ) {
-        List<OrderListResponse.OrderCardDTO> cards = orders.stream()
-                .map(order -> {
-                    List<OrderItem> items = itemsByOrderId.getOrDefault(order.getId(), List.of());
-                    return toOrderCardDTO(order, items);
-                })
-                .toList();
 
-        return OrderListResponse.builder()
-                .orders(cards)
-                .totalElements(totalElements)
-                .hasNext(hasNext)
-                .build();
-    }
-
-    private static OrderListResponse.OrderCardDTO toOrderCardDTO(Order order, List<OrderItem> items) {
-        String menuSummary = "메뉴 정보 없음";
-        if (!items.isEmpty()) {
-            menuSummary = items.get(0).getMenuName();
-            if (items.size() > 1) {
-                menuSummary += " 외 " + (items.size() - 1) + "개";
-            }
-        }
-
-        return OrderListResponse.OrderCardDTO.builder()
-                .orderId(order.getId())
-                .storeId(order.getStore().getId())
-                .storeName(order.getStore().getStoreName())
-                .storeImageUrl(order.getStore().getImageUrl())
-
-                .orderDate(order.getCreatedAt().toLocalDate())
-                .orderTime(order.getCreatedAt().toLocalTime())
-                .pickupDate(order.getPickupDate())
-                .pickupTime(order.getPickupTime())
-
-                .menuSummary(menuSummary)
-                .totalOriginalPrice(order.getTotalOriginalPrice())
-                .paymentAmount(order.getPaymentAmount())
-                .orderStatus(order.getOrderStatus())
-                .paymentMethod(order.getPaymentMethod())
-                .build();
-    }
-
-    public static OrderDetailResponse toOrderDetailResponse(Order order, List<OrderItem> orderItems) {
-
-        List<OrderDetailResponse.OrderDetailItemDTO> itemDTOs = orderItems.stream()
-                .map(item -> OrderDetailResponse.OrderDetailItemDTO.builder()
-                        .menuName(item.getMenuName())
-                        .quantity(item.getQuantity())
-                        .build())
-                .toList();
-
-        return OrderDetailResponse.builder()
-                .orderId(order.getId())
-                .orderStatus(order.getOrderStatus())
-                .customerName(order.getCustomerName())
-                .customerPhone(order.getCustomerPhone())
-                .pickupDate(order.getPickupDate())
-                .pickupTime(order.getPickupTime())
-                .items(itemDTOs)
-                .paymentAmount(order.getPaymentAmount())
-                .paymentMethod(order.getPaymentMethod())
-                .orderDate(order.getCreatedAt().toLocalDate())
-                .orderTime(order.getCreatedAt().toLocalTime())
-                .build();
-    }
 
     public static OrderStatusChangeResponse toOrderStatusChangeResponse(Order order, LocalDateTime processedAt) {
         return new OrderStatusChangeResponse(

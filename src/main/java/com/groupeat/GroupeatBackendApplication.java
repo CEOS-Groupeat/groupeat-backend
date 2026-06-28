@@ -6,6 +6,7 @@ import com.groupeat.domain.business.config.NtsApiProperties;
 import com.groupeat.domain.payment.config.TossPaymentProperties;
 import com.groupeat.domain.settlement.config.SettlementProperties;
 import com.groupeat.global.config.CorsProperties;
+import com.groupeat.global.upload.config.S3Properties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -19,7 +20,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 		CorsProperties.class,
 		TossPaymentProperties.class,
 		SettlementProperties.class,
-        NtsApiProperties.class
+        NtsApiProperties.class,
+		S3Properties.class
 })
 public class GroupeatBackendApplication {
 

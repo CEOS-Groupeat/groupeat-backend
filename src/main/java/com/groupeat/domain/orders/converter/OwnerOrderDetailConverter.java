@@ -28,7 +28,7 @@ public class OwnerOrderDetailConverter {
                 .map(item -> {
                     List<OrderItemOption> options = optionsByOrderItemId.getOrDefault(item.getId(), List.of());
 
-                    List<OwnerOrderDetailResponse.OrderMenuOptionDTO> optionDTOs = item.getOrderItemOptions().stream()
+                    List<OwnerOrderDetailResponse.OrderMenuOptionDTO> optionDTOs = options.stream()
                             .map(opt -> OwnerOrderDetailResponse.OrderMenuOptionDTO.builder()
                                     .optionName(opt.getOptionName())
                                     .build())

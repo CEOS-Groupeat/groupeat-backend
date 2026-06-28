@@ -100,24 +100,23 @@ public class CartConverter {
             Map<Long, MenuOption> menuOptionMap, int discountRate
     ) {
         int unitPrice = menu.getBasePrice();
-        String optionNames = "";
+        List<String> optionNames = List.of();
 
         if (!options.isEmpty()) {
             List<MenuOption> resolvedOptions = options.stream()
                     .map(opt -> menuOptionMap.get(opt.getMenuOptionId())).toList();
 
             unitPrice += resolvedOptions.stream().mapToInt(MenuOption::getAdditionalPrice).sum();
-            optionNames = resolvedOptions.stream().map(MenuOption::getName).collect(Collectors.joining(", "));
+            optionNames = resolvedOptions.stream().map(MenuOption::getName).toList();
         }
-
-        String menuSummary = menu.getName() + (optionNames.isEmpty() ? "" : " (" + optionNames + ")");
 
         int originalTotal = unitPrice * item.getQuantity();
         int discountAmount = (int) (originalTotal * (discountRate / 100.0));
 
         return CartListResponse.CartItemDTO.builder()
                 .cartItemId(item.getId())
-                .menuSummary(menuSummary)
+                .menuName(menu.getName())
+                .optionNames(optionNames)
                 .imageUrl(menu.getImageUrl())
                 .quantity(item.getQuantity())
                 .unitPrice(unitPrice)

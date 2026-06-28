@@ -48,8 +48,6 @@ public class Member extends BaseEntity {
 
     private LocalDate birthDate;
 
-    private Integer age;
-
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
@@ -83,12 +81,12 @@ public class Member extends BaseEntity {
     public void completeBusinessBasicInfo(
             String name,
             String email,
-            Integer age,
+            LocalDate birthDate,
             Gender gender
     ) {
         this.name = name;
         this.email = email;
-        this.age = age;
+        this.birthDate = birthDate;
         this.gender = gender;
         this.memberStatus = MemberStatus.BUSINESS_PENDING;
     }

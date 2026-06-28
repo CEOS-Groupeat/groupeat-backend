@@ -5,6 +5,7 @@ import com.groupeat.domain.admin.business.dto.response.AdminVerificationDetailRe
 import com.groupeat.domain.admin.business.dto.response.AdminVerificationListResponse;
 import com.groupeat.domain.admin.business.dto.response.AdminVerificationProcessResponse;
 import com.groupeat.domain.admin.business.enums.AdminVerificationFilterType;
+import com.groupeat.domain.admin.business.exception.AdminErrorStatus;
 import com.groupeat.domain.admin.business.service.AdminBusinessVerificationService;
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
 import com.groupeat.domain.member.enums.MemberType;
@@ -34,7 +35,7 @@ public class AdminBusinessVerificationController {
             @RequestParam(defaultValue = "10") int size
     ) {
         if (admin.memberType() != MemberType.ADMIN) {
-            throw new GeneralException(GlobalErrorStatus._FORBIDDEN);
+            throw new GeneralException(AdminErrorStatus.ADMIN_ACCESS_DENIED);
         }
 
         return ApiResponse.onSuccess(adminService.getVerificationList(filter, lastProfileId, size));

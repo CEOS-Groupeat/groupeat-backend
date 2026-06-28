@@ -2,8 +2,12 @@ package com.groupeat.domain.admin.business.service;
 
 import com.groupeat.domain.admin.business.converter.AdminBusinessConverter;
 import com.groupeat.domain.admin.business.dto.request.AdminVerificationProcessRequest;
+import com.groupeat.domain.admin.business.dto.response.AdminVerificationDetailResponse;
+import com.groupeat.domain.admin.business.dto.response.AdminVerificationListResponse;
 import com.groupeat.domain.admin.business.dto.response.AdminVerificationProcessResponse;
+import com.groupeat.domain.admin.business.enums.AdminVerificationFilterType;
 import com.groupeat.domain.admin.business.exception.AdminErrorStatus;
+import com.groupeat.domain.admin.business.repository.AdminBusinessQueryRepository;
 import com.groupeat.domain.business.entity.BusinessProfile;
 import com.groupeat.domain.business.enums.BusinessVerificationStatus;
 import com.groupeat.domain.business.repository.BusinessProfileRepository;
@@ -14,13 +18,49 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class AdminBusinessVerificationService {
 
     private final BusinessProfileRepository businessProfileRepository;
+    private final AdminBusinessQueryRepository adminQueryRepository;
     private final MemberRepository memberRepository;
+
+    @Transactional(readOnly = true)
+    public AdminVerificationListResponse.VerificationListDTO getVerificationList(
+            AdminVerificationFilterType filter, Long lastProfileId, int size
+    ) {
+        List<BusinessVerificationStatus> statusList =
+                (filter == null || filter == AdminVerificationFilterType.ALL) ? null : filter.getMappedStatuses();
+
+        long totalElements = adminQueryRepository.countVerifications(statusList);
+        List<BusinessProfile> profiles = adminQueryRepository.findVerificationsByCursor(statusList, lastProfileId, size);
+
+        boolean hasNext = false;
+        if (profiles.size() > size) {
+            hasNext = true;
+            profiles = profiles.subList(0, size);
+        }
+
+        Long nextCursor = profiles.isEmpty() ? null : profiles.get(profiles.size() - 1).getId();
+
+        // 💡 주의: 앞서 수정한 AdminBusinessConverter에 DTO 매핑 메서드를 맞춰서 추가해주어야 합니다.
+        return AdminBusinessConverter.toVerificationListDTO(profiles, totalElements, hasNext, nextCursor);
+    }
+
+    @Transactional(readOnly = true)
+    public AdminVerificationDetailResponse getVerificationDetail(Long profileId) {
+        BusinessProfile profile = businessProfileRepository.findById(profileId)
+                .orElseThrow(() -> new GeneralException(AdminErrorStatus.VERIFICATION_NOT_FOUND));
+
+        Member member = memberRepository.findById(profile.getMemberId())
+                .orElseThrow(() -> new GeneralException(AdminErrorStatus.MEMBER_NOT_FOUND));
+
+        return AdminBusinessConverter.toVerificationDetailResponse(profile, member);
+    }
 
     public AdminVerificationProcessResponse processVerification(Long adminId, Long profileId, AdminVerificationProcessRequest request) {
         // 사업자 프로필 조회

@@ -50,10 +50,14 @@ public class AuthTokenProvider {
 
         Number memberId = claims.get("memberId", Number.class);
 
+        Boolean isAdminClaim = claims.get("isAdmin", Boolean.class);
+        boolean isAdmin = (isAdminClaim != null) ? isAdminClaim : false;
+
         return new AuthenticatedMember(
                 memberId.longValue(),
                 MemberType.valueOf(claims.get("memberType", String.class)),
-                MemberStatus.valueOf(claims.get("memberStatus", String.class))
+                MemberStatus.valueOf(claims.get("memberStatus", String.class)),
+                isAdmin
         );
     }
 

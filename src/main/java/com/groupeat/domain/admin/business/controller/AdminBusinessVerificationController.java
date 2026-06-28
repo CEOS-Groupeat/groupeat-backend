@@ -34,7 +34,7 @@ public class AdminBusinessVerificationController {
             @RequestParam(required = false) Long lastProfileId,
             @RequestParam(defaultValue = "10") int size
     ) {
-        if (admin.memberType() != MemberType.ADMIN) {
+        if (!admin.isAdmin()) {
             throw new GeneralException(AdminErrorStatus.ADMIN_ACCESS_DENIED);
         }
 

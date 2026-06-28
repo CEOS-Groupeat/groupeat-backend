@@ -50,7 +50,8 @@ public class SecurityConfig {
                                 "/oauth2/**",
                                 "/login/oauth2/**",
                                 "/api/stores/**",
-                                "/api/search/stores"
+                                "/api/search/stores",
+                                "/api/business/validate"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

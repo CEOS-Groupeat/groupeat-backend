@@ -57,11 +57,11 @@ public class OrderController {
 
     @GetMapping("/{orderId}")
     @Operation(summary = "주문 상세 내역 조회", description = "특정 주문의 상세 정보(메뉴, 옵션, 결제정보 등)를 조회합니다.")
-    public ApiResponse<OrderDetailResponse> getOrderDetail(
+    public ApiResponse<OrderDetailResponse.OrderDetailDTO> getOrderDetail(
             @AuthenticationPrincipal AuthenticatedMember member,
             @PathVariable @Parameter(description = "조회할 주문 ID") Long orderId
     ) {
-        OrderDetailResponse response = orderService.getOrderDetail(member.memberId(), orderId);
+        OrderDetailResponse.OrderDetailDTO response = orderService.getOrderDetail(member.memberId(), orderId);
         return ApiResponse.onSuccess(response);
     }
 

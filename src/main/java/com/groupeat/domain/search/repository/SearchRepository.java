@@ -7,6 +7,7 @@ import com.groupeat.domain.store.enums.StoreCategory;
 import com.groupeat.domain.store.enums.StoreRegion;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -17,6 +18,8 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import static com.groupeat.domain.store.entity.QStoreOrderSchedule.storeOrderSchedule;
+import static com.groupeat.domain.store.entity.QStoreOrderScheduleDay.storeOrderScheduleDay;
 import static com.groupeat.domain.store.entity.QStore.store;
 
 @Repository
@@ -27,36 +30,37 @@ public class SearchRepository {
 
     // 조건에 맞는 가게 목록 조회
     public List<Store> searchStores(StoreSearchCondition condition) {
-        return queryFactory
+        JPAQuery<Store> query = queryFactory
                 .selectFrom(store)
                 .where(
                         keywordContains(condition.keyword()),
                         regionEq(condition.region()),
                         categoryEq(condition.category()),
-                        budgetLessThanOrEqualTo(condition.budget()),
-                        isPickupTimesAvailable(condition.pickupTimes()),
-                        isPickupDateAvailable(condition.pickupDate()),
-                        isQuantitySatisfied(condition.quantity())
-                )
-                .orderBy(getSortOrder(condition.sortType())) // 정렬 동적 제어
+                        budgetLessThanOrEqualTo(condition.budget())
+                );
+
+        applyScheduleJoinIfNeeded(query, condition);
+
+        return query.orderBy(getSortOrder(condition.sortType()))
+                .distinct()
                 .fetch();
     }
 
     // 페이징 처리를 위한 전체 개수 카운트 쿼리
     public long countStores(StoreSearchCondition condition) {
-        Long count = queryFactory
-                .select(store.count())
+        JPAQuery<Long> query = queryFactory
+                .select(store.countDistinct())
                 .from(store)
                 .where(
                         keywordContains(condition.keyword()),
                         regionEq(condition.region()),
                         categoryEq(condition.category()),
-                        budgetLessThanOrEqualTo(condition.budget()),
-                        isPickupTimesAvailable(condition.pickupTimes()),
-                        isPickupDateAvailable(condition.pickupDate()),
-                        isQuantitySatisfied(condition.quantity())
-                )
-                .fetchOne();
+                        budgetLessThanOrEqualTo(condition.budget())
+                );
+
+        applyScheduleJoinIfNeeded(query, condition);
+
+        Long count = query.fetchOne();
         return count != null ? count : 0L;
     }
 
@@ -80,17 +84,71 @@ public class SearchRepository {
         return budget != null ? store.minPrice.loe(budget) : null;
     }
 
+    private void applyScheduleJoinIfNeeded(JPAQuery<?> query, StoreSearchCondition condition) {
+        if (!hasScheduleCondition(condition)) {
+            return;
+        }
+
+        query.join(storeOrderSchedule)
+                .on(
+                        storeOrderSchedule.store.id.eq(store.id),
+                        storeOrderSchedule.deletedAt.isNull(),
+                        isPickupDateInSchedulePeriod(condition.pickupDate())
+                )
+                .join(storeOrderScheduleDay)
+                .on(
+                        storeOrderScheduleDay.schedule.id.eq(storeOrderSchedule.id),
+                        storeOrderScheduleDay.deletedAt.isNull(),
+                        storeOrderScheduleDay.available.isTrue(),
+                        isPickupDayAvailable(condition.pickupDate()),
+                        isLeadTimeEnough(condition.pickupDate()),
+                        isPickupTimesAvailable(condition.pickupTimes()),
+                        isQuantitySatisfied(condition.quantity())
+                );
+    }
+
+    private boolean hasScheduleCondition(StoreSearchCondition condition) {
+        return condition.pickupDate() != null
+                || (condition.pickupTimes() != null && !condition.pickupTimes().isEmpty())
+                || condition.quantity() != null;
+    }
+
+    private BooleanExpression isPickupDateInSchedulePeriod(LocalDate requestedDate) {
+        if (requestedDate == null) {
+            return null;
+        }
+
+        return storeOrderSchedule.startDate.loe(requestedDate)
+                .and(storeOrderSchedule.endDate.goe(requestedDate));
+    }
+
+    private BooleanExpression isPickupDayAvailable(LocalDate requestedDate) {
+        if (requestedDate == null) {
+            return null;
+        }
+
+        return storeOrderScheduleDay.dayOfWeek.eq(requestedDate.getDayOfWeek());
+    }
+
+    private BooleanExpression isLeadTimeEnough(LocalDate requestedDate) {
+        if (requestedDate == null) {
+            return null;
+        }
+
+        long daysBetween = ChronoUnit.DAYS.between(LocalDate.now(), requestedDate);
+        return storeOrderSchedule.minOrderDays.loe((int) daysBetween);
+    }
+
     private BooleanExpression isPickupTimesAvailable(List<LocalTime> requestedTimes) {
         if (requestedTimes == null || requestedTimes.isEmpty()) {
-            return null; // 시간이 안 넘어오면 조건 무시
+            return null;
         }
 
         BooleanExpression result = null;
 
-        // 선택한 시간들(예: 12:00, 13:00) 중 '하나라도' 영업시간 내에 있으면 검색되도록 (OR 조건)
         for (LocalTime time : requestedTimes) {
-            BooleanExpression timeCondition = store.pickupOpenTime.loe(time)
-                    .and(store.pickupCloseTime.goe(time));
+            BooleanExpression timeCondition = storeOrderScheduleDay.pickupOpenTime.loe(time)
+                    .and(storeOrderScheduleDay.pickupCloseTime.goe(time));
 
             result = (result == null) ? timeCondition : result.or(timeCondition);
         }
@@ -98,25 +156,11 @@ public class SearchRepository {
         return result;
     }
 
-    private BooleanExpression isPickupDateAvailable(LocalDate requestedDate) {
-        if (requestedDate == null) return null;
-
-        // 휴무일 검증: 가게의 closedDays 문자열에 요청한 날짜의 요일(예: MONDAY)이 포함되어 있지 않아야 함
-        String dayOfWeek = requestedDate.getDayOfWeek().name();
-        BooleanExpression isNotClosed = store.closedDays.contains(dayOfWeek).not();
-
-        // 리드타임 검증: 오늘부터 요청 날짜까지의 차이가 가게의 최소 주문 일수(minOrderDays) 이상이어야 함
-        long daysBetween = ChronoUnit.DAYS.between(LocalDate.now(), requestedDate);
-        BooleanExpression isLeadTimeEnough = store.minOrderDays.loe((int) daysBetween);
-
-        return isNotClosed.and(isLeadTimeEnough);
-    }
-
     private BooleanExpression isQuantitySatisfied(Integer requestedQuantity) {
         if (requestedQuantity == null) return null;
 
-        // 사용자가 입력한 수량이 가게의 할인 조건 수량보다 크거나 같아야 함 (조건 충족 가게만 노출)
-        return store.discountConditionQuantity.loe(requestedQuantity);
+        return storeOrderScheduleDay.minOrderQuantity.loe(requestedQuantity)
+                .and(storeOrderScheduleDay.maxOrderQuantity.goe(requestedQuantity));
     }
 
     // 동적 정렬 조건 분기 블록

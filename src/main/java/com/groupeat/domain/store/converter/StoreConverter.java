@@ -3,10 +3,16 @@ package com.groupeat.domain.store.converter;
 import com.groupeat.domain.store.dto.response.OwnerStoreResponse;
 import com.groupeat.domain.store.dto.response.StoreDetailResponse;
 import com.groupeat.domain.store.entity.Store;
+import com.groupeat.domain.store.entity.StoreOrderSchedule;
+import com.groupeat.domain.store.entity.StoreOrderScheduleDay;
+
+import java.time.LocalTime;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 
 public class StoreConverter {
 
-    public static StoreDetailResponse toStoreDetailResponse(Store store) {
+    public static StoreDetailResponse toStoreDetailResponse(Store store, StoreOrderSchedule schedule) {
 
         return StoreDetailResponse.builder()
                 .storeId(store.getId())
@@ -17,10 +23,10 @@ public class StoreConverter {
                 .reviewCount(store.getReviewCount())
                 .phoneNumber(store.getPhoneNumber())
                 .description(store.getDescription())
-                .closedDays(store.getClosedDays())
-                .pickupOpenTime(store.getPickupOpenTime())
-                .pickupCloseTime(store.getPickupCloseTime())
-                .minOrderDays(store.getMinOrderDays())
+                .closedDays(toClosedDays(schedule))
+                .pickupOpenTime(toEarliestPickupOpenTime(schedule))
+                .pickupCloseTime(toLatestPickupCloseTime(schedule))
+                .minOrderDays(schedule != null ? schedule.getMinOrderDays() : null)
                 .discountConditionQuantity(store.getDiscountConditionQuantity())
                 .discountRate(store.getDiscountRate())
                 .orderProcess(store.getOrderProcess())
@@ -60,5 +66,43 @@ public class StoreConverter {
 
     private static String getRegionDescription(Store store) {
         return store.getRegion() != null ? store.getRegion().getDescription() : null;
+    }
+
+    private static String toClosedDays(StoreOrderSchedule schedule) {
+        if (schedule == null) {
+            return null;
+        }
+
+        String closedDays = schedule.getDays().stream()
+                .filter(day -> !day.isAvailable())
+                .sorted(Comparator.comparing(StoreOrderScheduleDay::getDayOfWeek))
+                .map(day -> day.getDayOfWeek().name())
+                .collect(Collectors.joining(","));
+
+        return closedDays.isBlank() ? null : closedDays;
+    }
+
+    private static LocalTime toEarliestPickupOpenTime(StoreOrderSchedule schedule) {
+        if (schedule == null) {
+            return null;
+        }
+
+        return schedule.getDays().stream()
+                .filter(StoreOrderScheduleDay::isAvailable)
+                .map(StoreOrderScheduleDay::getPickupOpenTime)
+                .min(LocalTime::compareTo)
+                .orElse(null);
+    }
+
+    private static LocalTime toLatestPickupCloseTime(StoreOrderSchedule schedule) {
+        if (schedule == null) {
+            return null;
+        }
+
+        return schedule.getDays().stream()
+                .filter(StoreOrderScheduleDay::isAvailable)
+                .map(StoreOrderScheduleDay::getPickupCloseTime)
+                .max(LocalTime::compareTo)
+                .orElse(null);
     }
 }

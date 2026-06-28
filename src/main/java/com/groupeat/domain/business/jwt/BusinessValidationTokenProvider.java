@@ -1,8 +1,10 @@
 package com.groupeat.domain.business.jwt;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
+import com.groupeat.domain.business.exception.BusinessErrorStatus;
+import com.groupeat.global.exception.GeneralException;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -41,14 +43,24 @@ public class BusinessValidationTokenProvider {
 
     // 토큰 해석
     public BusinessValidationTokenPayload getPayload(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
 
-        return new BusinessValidationTokenPayload(
-                claims.get("businessRegistrationNumber", String.class)
-        );
+            return new BusinessValidationTokenPayload(
+                    claims.get("businessRegistrationNumber", String.class)
+            );
+
+            // 토큰 만료 에러 캐치
+        } catch (ExpiredJwtException e) {
+            throw new GeneralException(BusinessErrorStatus.BUSINESS_TOKEN_EXPIRED);
+
+            // 토큰 형식 불량, 서명 오류, 비어있음 등 에러 캐치
+        } catch (SignatureException | MalformedJwtException | UnsupportedJwtException | IllegalArgumentException e) {
+            throw new GeneralException(BusinessErrorStatus.INVALID_BUSINESS_TOKEN);
+        }
     }
 }

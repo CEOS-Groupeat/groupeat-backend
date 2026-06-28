@@ -39,9 +39,9 @@ public record BusinessSignupRequest(
         @Email(message = "이메일 형식이 올바르지 않습니다.")
         String email,
 
-        @NotNull(message = "나이는 필수입니다.")
-        @Min(value = 0, message = "나이는 0 이상이어야 합니다.")
-        Integer age,
+        @NotNull(message = "생년월일은 필수입니다.")
+        @PastOrPresent(message = "생년월일은 미래일 수 없습니다.")
+        LocalDate birthDate,
 
         @NotNull(message = "성별은 필수입니다.")
         Gender gender

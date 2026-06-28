@@ -83,7 +83,8 @@ public class OrderConverter {
         return new OrderStatusChangeResponse(
                 order.getId(),
                 order.getOrderStatus(),
-                processedAt
+                processedAt.toLocalDate(),
+                processedAt.toLocalTime()
         );
     }
 }

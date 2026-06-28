@@ -3,7 +3,6 @@ package com.groupeat.domain.orders.controller;
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
 import com.groupeat.domain.orders.dto.request.OrderCancelRequest;
 import com.groupeat.domain.orders.dto.request.OrderCreateRequest;
-import com.groupeat.domain.orders.dto.request.OrderRejectRequest;
 import com.groupeat.domain.orders.dto.response.OrderCancelResponse;
 import com.groupeat.domain.orders.dto.response.OrderCreateResponse;
 import com.groupeat.domain.orders.dto.response.OrderDetailResponse;
@@ -90,10 +89,9 @@ public class OrderController {
     @Operation(summary = "주문 거절", description = "사업자가 본인 가게의 주문을 거절하고 결제 금액을 전액 환불합니다.")
     public ApiResponse<OrderStatusChangeResponse> rejectOrder(
             @AuthenticationPrincipal AuthenticatedMember member,
-            @PathVariable @Parameter(description = "거절할 주문 ID") Long orderId,
-            @Valid @RequestBody OrderRejectRequest request
+            @PathVariable @Parameter(description = "거절할 주문 ID") Long orderId
     ) {
-        OrderStatusChangeResponse response = orderService.rejectOrder(member.memberId(), member.memberType(), orderId, request);
+        OrderStatusChangeResponse response = orderService.rejectOrder(member.memberId(), member.memberType(), orderId);
         return ApiResponse.onSuccess(response);
     }
 

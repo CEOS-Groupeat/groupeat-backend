@@ -94,9 +94,6 @@ public class Order extends BaseEntity {
     @Column(name = "accepted_at")
     private LocalDateTime acceptedAt;
 
-    @Column(name = "reject_reason", length = 100)
-    private String rejectReason;
-
     @Column(name = "rejected_at")
     private LocalDateTime rejectedAt;
 
@@ -133,9 +130,8 @@ public class Order extends BaseEntity {
         this.acceptedAt = acceptedAt;
     }
 
-    public void reject(String rejectReason, LocalDateTime rejectedAt) {
+    public void reject(LocalDateTime rejectedAt) {
         this.orderStatus = OrderStatus.REJECTED;
-        this.rejectReason = rejectReason;
         this.rejectedAt = rejectedAt;
     }
 

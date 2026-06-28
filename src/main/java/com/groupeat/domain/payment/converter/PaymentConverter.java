@@ -12,7 +12,8 @@ public class PaymentConverter {
                 payment.getPaymentKey(),
                 payment.getPaidAmount(),
                 payment.getPaymentStatus(),
-                payment.getApprovedAt()
+                payment.getApprovedAt() == null ? null : payment.getApprovedAt().toLocalDate(),
+                payment.getApprovedAt() == null ? null : payment.getApprovedAt().toLocalTime()
         );
     }
 }

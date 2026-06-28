@@ -3,7 +3,8 @@ package com.groupeat.domain.payment.dto.response;
 import com.groupeat.domain.payment.enums.PaymentStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 public record PaymentConfirmResponse(
         @Schema(description = "결제 DB 내부 ID", example = "1")
@@ -21,7 +22,10 @@ public record PaymentConfirmResponse(
         @Schema(description = "결제 상태", example = "DONE")
         PaymentStatus status,
 
-        @Schema(description = "결제 승인 완료 시각")
-        LocalDateTime approvedAt
+        @Schema(description = "결제 승인 완료 날짜", example = "2026-05-28")
+        LocalDate approvedDate,
+
+        @Schema(description = "결제 승인 완료 시간", example = "12:34:56")
+        LocalTime approvedTime
 ) {
 }

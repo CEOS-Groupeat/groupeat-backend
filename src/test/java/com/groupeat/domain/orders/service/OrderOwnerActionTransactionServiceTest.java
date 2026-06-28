@@ -94,14 +94,12 @@ class OrderOwnerActionTransactionServiceTest {
         OrderStatusChangeResponse response = orderOwnerActionTransactionService.rejectOrder(
                 OWNER_ID,
                 ORDER_ID,
-                "재료 소진",
                 10000,
                 new PaymentCancelResult(10000, LocalDateTime.now(), "cancel-tx", true)
         );
 
         assertThat(response.orderStatus()).isEqualTo(OrderStatus.REJECTED);
         assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.REJECTED);
-        assertThat(order.getRejectReason()).isEqualTo("재료 소진");
         assertThat(order.getRejectedAt()).isNotNull();
         assertThat(payment.getPaymentStatus()).isEqualTo(PaymentStatus.CANCELED);
         assertThat(payment.getRefundedAmount()).isEqualTo(10000);

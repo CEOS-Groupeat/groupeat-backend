@@ -137,7 +137,7 @@ public class SignupService {
         member.completeBusinessBasicInfo(
                 request.representativeName(),
                 request.email(),
-                request.age(),
+                request.birthDate(),
                 request.gender()
         );
 

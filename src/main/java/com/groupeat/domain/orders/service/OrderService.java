@@ -15,7 +15,6 @@ import com.groupeat.domain.orders.dto.OrderCancelPreparation;
 import com.groupeat.domain.orders.dto.OrderRejectPreparation;
 import com.groupeat.domain.orders.dto.request.OrderCancelRequest;
 import com.groupeat.domain.orders.dto.request.OrderCreateRequest;
-import com.groupeat.domain.orders.dto.request.OrderRejectRequest;
 import com.groupeat.domain.orders.dto.response.OrderCancelResponse;
 import com.groupeat.domain.orders.dto.response.OrderCreateResponse;
 import com.groupeat.domain.orders.dto.response.OrderDetailResponse;
@@ -63,6 +62,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Transactional
 public class OrderService {
+
+    private static final String OWNER_REJECT_CANCEL_REASON = "사업자 주문 거절";
 
     private final OrderRepository orderRepository;
     private final OrderQueryRepository orderQueryRepository;
@@ -262,14 +263,14 @@ public class OrderService {
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public OrderStatusChangeResponse rejectOrder(Long ownerId, MemberType memberType, Long orderId, OrderRejectRequest request) {
+    public OrderStatusChangeResponse rejectOrder(Long ownerId, MemberType memberType, Long orderId) {
         validateBusinessMember(memberType);
 
         OrderRejectPreparation preparation = orderOwnerActionTransactionService.prepareRejectOrder(ownerId, orderId);
 
         PaymentCancelResult paymentCancelResult = paymentCancelService.cancel(
                 preparation.payment(),
-                request.rejectReason(),
+                OWNER_REJECT_CANCEL_REASON,
                 preparation.refundAmount()
         );
 
@@ -277,7 +278,6 @@ public class OrderService {
             return orderOwnerActionTransactionService.rejectOrder(
                     ownerId,
                     orderId,
-                    request.rejectReason(),
                     preparation.refundAmount(),
                     paymentCancelResult
             );

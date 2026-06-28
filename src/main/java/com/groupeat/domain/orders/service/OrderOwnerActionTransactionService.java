@@ -61,7 +61,6 @@ public class OrderOwnerActionTransactionService {
     public OrderStatusChangeResponse rejectOrder(
             Long ownerId,
             Long orderId,
-            String rejectReason,
             int refundAmount,
             PaymentCancelResult paymentCancelResult
     ) {
@@ -71,7 +70,7 @@ public class OrderOwnerActionTransactionService {
         validateRejectable(order);
 
         LocalDateTime rejectedAt = LocalDateTime.now();
-        order.reject(rejectReason, rejectedAt);
+        order.reject(rejectedAt);
 
         paymentRepository.findByOrderId(order.getOrderId())
                 .ifPresent(payment -> applyPaymentCancel(payment, refundAmount, paymentCancelResult));

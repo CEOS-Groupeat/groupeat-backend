@@ -16,7 +16,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -132,7 +133,8 @@ class PaymentConfirmServiceTest {
                 PAYMENT_KEY,
                 AMOUNT,
                 PaymentStatus.DONE,
-                LocalDateTime.of(2026, 5, 28, 3, 39, 21)
+                LocalDate.of(2026, 5, 28),
+                LocalTime.of(3, 39, 21)
         );
     }
 

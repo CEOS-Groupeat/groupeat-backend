@@ -70,7 +70,14 @@ public class OrderCancelTransactionService {
         paymentRepository.findByOrderId(order.getOrderId())
                 .ifPresent(payment -> applyPaymentCancel(payment, refundAmount, paymentCancelResult));
 
-        return new OrderCancelResponse(order.getId(), order.getOrderStatus(), refundRate, refundAmount, cancelledAt);
+        return new OrderCancelResponse(
+                order.getId(),
+                order.getOrderStatus(),
+                refundRate,
+                refundAmount,
+                cancelledAt.toLocalDate(),
+                cancelledAt.toLocalTime()
+        );
     }
 
     private void validateCustomerCancelable(Order order) {

@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum AdminErrorStatus implements BaseErrorCode {
 
+    ADMIN_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ADMIN4030", "해당 기능을 사용할 수 있는 관리자 권한이 없습니다."),
     VERIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "ADMIN4040", "해당 사업자 인증 요청 프로필을 찾을 수 없습니다."),
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "ADMIN4041", "사업자 인증과 연결된 회원 정보를 찾을 수 없습니다."),
 

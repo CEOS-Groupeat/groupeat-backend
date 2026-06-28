@@ -7,7 +7,9 @@ import com.groupeat.domain.admin.business.dto.response.AdminVerificationProcessR
 import com.groupeat.domain.admin.business.enums.AdminVerificationFilterType;
 import com.groupeat.domain.admin.business.service.AdminBusinessVerificationService;
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
+import com.groupeat.domain.member.enums.MemberType;
 import com.groupeat.global.apiPayload.ApiResponse;
+import com.groupeat.global.exception.GeneralException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -32,7 +34,7 @@ public class AdminBusinessVerificationController {
             @RequestParam(defaultValue = "10") int size
     ) {
         if (admin.memberType() != MemberType.ADMIN) {
-            throw new GeneralException(GlobalErrorStatus._FORBIDDEN); // 권한 없음 에러(403)
+            throw new GeneralException(GlobalErrorStatus._FORBIDDEN);
         }
 
         return ApiResponse.onSuccess(adminService.getVerificationList(filter, lastProfileId, size));

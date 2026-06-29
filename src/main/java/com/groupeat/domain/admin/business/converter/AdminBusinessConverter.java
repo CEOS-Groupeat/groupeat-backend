@@ -14,7 +14,8 @@ public class AdminBusinessConverter {
         return AdminVerificationProcessResponse.builder()
                 .businessProfileId(profile.getId())
                 .status(profile.getVerificationStatus())
-                .reviewedAt(profile.getReviewedAt())
+                .reviewedDate(profile.getReviewedAt() != null ? profile.getReviewedAt().toLocalDate() : null)
+                .reviewedTime(profile.getReviewedAt() != null ? profile.getReviewedAt().toLocalTime() : null)
                 .build();
     }
 

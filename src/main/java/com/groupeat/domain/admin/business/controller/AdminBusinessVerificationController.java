@@ -8,7 +8,6 @@ import com.groupeat.domain.admin.business.enums.AdminVerificationFilterType;
 import com.groupeat.domain.admin.business.exception.AdminErrorStatus;
 import com.groupeat.domain.admin.business.service.AdminBusinessVerificationService;
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
-import com.groupeat.domain.member.enums.MemberType;
 import com.groupeat.global.apiPayload.ApiResponse;
 import com.groupeat.global.exception.GeneralException;
 import io.swagger.v3.oas.annotations.Operation;

@@ -111,6 +111,7 @@ public class AuthTokenProvider {
                 .claim("memberId", member.getId())
                 .claim("memberType", member.getMemberType().name())
                 .claim("memberStatus", member.getMemberStatus().name())
+                .claim("isAdmin", member.isAdmin())
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(secretKey)

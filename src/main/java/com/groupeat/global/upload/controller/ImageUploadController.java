@@ -3,7 +3,7 @@ package com.groupeat.global.upload.controller;
 import com.groupeat.global.apiPayload.ApiResponse;
 import com.groupeat.global.upload.dto.request.ImagePresignedUrlRequest;
 import com.groupeat.global.upload.dto.response.ImagePresignedUrlResponse;
-import com.groupeat.global.upload.enums.ImageUploadDomain;
+import com.groupeat.global.upload.enums.PublicImageUploadDomain;
 import com.groupeat.global.upload.service.ImageUploadService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -24,13 +24,20 @@ public class ImageUploadController {
 
     private final ImageUploadService imageUploadService;
 
-    @Operation(summary = "이미지 업로드 presigned URL 발급", description = "이미지를 S3에 직접 업로드하기 위한 presigned URL을 발급합니다.")
+    @Operation(
+            summary = "공개 이미지 업로드 presigned URL 발급",
+            description = "매장, 메뉴, 프로필, 리뷰 이미지를 S3에 직접 업로드하기 위한 presigned URL을 발급합니다. "
+                    + "사업자등록증은 사업자 회원가입 전용 API를 사용해야 합니다."
+    )
     @PostMapping("/presigned-url")
     public ApiResponse<ImagePresignedUrlResponse> createPresignedUrl(
-            @RequestParam @Parameter(description = "이미지 사용 도메인") ImageUploadDomain domain,
+            @RequestParam @Parameter(description = "공개 이미지 사용 도메인") PublicImageUploadDomain domain,
             @Valid @RequestBody ImagePresignedUrlRequest request
     ) {
-        ImagePresignedUrlResponse response = imageUploadService.createPresignedUrl(domain, request);
+        ImagePresignedUrlResponse response = imageUploadService.createPresignedUrl(
+                domain.toImageUploadDomain(),
+                request
+        );
         return ApiResponse.onSuccess(response);
     }
 }

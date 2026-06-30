@@ -5,6 +5,7 @@ import com.groupeat.domain.member.enums.MemberStatus;
 import com.groupeat.domain.member.enums.MemberType;
 import com.groupeat.domain.store.dto.request.OwnerStoreUpdateRequest;
 import com.groupeat.domain.store.dto.response.OwnerStoreResponse;
+import com.groupeat.domain.store.dto.response.OwnerStoreUpsertResult;
 import com.groupeat.domain.store.entity.Store;
 import com.groupeat.domain.store.enums.StoreCategory;
 import com.groupeat.domain.store.enums.StoreRegion;
@@ -19,6 +20,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class OwnerStoreServiceTest {
@@ -106,8 +109,10 @@ class OwnerStoreServiceTest {
         when(storeRepository.findActiveStoreByBusinessMemberId(BUSINESS_MEMBER_ID))
                 .thenReturn(Optional.of(store));
 
-        OwnerStoreResponse response = ownerStoreService.updateMyStore(activeBusinessMember(), updateRequest());
+        OwnerStoreUpsertResult result = ownerStoreService.upsertMyStore(activeBusinessMember(), updateRequest());
+        OwnerStoreResponse response = result.store();
 
+        assertThat(result.created()).isFalse();
         assertThat(response.storeId()).isEqualTo(1L);
         assertThat(response.storeName()).isEqualTo("브런치하우스");
         assertThat(response.imageUrl()).isEqualTo("https://example.com/updated-store.jpg");
@@ -121,18 +126,24 @@ class OwnerStoreServiceTest {
         assertThat(response.description()).isEqualTo("수정된 가게 소개입니다.");
         assertThat(response.discount().conditionQuantity()).isEqualTo(30);
         assertThat(response.discount().rate()).isEqualTo(10);
+        verify(storeRepository, never()).save(store);
     }
 
     @Test
-    // 수정할 사업자 회원의 활성 가게가 없으면 예외가 발생한다.
-    void updateMyStore_withoutOwnedStore_throwsOwnerStoreNotFound() {
+    // 사업자 회원의 활성 가게가 없으면 새 가게를 생성한다.
+    void upsertMyStore_withoutOwnedStore_createsStore() {
         when(storeRepository.findActiveStoreByBusinessMemberId(BUSINESS_MEMBER_ID))
                 .thenReturn(Optional.empty());
+        when(storeRepository.save(org.mockito.ArgumentMatchers.any(Store.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertThatThrownBy(() -> ownerStoreService.updateMyStore(activeBusinessMember(), updateRequest()))
-                .isInstanceOfSatisfying(GeneralException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(StoreErrorStatus.OWNER_STORE_NOT_FOUND)
-                );
+        OwnerStoreUpsertResult result = ownerStoreService.upsertMyStore(activeBusinessMember(), updateRequest());
+
+        assertThat(result.created()).isTrue();
+        assertThat(result.store().storeName()).isEqualTo("브런치하우스");
+        assertThat(result.store().location().address()).isEqualTo("서울특별시 마포구 와우산로 12");
+        assertThat(result.store().category()).isEqualTo(StoreCategory.DESSERT);
+        verify(storeRepository).save(org.mockito.ArgumentMatchers.any(Store.class));
     }
 
     @Test
@@ -144,7 +155,7 @@ class OwnerStoreServiceTest {
                 MemberStatus.ACTIVE
         );
 
-        assertThatThrownBy(() -> ownerStoreService.updateMyStore(member, updateRequest()))
+        assertThatThrownBy(() -> ownerStoreService.upsertMyStore(member, updateRequest()))
                 .isInstanceOfSatisfying(GeneralException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(StoreErrorStatus.BUSINESS_MEMBER_REQUIRED)
                 );
@@ -159,7 +170,7 @@ class OwnerStoreServiceTest {
                 MemberStatus.BUSINESS_PENDING
         );
 
-        assertThatThrownBy(() -> ownerStoreService.updateMyStore(member, updateRequest()))
+        assertThatThrownBy(() -> ownerStoreService.upsertMyStore(member, updateRequest()))
                 .isInstanceOfSatisfying(GeneralException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(StoreErrorStatus.ACTIVE_BUSINESS_MEMBER_REQUIRED)
                 );

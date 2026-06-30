@@ -3,6 +3,8 @@ package com.groupeat.domain.store.dto.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
+import java.util.List;
+
 @Builder
 public record OwnerMenuResponse(
 
@@ -19,6 +21,24 @@ public record OwnerMenuResponse(
         String description,
 
         @Schema(description = "메뉴 이미지 URL", example = "https://groupeat-bucket.s3.ap-northeast-2.amazonaws.com/menus/1.jpg")
-        String imageUrl
+        String imageUrl,
+
+        @Schema(description = "옵션 그룹 목록")
+        List<OptionGroupResponse> optionGroups
 ) {
+    @Builder
+    public record OptionGroupResponse(
+            Long optionGroupId,
+            String name,
+            Boolean isRequired,
+            Boolean isMultiple,
+            List<OptionResponse> options
+    ) {}
+
+    @Builder
+    public record OptionResponse(
+            Long optionId,
+            String name,
+            Integer additionalPrice
+    ) {}
 }

@@ -5,7 +5,10 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.Valid;
 import lombok.Builder;
+
+import java.util.List;
 
 @Builder
 public record OwnerMenuRequest(
@@ -25,6 +28,42 @@ public record OwnerMenuRequest(
         String description,
 
         @Schema(description = "메뉴 이미지 URL", example = "https://groupeat-bucket.s3.ap-northeast-2.amazonaws.com/menus/1.jpg")
-        String imageUrl
+        String imageUrl,
+
+        @Schema(description = "옵션 그룹 목록")
+        @Valid
+        List<OptionGroupRequest> optionGroups
 ) {
+    @Builder
+    public record OptionGroupRequest(
+            @Schema(description = "옵션 그룹명", example = "샌드위치 선택")
+            @NotBlank(message = "옵션 그룹명은 필수입니다.")
+            @Size(max = 50, message = "옵션 그룹명은 50자 이하여야 합니다.")
+            String name,
+
+            @Schema(description = "필수 선택 여부", example = "true")
+            @NotNull(message = "필수 선택 여부는 필수입니다.")
+            Boolean isRequired,
+
+            @Schema(description = "다중 선택 가능 여부", example = "false")
+            @NotNull(message = "다중 선택 가능 여부는 필수입니다.")
+            Boolean isMultiple,
+
+            @Schema(description = "세부 옵션 목록")
+            @Valid
+            List<OptionRequest> options
+    ) {}
+
+    @Builder
+    public record OptionRequest(
+            @Schema(description = "옵션명", example = "햄치즈")
+            @NotBlank(message = "옵션명은 필수입니다.")
+            @Size(max = 50, message = "옵션명은 50자 이하여야 합니다.")
+            String name,
+
+            @Schema(description = "추가 금액", example = "900")
+            @NotNull(message = "추가 금액은 필수입니다.")
+            @Min(value = 0, message = "추가 금액은 0 이상이어야 합니다.")
+            Integer additionalPrice
+    ) {}
 }

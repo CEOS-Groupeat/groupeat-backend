@@ -7,6 +7,7 @@ import com.groupeat.domain.store.dto.request.OwnerStoreOrderScheduleRequest;
 import com.groupeat.domain.store.dto.response.OwnerStoreOrderScheduleResponse;
 import com.groupeat.domain.store.entity.Store;
 import com.groupeat.domain.store.entity.StoreOrderSchedule;
+import com.groupeat.domain.store.entity.StoreOrderScheduleDay;
 import com.groupeat.domain.store.enums.StoreCategory;
 import com.groupeat.domain.store.enums.StoreRegion;
 import com.groupeat.domain.store.exception.StoreErrorStatus;
@@ -19,8 +20,12 @@ import org.junit.jupiter.api.Test;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -106,6 +111,8 @@ class OwnerStoreOrderScheduleServiceTest {
     void saveMyOrderSchedule_updatesExistingSchedule() {
         Store store = store();
         StoreOrderSchedule existingSchedule = existingSchedule(store);
+        Map<DayOfWeek, StoreOrderScheduleDay> existingDays = existingSchedule.getDays().stream()
+                .collect(Collectors.toMap(StoreOrderScheduleDay::getDayOfWeek, Function.identity()));
         when(storeRepository.findActiveStoreByBusinessMemberId(BUSINESS_MEMBER_ID))
                 .thenReturn(Optional.of(store));
         when(scheduleRepository.findFirstByStore_OwnerIdAndDeletedAtIsNullOrderByStartDateDesc(BUSINESS_MEMBER_ID))
@@ -120,6 +127,11 @@ class OwnerStoreOrderScheduleServiceTest {
         assertThat(response.endDate()).isEqualTo(LocalDate.of(2027, 5, 20));
         assertThat(response.minOrderDays()).isEqualTo(3);
         assertThat(existingSchedule.getDays()).hasSize(7);
+        assertThat(existingSchedule.getDays()).allSatisfy(day ->
+                assertThat(day).isSameAs(existingDays.get(day.getDayOfWeek()))
+        );
+        assertThat(existingDays.get(DayOfWeek.MONDAY).isAvailable()).isTrue();
+        assertThat(existingDays.get(DayOfWeek.TUESDAY).isAvailable()).isFalse();
         verify(scheduleRepository, never()).save(any(StoreOrderSchedule.class));
     }
 
@@ -205,7 +217,9 @@ class OwnerStoreOrderScheduleServiceTest {
                 LocalDate.of(2026, 1, 1),
                 LocalDate.of(2026, 12, 31),
                 1,
-                List.of()
+                Arrays.stream(DayOfWeek.values())
+                        .map(StoreOrderScheduleDay::createUnavailable)
+                        .toList()
         );
     }
 

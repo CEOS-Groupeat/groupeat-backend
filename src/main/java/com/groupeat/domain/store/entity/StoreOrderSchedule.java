@@ -20,9 +20,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.BatchSize;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Getter
@@ -93,6 +96,20 @@ public class StoreOrderSchedule extends BaseEntity {
     public void replaceDays(List<StoreOrderScheduleDay> days) {
         this.days.clear();
         days.forEach(this::addDay);
+    }
+
+    public void updateDays(List<StoreOrderScheduleDay> days) {
+        Map<DayOfWeek, StoreOrderScheduleDay> existingDays = new EnumMap<>(DayOfWeek.class);
+        this.days.forEach(day -> existingDays.put(day.getDayOfWeek(), day));
+
+        for (StoreOrderScheduleDay day : days) {
+            StoreOrderScheduleDay existingDay = existingDays.get(day.getDayOfWeek());
+            if (existingDay == null) {
+                addDay(day);
+                continue;
+            }
+            existingDay.updateFrom(day);
+        }
     }
 
     public void addDay(StoreOrderScheduleDay day) {

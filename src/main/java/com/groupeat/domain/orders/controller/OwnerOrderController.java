@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/owner/orders")
@@ -27,10 +29,12 @@ public class OwnerOrderController {
     public ApiResponse<OwnerOrderListResponse.OwnerOrderListDTO> getOwnerOrderList(
             @AuthenticationPrincipal AuthenticatedMember member,
             @RequestParam OrderTab tab,
+            @RequestParam(required = false) @Parameter(description = "특정 날짜 필터링 (예: 2026-06-30)") LocalDate filterDate,
             @RequestParam(required = false) Long lastOrderId,
             @RequestParam(defaultValue = "20") int size
     ) {
-        OwnerOrderListResponse.OwnerOrderListDTO response = ownerOrderService.getOwnerOrderListByTab(member.memberId(), tab, lastOrderId, size);
+        OwnerOrderListResponse.OwnerOrderListDTO response =
+                ownerOrderService.getOwnerOrderListByTab(member.memberId(), tab, filterDate, lastOrderId, size);
         return ApiResponse.onSuccess(response);
     }
 

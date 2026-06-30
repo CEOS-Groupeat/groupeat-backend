@@ -45,6 +45,21 @@ public class MenuConverter {
                 .basePrice(menu.getBasePrice())
                 .description(menu.getDescription())
                 .imageUrl(menu.getImageUrl())
+                .optionGroups(menu.getOptionGroups().stream()
+                        .map(group -> OwnerMenuResponse.OptionGroupResponse.builder()
+                                .optionGroupId(group.getId())
+                                .name(group.getName())
+                                .isRequired(group.getIsRequired())
+                                .isMultiple(group.getIsMultiple())
+                                .options(group.getOptions().stream()
+                                        .map(option -> OwnerMenuResponse.OptionResponse.builder()
+                                                .optionId(option.getId())
+                                                .name(option.getName())
+                                                .additionalPrice(option.getAdditionalPrice())
+                                                .build())
+                                        .toList())
+                                .build())
+                        .toList())
                 .build();
     }
 }

@@ -8,6 +8,8 @@ import com.groupeat.domain.store.dto.request.OwnerMenuRequest;
 import com.groupeat.domain.store.dto.response.MenuListResponse;
 import com.groupeat.domain.store.dto.response.OwnerMenuResponse;
 import com.groupeat.domain.store.entity.Menu;
+import com.groupeat.domain.store.entity.MenuOption;
+import com.groupeat.domain.store.entity.MenuOptionGroup;
 import com.groupeat.domain.store.entity.Store;
 import com.groupeat.domain.store.exception.StoreErrorStatus;
 import com.groupeat.domain.store.repository.MenuRepository;
@@ -44,6 +46,9 @@ public class OwnerMenuService {
                 .description(request.description())
                 .imageUrl(request.imageUrl())
                 .build();
+        if (request.optionGroups() != null) {
+            menu.replaceOptionGroups(toOptionGroups(menu, request.optionGroups()));
+        }
 
         Menu savedMenu = menuRepository.save(menu);
         refreshStoreMenuPriceRange(store);
@@ -62,6 +67,9 @@ public class OwnerMenuService {
                 request.description(),
                 request.imageUrl()
         );
+        if (request.optionGroups() != null) {
+            menu.replaceOptionGroups(toOptionGroups(menu, request.optionGroups()));
+        }
         refreshStoreMenuPriceRange(store);
 
         return MenuConverter.toOwnerMenuResponse(menu);
@@ -87,6 +95,33 @@ public class OwnerMenuService {
     private Menu findOwnedMenu(Long storeId, Long menuId) {
         return menuRepository.findActiveByIdAndStoreId(menuId, storeId)
                 .orElseThrow(() -> new GeneralException(StoreErrorStatus.MENU_NOT_FOUND));
+    }
+
+    private List<MenuOptionGroup> toOptionGroups(
+            Menu menu,
+            List<OwnerMenuRequest.OptionGroupRequest> requests
+    ) {
+        return requests.stream()
+                .map(request -> {
+                    MenuOptionGroup group = MenuOptionGroup.builder()
+                            .menu(menu)
+                            .name(request.name())
+                            .isRequired(request.isRequired())
+                            .isMultiple(request.isMultiple())
+                            .build();
+
+                    if (request.options() != null) {
+                        request.options().forEach(optionRequest -> group.addOption(
+                                MenuOption.builder()
+                                        .optionGroup(group)
+                                        .name(optionRequest.name())
+                                        .additionalPrice(optionRequest.additionalPrice())
+                                        .build()
+                        ));
+                    }
+                    return group;
+                })
+                .toList();
     }
 
     // 메뉴 변경 후 검색/정렬에 사용하는 가게 가격 범위를 최신 상태로 업데이트

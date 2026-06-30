@@ -37,4 +37,8 @@ public class MenuOptionGroup extends BaseEntity {
     @OneToMany(mappedBy = "optionGroup", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<MenuOption> options = new ArrayList<>();
+
+    public void addOption(MenuOption option) {
+        this.options.add(option);
+    }
 }

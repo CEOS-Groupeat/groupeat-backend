@@ -52,4 +52,9 @@ public class Menu extends BaseEntity {
         this.description = description;
         this.imageUrl = imageUrl;
     }
+
+    public void replaceOptionGroups(List<MenuOptionGroup> optionGroups) {
+        this.optionGroups.clear();
+        this.optionGroups.addAll(optionGroups);
+    }
 }

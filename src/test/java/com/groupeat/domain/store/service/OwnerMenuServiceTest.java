@@ -7,6 +7,8 @@ import com.groupeat.domain.store.dto.request.OwnerMenuRequest;
 import com.groupeat.domain.store.dto.response.MenuListResponse;
 import com.groupeat.domain.store.dto.response.OwnerMenuResponse;
 import com.groupeat.domain.store.entity.Menu;
+import com.groupeat.domain.store.entity.MenuOption;
+import com.groupeat.domain.store.entity.MenuOptionGroup;
 import com.groupeat.domain.store.entity.Store;
 import com.groupeat.domain.store.enums.StoreCategory;
 import com.groupeat.domain.store.enums.StoreRegion;
@@ -74,6 +76,10 @@ class OwnerMenuServiceTest {
         assertThat(response.menuId()).isEqualTo(10L);
         assertThat(response.name()).isEqualTo("햄치즈 샌드위치");
         assertThat(response.basePrice()).isEqualTo(7800);
+        assertThat(response.optionGroups()).hasSize(1);
+        assertThat(response.optionGroups().get(0).name()).isEqualTo("샌드위치 선택");
+        assertThat(response.optionGroups().get(0).options()).hasSize(1);
+        assertThat(response.optionGroups().get(0).options().get(0).name()).isEqualTo("햄치즈");
         assertThat(store.getMinPrice()).isEqualTo(7800);
         assertThat(store.getMaxPrice()).isEqualTo(7800);
         verify(menuRepository).save(any(Menu.class));
@@ -83,6 +89,9 @@ class OwnerMenuServiceTest {
     void updateMenu_updatesOwnedMenu() {
         Store store = store();
         Menu menu = menu(10L, store, "기존 메뉴", 7000);
+        MenuOptionGroup oldGroup = optionGroup(20L, menu, "기존 옵션 그룹");
+        oldGroup.addOption(option(30L, oldGroup, "기존 옵션", 500));
+        menu.getOptionGroups().add(oldGroup);
         when(storeRepository.findActiveStoreByBusinessMemberId(BUSINESS_MEMBER_ID))
                 .thenReturn(Optional.of(store));
         when(menuRepository.findActiveByIdAndStoreId(menu.getId(), store.getId()))
@@ -97,6 +106,11 @@ class OwnerMenuServiceTest {
         assertThat(response.basePrice()).isEqualTo(7800);
         assertThat(response.description()).isEqualTo("햄과 치즈가 들어간 샌드위치입니다.");
         assertThat(response.imageUrl()).isEqualTo("https://example.com/menu.jpg");
+        assertThat(response.optionGroups()).hasSize(1);
+        assertThat(response.optionGroups().get(0).name()).isEqualTo("샌드위치 선택");
+        assertThat(response.optionGroups().get(0).options().get(0).name()).isEqualTo("햄치즈");
+        assertThat(menu.getOptionGroups()).hasSize(1);
+        assertThat(menu.getOptionGroups().get(0).getName()).isEqualTo("샌드위치 선택");
         assertThat(store.getMinPrice()).isEqualTo(7800);
         assertThat(store.getMaxPrice()).isEqualTo(7800);
     }
@@ -113,6 +127,30 @@ class OwnerMenuServiceTest {
                 .isInstanceOfSatisfying(GeneralException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(StoreErrorStatus.MENU_NOT_FOUND)
                 );
+    }
+
+    @Test
+    void updateMenu_withoutOptionGroups_keepsExistingOptions() {
+        Store store = store();
+        Menu menu = menu(10L, store, "기존 메뉴", 7000);
+        when(storeRepository.findActiveStoreByBusinessMemberId(BUSINESS_MEMBER_ID))
+                .thenReturn(Optional.of(store));
+        when(menuRepository.findActiveByIdAndStoreId(menu.getId(), store.getId()))
+                .thenReturn(Optional.of(menu));
+        when(menuRepository.findAllByStoreId(store.getId()))
+                .thenReturn(List.of(menu));
+
+        OwnerMenuRequest requestWithoutOptions = OwnerMenuRequest.builder()
+                .name("수정 메뉴")
+                .basePrice(8000)
+                .build();
+
+        OwnerMenuResponse response = ownerMenuService.updateMenu(
+                activeBusinessMember(), menu.getId(), requestWithoutOptions
+        );
+
+        assertThat(response.optionGroups()).hasSize(1);
+        assertThat(response.optionGroups().get(0).name()).isEqualTo("샌드위치 선택");
     }
 
     @Test
@@ -174,17 +212,49 @@ class OwnerMenuServiceTest {
                 .basePrice(7800)
                 .description("햄과 치즈가 들어간 샌드위치입니다.")
                 .imageUrl("https://example.com/menu.jpg")
+                .optionGroups(List.of(OwnerMenuRequest.OptionGroupRequest.builder()
+                        .name("샌드위치 선택")
+                        .isRequired(true)
+                        .isMultiple(false)
+                        .options(List.of(OwnerMenuRequest.OptionRequest.builder()
+                                .name("햄치즈")
+                                .additionalPrice(900)
+                                .build()))
+                        .build()))
                 .build();
     }
 
     private Menu menu(Long id, Store store, String name, Integer basePrice) {
-        return Menu.builder()
+        Menu menu = Menu.builder()
                 .id(id)
                 .store(store)
                 .name(name)
                 .basePrice(basePrice)
                 .description("메뉴 설명")
                 .imageUrl("https://example.com/menu.jpg")
+                .build();
+        MenuOptionGroup group = optionGroup(20L, menu, "샌드위치 선택");
+        group.addOption(option(30L, group, "햄치즈", 900));
+        menu.getOptionGroups().add(group);
+        return menu;
+    }
+
+    private MenuOptionGroup optionGroup(Long id, Menu menu, String name) {
+        return MenuOptionGroup.builder()
+                .id(id)
+                .menu(menu)
+                .name(name)
+                .isRequired(true)
+                .isMultiple(false)
+                .build();
+    }
+
+    private MenuOption option(Long id, MenuOptionGroup group, String name, Integer additionalPrice) {
+        return MenuOption.builder()
+                .id(id)
+                .optionGroup(group)
+                .name(name)
+                .additionalPrice(additionalPrice)
                 .build();
     }
 

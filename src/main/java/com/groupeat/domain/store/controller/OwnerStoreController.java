@@ -8,15 +8,18 @@ import com.groupeat.domain.store.dto.response.MenuListResponse;
 import com.groupeat.domain.store.dto.response.OwnerMenuResponse;
 import com.groupeat.domain.store.dto.response.OwnerStoreOrderScheduleResponse;
 import com.groupeat.domain.store.dto.response.OwnerStoreResponse;
+import com.groupeat.domain.store.dto.response.OwnerStoreUpsertResult;
 import com.groupeat.domain.store.service.OwnerMenuService;
 import com.groupeat.domain.store.service.OwnerStoreOrderScheduleService;
 import com.groupeat.domain.store.service.OwnerStoreService;
 import com.groupeat.global.apiPayload.ApiResponse;
+import com.groupeat.global.apiPayload.code.status.SuccessStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,14 +48,18 @@ public class OwnerStoreController {
         return ApiResponse.onSuccess(result);
     }
 
-    @Operation(summary = "내 가게 수정", description = "로그인한 사업자 회원의 가게 정보를 수정합니다.")
+    @Operation(summary = "내 가게 저장", description = "가게가 없으면 생성하고, 있으면 수정합니다.")
     @PutMapping
-    public ApiResponse<OwnerStoreResponse> updateMyStore(
+    public ResponseEntity<ApiResponse<OwnerStoreResponse>> upsertMyStore(
             @AuthenticationPrincipal AuthenticatedMember member,
             @Valid @RequestBody OwnerStoreUpdateRequest request
     ) {
-        OwnerStoreResponse result = ownerStoreService.updateMyStore(member, request);
-        return ApiResponse.onSuccess(result);
+        OwnerStoreUpsertResult result = ownerStoreService.upsertMyStore(member, request);
+        SuccessStatus status = result.created() ? SuccessStatus.CREATED : SuccessStatus.OK;
+
+        return ResponseEntity
+                .status(status.getHttpStatus())
+                .body(ApiResponse.of(status, result.store()));
     }
 
     @Operation(summary = "내 가게 주문 가능 일정 조회", description = "로그인한 사업자 회원의 가게 주문 가능 일정 설정을 조회합니다.")

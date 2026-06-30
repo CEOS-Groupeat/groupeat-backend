@@ -99,6 +99,15 @@ public class StoreOrderScheduleDay extends BaseEntity {
                 .build();
     }
 
+    public void updateFrom(StoreOrderScheduleDay day) {
+        this.available = day.available;
+        this.minOrderQuantity = day.minOrderQuantity;
+        this.maxOrderQuantity = day.maxOrderQuantity;
+        this.pickupOpenTime = day.pickupOpenTime;
+        this.pickupCloseTime = day.pickupCloseTime;
+        this.intervalMinutes = day.intervalMinutes;
+    }
+
     void assignSchedule(StoreOrderSchedule schedule) {
         this.schedule = schedule;
     }

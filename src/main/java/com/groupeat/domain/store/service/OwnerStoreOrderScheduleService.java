@@ -68,7 +68,7 @@ public class OwnerStoreOrderScheduleService {
                     request.endDate(),
                     request.minOrderDays()
             );
-            schedule.replaceDays(days);
+            schedule.updateDays(days);
         }
 
         return StoreOrderScheduleConverter.toOwnerResponse(store, schedule);

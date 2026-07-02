@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum BusinessErrorStatus implements BaseErrorCode {
 
+    // 국세청 통신 관련 에러 추가
     NTS_API_COMMUNICATION_FAILED(HttpStatus.BAD_GATEWAY, "BUSINESS5020", "국세청 서버와 통신 중 오류가 발생했습니다."),
     INVALID_BUSINESS_NUMBER(HttpStatus.BAD_REQUEST, "BUSINESS4001", "국세청에 등록되지 않은 사업자번호입니다."),
     CLOSED_BUSINESS_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "BUSINESS4002", "휴업 또는 폐업 상태의 사업자는 가입할 수 없습니다."),

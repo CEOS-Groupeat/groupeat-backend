@@ -41,6 +41,10 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     private MemberStatus memberStatus;
 
+    // 관리자 여부
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean isAdmin = false;
+
     private String name;
 
     @Column(unique = true)

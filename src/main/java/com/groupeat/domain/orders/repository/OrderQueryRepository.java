@@ -2,6 +2,8 @@ package com.groupeat.domain.orders.repository;
 
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.enums.OrderStatus;
+import com.groupeat.domain.orders.enums.OrderTab;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +52,11 @@ public class OrderQueryRepository {
         return count != null ? count : 0L;
     }
 
-    public List<Order> findOwnerOrdersByCursorWithDate(Long ownerId, List<OrderStatus> statuses, LocalDate pickupDate, Long lastOrderId, int size) {
+    // 사장님용
+    public List<Order> findOwnerOrdersByCursorAndTab(
+            Long ownerId, List<OrderStatus> statuses, LocalDate pickupDate,
+            Long lastOrderId, int size, OrderTab tab
+    ) {
         return queryFactory
                 .selectFrom(order)
                 .join(order.store, store).fetchJoin()
@@ -58,11 +64,35 @@ public class OrderQueryRepository {
                         store.ownerId.eq(ownerId),
                         statusIn(statuses),
                         pickupDateEq(pickupDate),
-                        ltOrderId(lastOrderId)
+                        dynamicCursor(tab, lastOrderId)
                 )
-                .orderBy(order.id.desc())
+                .orderBy(dynamicOrderSpecifier(tab))
                 .limit(size + 1)
                 .fetch();
+    }
+
+    private OrderSpecifier<?>[] dynamicOrderSpecifier(OrderTab tab) {
+        if (tab.isConfirmedTab()) {
+            // 확정 탭: 픽업 날짜 오름차순 -> 픽업 시간 오름차순 -> 겹치면 ID 오름차순
+            return new OrderSpecifier[]{
+                    order.pickupDate.asc(),
+                    order.pickupTime.asc(),
+                    order.id.asc()
+            };
+        } else {
+            // 대기 중, 지난 주문 탭: 최신순
+            return new OrderSpecifier[]{ order.id.desc() };
+        }
+    }
+
+    private BooleanExpression dynamicCursor(OrderTab tab, Long lastOrderId) {
+        if (lastOrderId == null) return null;
+
+        if (tab.isConfirmedTab()) {
+            return null;
+        } else {
+            return order.id.lt(lastOrderId);
+        }
     }
 
     public long countOwnerOrdersWithDate(Long ownerId, List<OrderStatus> statuses, LocalDate pickupDate) {

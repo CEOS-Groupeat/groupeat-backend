@@ -50,10 +50,14 @@ public class AuthTokenProvider {
 
         Number memberId = claims.get("memberId", Number.class);
 
+        Boolean isAdminClaim = claims.get("isAdmin", Boolean.class);
+        boolean isAdmin = (isAdminClaim != null) ? isAdminClaim : false;
+
         return new AuthenticatedMember(
                 memberId.longValue(),
                 MemberType.valueOf(claims.get("memberType", String.class)),
-                MemberStatus.valueOf(claims.get("memberStatus", String.class))
+                MemberStatus.valueOf(claims.get("memberStatus", String.class)),
+                isAdmin
         );
     }
 
@@ -107,6 +111,7 @@ public class AuthTokenProvider {
                 .claim("memberId", member.getId())
                 .claim("memberType", member.getMemberType().name())
                 .claim("memberStatus", member.getMemberStatus().name())
+                .claim("isAdmin", member.isAdmin())
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(secretKey)

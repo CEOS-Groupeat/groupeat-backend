@@ -24,6 +24,7 @@ public record OrderListResponse(
             Long nextCursor
 ) {
     @Builder
+    @Schema(name = "CustomerOrderCardDTO", description = "고객용 주문 카드 응답")
     public record OrderCardDTO(
             @Schema(description = "주문 고유 ID", example = "1")
             Long orderId,

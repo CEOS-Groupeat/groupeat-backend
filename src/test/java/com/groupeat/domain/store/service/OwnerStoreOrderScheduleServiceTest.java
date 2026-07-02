@@ -159,7 +159,8 @@ class OwnerStoreOrderScheduleServiceTest {
         AuthenticatedMember member = new AuthenticatedMember(
                 BUSINESS_MEMBER_ID,
                 MemberType.CUSTOMER,
-                MemberStatus.ACTIVE
+                MemberStatus.ACTIVE,
+                false
         );
 
         assertThatThrownBy(() -> ownerStoreOrderScheduleService.saveMyOrderSchedule(member, requestWithMondayAvailable()))
@@ -186,7 +187,8 @@ class OwnerStoreOrderScheduleServiceTest {
         return new AuthenticatedMember(
                 BUSINESS_MEMBER_ID,
                 MemberType.BUSINESS,
-                MemberStatus.ACTIVE
+                MemberStatus.ACTIVE,
+                false
         );
     }
 

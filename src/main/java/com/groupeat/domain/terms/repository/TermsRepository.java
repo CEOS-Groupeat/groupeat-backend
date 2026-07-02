@@ -6,10 +6,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface TermsRepository extends JpaRepository<Terms, Long> {
 
     List<Terms> findByTargetTypeAndActiveTrue(TermsTargetType targetType);
+
+    List<Terms> findByTargetTypeInAndActiveTrue(Collection<TermsTargetType> targetTypes);
+
+    Optional<Terms> findByIdAndActiveTrue(Long id);
 
     List<Terms> findByIdIn(Collection<Long> ids);
 }

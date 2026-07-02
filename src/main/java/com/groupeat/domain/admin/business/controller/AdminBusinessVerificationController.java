@@ -33,10 +33,6 @@ public class AdminBusinessVerificationController {
             @RequestParam(required = false) Long lastProfileId,
             @RequestParam(defaultValue = "10") int size
     ) {
-        if (!admin.isAdmin()) {
-            throw new GeneralException(AdminErrorStatus.ADMIN_ACCESS_DENIED);
-        }
-
         return ApiResponse.onSuccess(adminService.getVerificationList(filter, lastProfileId, size));
     }
 

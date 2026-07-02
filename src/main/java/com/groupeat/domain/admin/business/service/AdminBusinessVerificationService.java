@@ -47,7 +47,6 @@ public class AdminBusinessVerificationService {
 
         Long nextCursor = profiles.isEmpty() ? null : profiles.get(profiles.size() - 1).getId();
 
-        // 💡 주의: 앞서 수정한 AdminBusinessConverter에 DTO 매핑 메서드를 맞춰서 추가해주어야 합니다.
         return AdminBusinessConverter.toVerificationListDTO(profiles, totalElements, hasNext, nextCursor);
     }
 

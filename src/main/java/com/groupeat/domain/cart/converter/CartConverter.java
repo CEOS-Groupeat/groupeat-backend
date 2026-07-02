@@ -9,6 +9,8 @@ import com.groupeat.domain.store.entity.Menu;
 import com.groupeat.domain.store.entity.MenuOption;
 import com.groupeat.domain.store.entity.Store;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,13 @@ public class CartConverter {
             List<CartItem> cartItems, Map<Long, Store> storeMap, Map<Long, Menu> menuMap,
             Map<Long, List<CartItemOption>> cartItemOptionsMap, Map<Long, MenuOption> menuOptionMap
     ) {
+        if (cartItems.isEmpty()) {
+            return CartListResponse.builder().storeCarts(List.of()).build();
+        }
+
+        LocalDate cartPickupDate = cartItems.get(0).getPickupDate();
+        LocalTime cartPickupTime = cartItems.get(0).getPickupTime();
+
         Map<Long, List<CartItem>> itemsByStore = cartItems.stream()
                 .collect(Collectors.groupingBy(CartItem::getStoreId, LinkedHashMap::new, Collectors.toList()));
 
@@ -68,7 +77,11 @@ public class CartConverter {
                     .build();
         }).toList();
 
-        return CartListResponse.builder().storeCarts(storeCarts).build();
+        return CartListResponse.builder()
+                .pickupDate(cartPickupDate)
+                .pickupTime(cartPickupTime)
+                .storeCarts(storeCarts)
+                .build();
     }
 
     public static CartItem toCartItem(Cart cart, CartItemAddRequest request) {

@@ -2,10 +2,19 @@ package com.groupeat.domain.cart.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Builder
 public record CartListResponse(
+        @Schema(description = "장바구니 픽업 날짜", example = "2026-07-02")
+        LocalDate pickupDate,
+
+        @Schema(description = "장바구니 픽업 시간", example = "14:30:00")
+        LocalTime pickupTime,
+
         @Schema(description = "가게별로 그룹화된 장바구니 목록")
         List<StoreCartDTO> storeCarts
 ) {

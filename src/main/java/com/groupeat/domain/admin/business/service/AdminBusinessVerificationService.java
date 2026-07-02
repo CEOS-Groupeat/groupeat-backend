@@ -63,7 +63,7 @@ public class AdminBusinessVerificationService {
 
     public AdminVerificationProcessResponse processVerification(Long adminId, Long profileId, AdminVerificationProcessRequest request) {
         // 사업자 프로필 조회
-        BusinessProfile profile = businessProfileRepository.findById(profileId)
+        BusinessProfile profile = businessProfileRepository.findByIdWithPessimisticLock(profileId)
                 .orElseThrow(() -> new GeneralException(AdminErrorStatus.VERIFICATION_NOT_FOUND));
 
         // 이미 처리된 건인지 검증

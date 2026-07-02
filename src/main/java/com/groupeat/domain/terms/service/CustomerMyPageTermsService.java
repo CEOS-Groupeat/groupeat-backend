@@ -38,6 +38,8 @@ public class CustomerMyPageTermsService {
 
         List<Terms> termsList = termsRepository.findByTargetTypeInAndActiveTrue(CUSTOMER_TARGET_TYPES);
         List<Long> termsIds = termsList.stream().map(Terms::getId).toList();
+
+        // 중복 이력이 존재하는 경우를 고려한 약관별 최신 동의 이력 구성
         Map<Long, MemberTermsAgreement> agreementByTermsId = agreementRepository
                 .findByMemberIdAndTermsIdIn(memberId, termsIds)
                 .stream()
@@ -74,6 +76,7 @@ public class CustomerMyPageTermsService {
             throw new GeneralException(TermsErrorStatus.REQUIRED_TERMS_NOT_MODIFIABLE);
         }
 
+        // 기존 이력이 없는 선택 약관의 최초 동의 이력 생성
         MemberTermsAgreement agreement = agreementRepository
                 .findFirstByMemberIdAndTermsIdOrderByIdDesc(memberId, termsId)
                 .orElseGet(() -> agreementRepository.save(

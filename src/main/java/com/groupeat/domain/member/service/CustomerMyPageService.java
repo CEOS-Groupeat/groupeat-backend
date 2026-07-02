@@ -73,6 +73,7 @@ public class CustomerMyPageService {
             throw new GeneralException(MemberErrorStatus.PHONE_NUMBER_ALREADY_EXISTS);
         }
 
+        // 변경 대상 번호의 인증 완료 여부 확인 및 인증 정보 사용 처리
         phoneVerificationService.validateVerifiedPhoneNumber(phoneNumber);
         member.updatePhoneNumber(phoneNumber);
 
@@ -86,6 +87,7 @@ public class CustomerMyPageService {
         return new MemberWithdrawalResponse("회원 탈퇴가 완료되었습니다.");
     }
 
+    // 고객 마이페이지 공통 접근 조건 검증
     public Member getActiveCustomer(Long memberId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new GeneralException(MemberErrorStatus.MEMBER_NOT_FOUND));

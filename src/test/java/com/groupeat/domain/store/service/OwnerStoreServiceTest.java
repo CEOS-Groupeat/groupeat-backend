@@ -66,7 +66,8 @@ class OwnerStoreServiceTest {
         AuthenticatedMember member = new AuthenticatedMember(
                 BUSINESS_MEMBER_ID,
                 MemberType.CUSTOMER,
-                MemberStatus.ACTIVE
+                MemberStatus.ACTIVE,
+                false
         );
 
         assertThatThrownBy(() -> ownerStoreService.getMyStore(member))
@@ -81,7 +82,8 @@ class OwnerStoreServiceTest {
         AuthenticatedMember member = new AuthenticatedMember(
                 BUSINESS_MEMBER_ID,
                 MemberType.BUSINESS,
-                MemberStatus.BUSINESS_PENDING
+                MemberStatus.BUSINESS_PENDING,
+                false
         );
 
         assertThatThrownBy(() -> ownerStoreService.getMyStore(member))
@@ -152,7 +154,8 @@ class OwnerStoreServiceTest {
         AuthenticatedMember member = new AuthenticatedMember(
                 BUSINESS_MEMBER_ID,
                 MemberType.CUSTOMER,
-                MemberStatus.ACTIVE
+                MemberStatus.ACTIVE,
+                false
         );
 
         assertThatThrownBy(() -> ownerStoreService.upsertMyStore(member, updateRequest()))
@@ -167,7 +170,8 @@ class OwnerStoreServiceTest {
         AuthenticatedMember member = new AuthenticatedMember(
                 BUSINESS_MEMBER_ID,
                 MemberType.BUSINESS,
-                MemberStatus.BUSINESS_PENDING
+                MemberStatus.BUSINESS_PENDING,
+                false
         );
 
         assertThatThrownBy(() -> ownerStoreService.upsertMyStore(member, updateRequest()))
@@ -180,7 +184,8 @@ class OwnerStoreServiceTest {
         return new AuthenticatedMember(
                 BUSINESS_MEMBER_ID,
                 MemberType.BUSINESS,
-                MemberStatus.ACTIVE
+                MemberStatus.ACTIVE,
+                false
         );
     }
 

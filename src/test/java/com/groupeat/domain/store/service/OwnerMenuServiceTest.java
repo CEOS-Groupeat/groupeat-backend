@@ -178,7 +178,8 @@ class OwnerMenuServiceTest {
         AuthenticatedMember member = new AuthenticatedMember(
                 BUSINESS_MEMBER_ID,
                 MemberType.CUSTOMER,
-                MemberStatus.ACTIVE
+                MemberStatus.ACTIVE,
+                false
         );
 
         assertThatThrownBy(() -> ownerMenuService.createMenu(member, request()))
@@ -202,7 +203,8 @@ class OwnerMenuServiceTest {
         return new AuthenticatedMember(
                 BUSINESS_MEMBER_ID,
                 MemberType.BUSINESS,
-                MemberStatus.ACTIVE
+                MemberStatus.ACTIVE,
+                false
         );
     }
 

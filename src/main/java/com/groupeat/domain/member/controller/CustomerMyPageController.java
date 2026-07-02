@@ -33,7 +33,10 @@ public class CustomerMyPageController {
     private final AuthCookieService authCookieService;
 
     @GetMapping
-    @Operation(summary = "마이페이지 요약 조회")
+    @Operation(
+            summary = "마이페이지 요약 조회",
+            description = "로그인한 고객의 전체 주문 수를 조회합니다. 리뷰와 즐겨찾기 수는 기능 구현 전까지 0으로 반환합니다."
+    )
     public ApiResponse<CustomerMyPageResponse> getMyPage(
             @AuthenticationPrincipal AuthenticatedMember member
     ) {
@@ -41,7 +44,10 @@ public class CustomerMyPageController {
     }
 
     @GetMapping("/account")
-    @Operation(summary = "계정 정보 조회")
+    @Operation(
+            summary = "계정 정보 조회",
+            description = "로그인한 고객의 기본 정보와 연결된 소셜 계정을 조회합니다. 소셜 제공자가 이메일을 제공하지 않으면 socialAccount.email은 빈 문자열입니다."
+    )
     public ApiResponse<CustomerAccountResponse> getAccount(
             @AuthenticationPrincipal AuthenticatedMember member
     ) {
@@ -49,7 +55,10 @@ public class CustomerMyPageController {
     }
 
     @PatchMapping("/account")
-    @Operation(summary = "계정 정보 수정", description = "실명, 이메일, 생년월일, 성별을 수정합니다.")
+    @Operation(
+            summary = "계정 정보 수정",
+            description = "실명, 이메일, 생년월일, 성별을 한 번에 수정합니다. 실명은 필수이며 이메일 빈 문자열은 null로 저장됩니다. 휴대폰 번호는 별도 API를 사용합니다."
+    )
     public ApiResponse<CustomerAccountResponse> updateAccount(
             @AuthenticationPrincipal AuthenticatedMember member,
             @Valid @RequestBody CustomerAccountUpdateRequest request
@@ -58,7 +67,10 @@ public class CustomerMyPageController {
     }
 
     @PatchMapping("/account/phone-number")
-    @Operation(summary = "휴대폰 번호 변경", description = "인증이 완료된 새 휴대폰 번호로 변경합니다.")
+    @Operation(
+            summary = "휴대폰 번호 변경",
+            description = "POST /api/phone-verifications/send 및 /confirm을 순서대로 호출한 후, 동일한 새 번호를 전달합니다. 인증 정보는 번호 변경 성공 시 사용 처리됩니다."
+    )
     public ApiResponse<PhoneNumberUpdateResponse> updatePhoneNumber(
             @AuthenticationPrincipal AuthenticatedMember member,
             @Valid @RequestBody PhoneNumberUpdateRequest request
@@ -67,7 +79,10 @@ public class CustomerMyPageController {
     }
 
     @DeleteMapping("/account")
-    @Operation(summary = "회원 탈퇴")
+    @Operation(
+            summary = "회원 탈퇴",
+            description = "회원 상태를 탈퇴로 변경하고 인증 쿠키를 제거합니다. 탈퇴 후 기존 Access Token도 사용할 수 없습니다."
+    )
     public ApiResponse<MemberWithdrawalResponse> withdraw(
             @AuthenticationPrincipal AuthenticatedMember member,
             HttpServletResponse response

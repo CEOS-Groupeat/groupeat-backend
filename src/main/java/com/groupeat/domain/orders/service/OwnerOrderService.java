@@ -56,7 +56,7 @@ public class OwnerOrderService {
         LocalDate pickupDate = filterDate;
 
         // 레포지토리 호출 시 tab 객체를 넘김 (정렬 분기를 위함)
-        int fetchSize = tab.isConfirmedTab() ? 50 : size;
+        int fetchSize = tab.isConfirmedTab() ? 300 : size;
 
         List<Order> orders = orderQueryRepository.findOwnerOrdersByCursorAndTab(
                 ownerId, statuses, pickupDate, lastOrderId, fetchSize, tab

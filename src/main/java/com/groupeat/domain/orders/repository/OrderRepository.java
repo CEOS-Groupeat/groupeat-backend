@@ -11,6 +11,8 @@ import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
+    long countByMemberId(Long memberId);
+
     Optional<Order> findByIdAndMemberId(Long orderId, Long memberId);
 
     Optional<Order> findByIdAndStoreOwnerId(Long orderId, Long ownerId);

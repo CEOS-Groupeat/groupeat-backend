@@ -106,4 +106,24 @@ public class Member extends BaseEntity {
     public boolean isBusiness() {
         return this.memberType == MemberType.BUSINESS;
     }
+
+    public void updateAccount(
+            String name,
+            String email,
+            LocalDate birthDate,
+            Gender gender
+    ) {
+        this.name = name;
+        this.email = email;
+        this.birthDate = birthDate;
+        this.gender = gender;
+    }
+
+    public void updatePhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public void withdraw() {
+        this.memberStatus = MemberStatus.WITHDRAWN;
+    }
 }

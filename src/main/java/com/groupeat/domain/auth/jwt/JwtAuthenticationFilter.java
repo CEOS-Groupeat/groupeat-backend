@@ -1,7 +1,5 @@
 package com.groupeat.domain.auth.jwt;
 
-import com.groupeat.domain.member.enums.MemberStatus;
-import com.groupeat.domain.member.repository.MemberRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -27,7 +25,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final AuthTokenProvider authTokenProvider;
-    private final MemberRepository memberRepository;
 
     @Override
     protected void doFilterInternal(
@@ -47,10 +44,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private void authenticate(String accessToken) {
         try {
             AuthenticatedMember member = authTokenProvider.parseAccessToken(accessToken);
-            memberRepository.findById(member.memberId())
-                    .filter(foundMember -> foundMember.getMemberStatus() == MemberStatus.ACTIVE)
-                    .filter(foundMember -> foundMember.getMemberType() == member.memberType())
-                    .orElseThrow(() -> new IllegalStateException("활성 회원이 아닙니다."));
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
                             member,

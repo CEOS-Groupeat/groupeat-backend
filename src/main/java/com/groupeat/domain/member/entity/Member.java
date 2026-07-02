@@ -123,7 +123,4 @@ public class Member extends BaseEntity {
         this.phoneNumber = phoneNumber;
     }
 
-    public void withdraw() {
-        this.memberStatus = MemberStatus.WITHDRAWN;
-    }
 }

@@ -4,7 +4,6 @@ import com.groupeat.domain.member.dto.request.CustomerAccountUpdateRequest;
 import com.groupeat.domain.member.dto.request.PhoneNumberUpdateRequest;
 import com.groupeat.domain.member.dto.response.CustomerAccountResponse;
 import com.groupeat.domain.member.dto.response.CustomerMyPageResponse;
-import com.groupeat.domain.member.dto.response.MemberWithdrawalResponse;
 import com.groupeat.domain.member.dto.response.PhoneNumberUpdateResponse;
 import com.groupeat.domain.member.entity.Member;
 import com.groupeat.domain.member.entity.SocialAccount;
@@ -78,13 +77,6 @@ public class CustomerMyPageService {
         member.updatePhoneNumber(phoneNumber);
 
         return new PhoneNumberUpdateResponse(phoneNumber, "휴대폰 번호가 변경되었습니다.");
-    }
-
-    @Transactional
-    public MemberWithdrawalResponse withdraw(Long memberId) {
-        Member member = getActiveCustomer(memberId);
-        member.withdraw();
-        return new MemberWithdrawalResponse("회원 탈퇴가 완료되었습니다.");
     }
 
     // 고객 마이페이지 공통 접근 조건 검증

@@ -10,6 +10,8 @@ public interface SocialAccountRepository extends JpaRepository<SocialAccount, Lo
 
     Optional<SocialAccount> findByMemberId(Long memberId);
 
+    void deleteByMemberId(Long memberId);
+
     Optional<SocialAccount> findByProviderAndProviderUserId(
             OAuthProvider provider,
             String providerUserId

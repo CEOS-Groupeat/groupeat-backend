@@ -1,19 +1,24 @@
 package com.groupeat.domain.member.controller;
 
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
+import com.groupeat.domain.auth.service.AuthCookieService;
 import com.groupeat.domain.member.dto.request.CustomerAccountUpdateRequest;
 import com.groupeat.domain.member.dto.request.PhoneNumberUpdateRequest;
 import com.groupeat.domain.member.dto.response.CustomerAccountResponse;
 import com.groupeat.domain.member.dto.response.CustomerMyPageResponse;
+import com.groupeat.domain.member.dto.response.CustomerWithdrawalResponse;
 import com.groupeat.domain.member.dto.response.PhoneNumberUpdateResponse;
 import com.groupeat.domain.member.service.CustomerMyPageService;
+import com.groupeat.domain.member.service.CustomerWithdrawalService;
 import com.groupeat.global.apiPayload.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +31,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class CustomerMyPageController {
 
     private final CustomerMyPageService customerMyPageService;
+    private final CustomerWithdrawalService customerWithdrawalService;
+    private final AuthCookieService authCookieService;
 
     @GetMapping
     @Operation(
@@ -71,6 +78,20 @@ public class CustomerMyPageController {
             @Valid @RequestBody PhoneNumberUpdateRequest request
     ) {
         return ApiResponse.onSuccess(customerMyPageService.updatePhoneNumber(member.memberId(), request));
+    }
+
+    @DeleteMapping("/account")
+    @Operation(
+            summary = "회원 탈퇴",
+            description = "진행 중인 주문이 없는 고객의 개인정보를 익명화하고 연관 데이터를 정리합니다. 탈퇴 완료 후 동일 소셜 계정으로 즉시 재가입할 수 있습니다."
+    )
+    public ApiResponse<CustomerWithdrawalResponse> withdraw(
+            @AuthenticationPrincipal AuthenticatedMember member,
+            HttpServletResponse response
+    ) {
+        CustomerWithdrawalResponse result = customerWithdrawalService.withdraw(member.memberId());
+        authCookieService.clearAuthTokenCookies(response);
+        return ApiResponse.onSuccess(result);
     }
 
 }

@@ -7,11 +7,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     long countByMemberId(Long memberId);
+
+    boolean existsByMemberIdAndOrderStatusIn(Long memberId, Collection<OrderStatus> orderStatuses);
 
     Optional<Order> findByIdAndMemberId(Long orderId, Long memberId);
 

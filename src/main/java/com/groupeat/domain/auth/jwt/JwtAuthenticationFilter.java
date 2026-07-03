@@ -1,5 +1,7 @@
 package com.groupeat.domain.auth.jwt;
 
+import com.groupeat.domain.member.enums.MemberStatus;
+import com.groupeat.domain.member.repository.MemberRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -25,6 +27,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final AuthTokenProvider authTokenProvider;
+    private final MemberRepository memberRepository;
 
     @Override
     protected void doFilterInternal(
@@ -44,6 +47,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private void authenticate(String accessToken) {
         try {
             AuthenticatedMember member = authTokenProvider.parseAccessToken(accessToken);
+
+            boolean validMember = memberRepository.existsByIdAndMemberStatusAndMemberType(
+                    member.memberId(),
+                    member.memberStatus(),
+                    member.memberType()
+            );
+            if (member.memberStatus() == MemberStatus.WITHDRAWN || !validMember) {
+                throw new IllegalStateException("유효하지 않은 회원 상태입니다.");
+            }
+
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
                             member,

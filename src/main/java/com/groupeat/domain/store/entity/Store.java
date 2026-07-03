@@ -122,4 +122,12 @@ public class Store extends BaseEntity {
         this.totalRatingScore += (long) Math.round(newRating); // 별점을 정수로 반올림하여 합산
         this.reviewRating = (double) this.totalRatingScore / this.reviewCount;
     }
+
+    public void removeReviewStats(double oldRating) {
+        if (this.reviewCount > 0) {
+            this.reviewCount--;
+            this.totalRatingScore -= (long) Math.round(oldRating);
+            this.reviewRating = this.reviewCount == 0 ? 0.0 : (double) this.totalRatingScore / this.reviewCount;
+        }
+    }
 }

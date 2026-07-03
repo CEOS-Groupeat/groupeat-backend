@@ -7,11 +7,21 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 public class OrderDetailResponse {
     @Builder
     public record OrderDetailDTO(
+            @Schema(description = "가게 이름")
+            String storeName,
+
+            @Schema(description = "픽업 날짜", example = "2026-06-25")
+            LocalDate pickupDate,
+
+            @Schema(description = "픽업 시간", example = "14:30")
+            LocalTime pickupTime,
+
             @Schema(description = "주문자 정보")
             OrdererInfoDTO ordererInfo,
 
@@ -38,6 +48,9 @@ public class OrderDetailResponse {
 
             @Schema(description = "주문 일자", example = "2026-06-20")
             LocalDate orderDate,
+
+            @Schema(description = "주문 시간", example = "18:30")
+            LocalTime orderTime,
 
             @Schema(description = "요청사항", example = "픽업 시간에 맞춰서 준비해 주세요.")
             String requests

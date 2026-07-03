@@ -68,6 +68,9 @@ public class Store extends BaseEntity {
     @Column(name = "review_count")
     private Integer reviewCount = 0;
 
+    @Builder.Default
+    private Long totalRatingScore = 0L;
+
     @Column(name = "image_url")
     private String imageUrl;
 
@@ -112,5 +115,11 @@ public class Store extends BaseEntity {
     public void updateMenuPriceRange(Integer minPrice, Integer maxPrice) {
         this.minPrice = minPrice;
         this.maxPrice = maxPrice;
+    }
+
+    public void updateReviewStats(double newRating) {
+        this.reviewCount++;
+        this.totalRatingScore += (long) Math.round(newRating); // 별점을 정수로 반올림하여 합산
+        this.reviewRating = (double) this.totalRatingScore / this.reviewCount;
     }
 }

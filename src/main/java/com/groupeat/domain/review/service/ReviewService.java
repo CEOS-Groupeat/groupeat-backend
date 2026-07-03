@@ -101,6 +101,7 @@ public class ReviewService {
                 .mapToInt(ReviewCreateRequest.MenuRatingDTO::rating)
                 .average()
                 .orElse(0.0);
-        
+
+        store.updateReviewStats(currentReviewAverage);
     }
 }

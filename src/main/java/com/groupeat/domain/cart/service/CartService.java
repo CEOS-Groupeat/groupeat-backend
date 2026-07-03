@@ -41,6 +41,10 @@ public class CartService {
     // 장바구니에 메뉴 담기
     @Transactional
     public CartListResponse addCartItems(Long memberId, CartItemBulkAddRequest bulkRequest) {
+        if (bulkRequest.cartItems() == null || bulkRequest.cartItems().isEmpty()) {
+            throw new GeneralException(CartErrorStatus.EMPTY_CART_SELECTION);
+        }
+
         Cart cart = getOrCreateCart(memberId);
         List<CartItem> cartItems = new ArrayList<>(cartItemRepository.findAllByCartId(cart.getId()));
 

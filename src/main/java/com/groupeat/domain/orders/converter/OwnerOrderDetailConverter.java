@@ -20,6 +20,7 @@ public class OwnerOrderDetailConverter {
                 .groupName(order.getGroupName())
                 .phoneNumber(order.getCustomerPhone())
                 .orderDate(order.getCreatedAt().toLocalDate())
+                .orderTime(order.getCreatedAt().toLocalTime())
                 .requests(order.getRequests())
                 .build();
 

@@ -7,11 +7,16 @@ import com.groupeat.domain.store.entity.Store;
 import com.groupeat.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+// 삭제 쿼리 발생 시, 실제 삭제 대신 deleted_at 시간을 현재 시간으로 UPDATE
+@SQLDelete(sql = "UPDATE review SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 @AllArgsConstructor
 public class Review extends BaseEntity {
 

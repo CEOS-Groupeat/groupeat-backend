@@ -10,10 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,5 +28,15 @@ public class ReviewController {
     ) {
         ReviewCreateResponse response = reviewService.createReview(member.memberId(), request);
         return ApiResponse.onSuccess(response);
+    }
+
+    @DeleteMapping("/{reviewId}")
+    @Operation(summary = "리뷰 삭제 API", description = "작성한 리뷰를 소프트 딜리트 방식으로 삭제하며, 가게의 별점 통계가 자동으로 롤백됩니다.")
+    public ApiResponse<String> deleteReview(
+            @AuthenticationPrincipal AuthenticatedMember member,
+            @PathVariable Long reviewId
+    ) {
+        reviewService.deleteReview(member.memberId(), reviewId);
+        return ApiResponse.onSuccess("리뷰가 성공적으로 삭제되었습니다.");
     }
 }

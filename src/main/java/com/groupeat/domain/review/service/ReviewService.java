@@ -108,21 +108,28 @@ public class ReviewService {
     @Transactional
     public void deleteReview(Long memberId, Long reviewId) {
 
+        Member requestMember = memberRepository.findById(memberId)
+                .orElseThrow(() -> new GeneralException(SignupErrorStatus.MEMBER_NOT_FOUND));
+
+        // 리뷰 조회 및 존재 여부 확인
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new GeneralException(ReviewErrorStatus.REVIEW_NOT_FOUND));
 
-        if (!review.getMember().getId().equals(memberId)) {
+        // 권한 검증
+        boolean isAuthor = review.getMember().getId().equals(memberId);
+        boolean isAdmin = requestMember.isAdmin();
+
+        // 본인도 아니고 관리자도 아니라면 예외 발생
+        if (!isAuthor && !isAdmin) {
             throw new GeneralException(ReviewErrorStatus.UNAUTHORIZED_REVIEW_ACCESS);
         }
 
         // 가게 별점 롤백 처리
         Store store = review.getStore();
 
-        // 삭제하려는 리뷰에 속해있던 메뉴 별점들의 평균값을 구함
-        double oldReviewAverage = reviewMenuRatingRepository.findAverageRatingByReviewId(reviewId);
-
+        Double oldReviewAverage = reviewMenuRatingRepository.findAverageRatingByReviewId(reviewId);
         store.removeReviewStats(oldReviewAverage);
-
+        
         reviewRepository.delete(review);
     }
 }

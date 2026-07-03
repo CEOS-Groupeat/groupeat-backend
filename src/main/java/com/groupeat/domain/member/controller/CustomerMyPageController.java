@@ -2,6 +2,7 @@ package com.groupeat.domain.member.controller;
 
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
 import com.groupeat.domain.auth.service.AuthCookieService;
+import com.groupeat.domain.member.controller.docs.CustomerWithdrawalApiDocs;
 import com.groupeat.domain.member.dto.request.CustomerAccountUpdateRequest;
 import com.groupeat.domain.member.dto.request.PhoneNumberUpdateRequest;
 import com.groupeat.domain.member.dto.response.CustomerAccountResponse;
@@ -81,10 +82,7 @@ public class CustomerMyPageController {
     }
 
     @DeleteMapping("/account")
-    @Operation(
-            summary = "회원 탈퇴",
-            description = "진행 중인 주문이 없는 고객의 개인정보를 익명화하고 연관 데이터를 정리합니다. 탈퇴 완료 후 동일 소셜 계정으로 즉시 재가입할 수 있습니다."
-    )
+    @CustomerWithdrawalApiDocs
     public ApiResponse<CustomerWithdrawalResponse> withdraw(
             @AuthenticationPrincipal AuthenticatedMember member,
             HttpServletResponse response

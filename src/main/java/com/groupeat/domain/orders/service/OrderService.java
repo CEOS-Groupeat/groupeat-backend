@@ -173,12 +173,6 @@ public class OrderService {
             orderItemOptionRepository.saveAll(orderItemOptionsToSave);
         }
 
-        // 장바구니 비우기
-        if (!allCartItemOptions.isEmpty()) {
-            cartItemOptionRepository.deleteAllInBatch(allCartItemOptions);
-        }
-        cartItemRepository.deleteAllByIdInBatch(cartItemIds);
-
         return OrderConverter.toOrderCreateResponse(savedOrder, savedPayment.getId());
     }
 

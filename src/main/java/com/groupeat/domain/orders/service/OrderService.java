@@ -92,7 +92,7 @@ public class OrderService {
             throw new GeneralException(CartErrorStatus.CART_ITEM_NOT_FOUND);
         }
 
-        // 2. 픽업 날짜/시간 동일성 검증 (하나라도 다르면 주문 불가)
+        // 픽업 날짜/시간 동일성 검증 (하나라도 다르면 주문 불가)
         long distinctPickupCount = cartItems.stream()
                 .map(item -> item.getPickupDate().toString() + item.getPickupTime().toString())
                 .distinct()

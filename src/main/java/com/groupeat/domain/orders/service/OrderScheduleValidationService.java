@@ -98,8 +98,13 @@ public class OrderScheduleValidationService {
     }
 
     private void validateRequestedQuantity(StoreOrderScheduleDay daySchedule, int requestedQuantity) {
-        if (requestedQuantity < daySchedule.getMinOrderQuantity()
-                || requestedQuantity > daySchedule.getMaxOrderQuantity()) {
+        // 최소 수량 미달 시 전용 에러
+        if (daySchedule.getMinOrderQuantity() != null && requestedQuantity < daySchedule.getMinOrderQuantity()) {
+            throw new GeneralException(OrderErrorStatus.ORDER_QUANTITY_SHORTAGE);
+        }
+
+        // 최대 수량 초과 시 전용 에러
+        if (daySchedule.getMaxOrderQuantity() != null && requestedQuantity > daySchedule.getMaxOrderQuantity()) {
             throw new GeneralException(OrderErrorStatus.ORDER_QUANTITY_NOT_AVAILABLE);
         }
     }
@@ -116,7 +121,11 @@ public class OrderScheduleValidationService {
                 OrderStatus.ACCEPTED
         );
 
-        if (acceptedQuantity + requestedQuantity > daySchedule.getMaxOrderQuantity()) {
+        // 주문이 하나도 없으면 0
+        long totalAccepted = acceptedQuantity != null ? acceptedQuantity : 0L;
+
+        // 누적 수량 + 요청 수량이 최대치를 넘어가면 에러
+        if (daySchedule.getMaxOrderQuantity() != null && totalAccepted + requestedQuantity > daySchedule.getMaxOrderQuantity()) {
             throw new GeneralException(OrderErrorStatus.ORDER_QUANTITY_NOT_AVAILABLE);
         }
     }

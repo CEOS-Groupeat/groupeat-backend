@@ -1,5 +1,6 @@
 package com.groupeat.domain.payment.service;
 
+import com.groupeat.domain.cart.service.CartService;
 import com.groupeat.domain.payment.converter.PaymentConverter;
 import com.groupeat.domain.payment.dto.PreparedPaymentConfirm;
 import com.groupeat.domain.payment.dto.request.PaymentConfirmRequest;
@@ -23,6 +24,7 @@ import java.util.Objects;
 public class PaymentConfirmTransactionService {
 
     private final PaymentRepository paymentRepository;
+    private final CartService cartService;
 
     // 결제 승인 전 검증을 수행하고 승인 진행 상태로 저장
     @Transactional
@@ -59,6 +61,10 @@ public class PaymentConfirmTransactionService {
                 tossResponse.card() != null ? tossResponse.card().approveNo() : null
         );
         markOrderPaid(payment);
+
+        // 결제가 성공했으므로 해당 유저의 장바구니 비우기
+        cartService.clearCartByMemberId(payment.getMemberId());
+
         return PaymentConverter.toConfirmResponse(payment);
     }
 

@@ -12,10 +12,8 @@ import com.groupeat.domain.review.dto.request.ReviewCreateRequest;
 import com.groupeat.domain.review.dto.response.ReviewCreateResponse;
 import com.groupeat.domain.review.entity.Review;
 import com.groupeat.domain.review.entity.ReviewImage;
-import com.groupeat.domain.review.entity.ReviewMenuRating;
 import com.groupeat.domain.review.exception.ReviewErrorStatus;
 import com.groupeat.domain.review.repository.ReviewImageRepository;
-import com.groupeat.domain.review.repository.ReviewMenuRatingRepository;
 import com.groupeat.domain.review.repository.ReviewRepository;
 import com.groupeat.domain.signup.exception.SignupErrorStatus;
 import com.groupeat.domain.store.entity.Store;
@@ -33,7 +31,6 @@ public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final ReviewImageRepository reviewImageRepository;
-    private final ReviewMenuRatingRepository reviewMenuRatingRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
 
@@ -52,11 +49,9 @@ public class ReviewService {
         if (!order.getMemberId().equals(memberId)) {
             throw new GeneralException(ReviewErrorStatus.UNAUTHORIZED_REVIEW_ACCESS);
         }
-
         if (order.getOrderStatus() != OrderStatus.COMPLETED) {
             throw new GeneralException(ReviewErrorStatus.ORDER_NOT_COMPLETED);
         }
-
         if (reviewRepository.existsByOrderId(order.getId())) {
             throw new GeneralException(ReviewErrorStatus.REVIEW_ALREADY_EXISTS);
         }
@@ -75,35 +70,12 @@ public class ReviewService {
             reviewImageRepository.saveAll(images);
         }
 
-        // 메뉴별 별점 저장 (올바른 주문 항목인지 2차 검증 포함)
-        List<ReviewMenuRating> menuRatings = request.menuRatings().stream()
-                .map(ratingDto -> {
-                    OrderItem orderItem = orderItemRepository.findById(ratingDto.orderItemId())
-                            .orElseThrow(() -> new GeneralException(ReviewErrorStatus.ORDER_ITEM_NOT_FOUND));
-
-                    if (!orderItem.getOrder().getId().equals(order.getId())) {
-                        throw new GeneralException(ReviewErrorStatus.INVALID_MENU_RATING);
-                    }
-                    return reviewConverter.toReviewMenuRating(review, orderItem, ratingDto.rating());
-                }).toList();
-
-        reviewMenuRatingRepository.saveAll(menuRatings);
-
         // 가게의 총 별점 및 리뷰 개수 업데이트
-        updateStoreReviewStats(store, request.menuRatings());
+        store.updateReviewStats(request.rating());
 
         return reviewConverter.toReviewCreateResponse(review);
     }
 
-    private void updateStoreReviewStats(Store store, List<ReviewCreateRequest.MenuRatingDTO> menuRatings) {
-        // 리뷰 평균 계산
-        double currentReviewAverage = menuRatings.stream()
-                .mapToInt(ReviewCreateRequest.MenuRatingDTO::rating)
-                .average()
-                .orElse(0.0);
-
-        store.updateReviewStats(currentReviewAverage);
-    }
 
     @Transactional
     public void deleteReview(Long memberId, Long reviewId) {
@@ -111,25 +83,20 @@ public class ReviewService {
         Member requestMember = memberRepository.findById(memberId)
                 .orElseThrow(() -> new GeneralException(SignupErrorStatus.MEMBER_NOT_FOUND));
 
-        // 리뷰 조회 및 존재 여부 확인
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new GeneralException(ReviewErrorStatus.REVIEW_NOT_FOUND));
 
-        // 권한 검증
         boolean isAuthor = review.getMember().getId().equals(memberId);
         boolean isAdmin = requestMember.isAdmin();
 
-        // 본인도 아니고 관리자도 아니라면 예외 발생
         if (!isAuthor && !isAdmin) {
             throw new GeneralException(ReviewErrorStatus.UNAUTHORIZED_REVIEW_ACCESS);
         }
 
-        // 가게 별점 롤백 처리
         Store store = review.getStore();
 
-        Double oldReviewAverage = reviewMenuRatingRepository.findAverageRatingByReviewId(reviewId);
-        store.removeReviewStats(oldReviewAverage);
-        
+        store.removeReviewStats(review.getRating());
+
         reviewRepository.delete(review);
     }
 }

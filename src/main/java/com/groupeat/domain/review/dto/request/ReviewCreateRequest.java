@@ -12,9 +12,11 @@ public record ReviewCreateRequest(
         @NotNull(message = "주문 ID는 필수입니다.")
         Long orderId,
 
-        @Schema(description = "주문한 개별 메뉴의 별점 목록")
-        @NotEmpty(message = "최소 1개 이상의 메뉴 별점이 필요합니다.")
-        List<MenuRatingDTO> menuRatings,
+        @Schema(description = "리뷰 별점 (1~5)", example = "5")
+        @NotNull(message = "별점을 입력해주세요.")
+        @Min(value = 1, message = "별점은 최소 1점입니다.")
+        @Max(value = 5, message = "별점은 최대 5점입니다.")
+        Integer rating,
 
         @Schema(description = "행사 유형", example = "SEMINAR")
         @NotNull(message = "행사 유형을 선택해주세요.")
@@ -34,16 +36,4 @@ public record ReviewCreateRequest(
 
         @Schema(description = "리뷰 이미지 URL 목록")
         List<String> imageUrls
-) {
-    @Schema(name = "ReviewMenuRatingDTO", description = "메뉴별 별점 요청 정보")
-    public record MenuRatingDTO(
-            @Schema(description = "주문 항목(OrderItem) ID", example = "101")
-            @NotNull(message = "주문 항목 ID는 필수입니다.")
-            Long orderItemId,
-
-            @Schema(description = "해당 메뉴 별점 (1~5)", example = "5")
-            @Min(value = 1, message = "별점은 최소 1점입니다.")
-            @Max(value = 5, message = "별점은 최대 5점입니다.")
-            Integer rating
-    ) {}
-}
+) { }

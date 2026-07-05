@@ -117,16 +117,17 @@ public class Store extends BaseEntity {
         this.maxPrice = maxPrice;
     }
 
-    public void updateReviewStats(double newRating) {
+    public void updateReviewStats(int newRating) {
         this.reviewCount++;
-        this.totalRatingScore += (long) Math.round(newRating); // 별점을 정수로 반올림하여 합산
+        this.totalRatingScore += newRating;
         this.reviewRating = (double) this.totalRatingScore / this.reviewCount;
     }
 
-    public void removeReviewStats(double oldRating) {
+    // 파라미터 타입이 double -> int 로 변경되었습니다.
+    public void removeReviewStats(int oldRating) {
         if (this.reviewCount > 0) {
             this.reviewCount--;
-            this.totalRatingScore -= (long) Math.round(oldRating);
+            this.totalRatingScore -= oldRating;
             this.reviewRating = this.reviewCount == 0 ? 0.0 : (double) this.totalRatingScore / this.reviewCount;
         }
     }

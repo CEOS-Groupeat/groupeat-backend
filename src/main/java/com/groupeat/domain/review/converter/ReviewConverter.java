@@ -7,7 +7,6 @@ import com.groupeat.domain.review.dto.request.ReviewCreateRequest;
 import com.groupeat.domain.review.dto.response.ReviewCreateResponse;
 import com.groupeat.domain.review.entity.Review;
 import com.groupeat.domain.review.entity.ReviewImage;
-import com.groupeat.domain.review.entity.ReviewMenuRating;
 import com.groupeat.domain.store.entity.Store;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +21,7 @@ public class ReviewConverter {
                 .eventType(request.eventType())
                 .headcount(request.headcount())
                 .perPersonBudget(request.perPersonBudget())
+                .rating(request.rating())
                 .content(request.content())
                 .build();
     }
@@ -33,13 +33,6 @@ public class ReviewConverter {
                 .build();
     }
 
-    public ReviewMenuRating toReviewMenuRating(Review review, OrderItem orderItem, Integer rating) {
-        return ReviewMenuRating.builder()
-                .review(review)
-                .orderItem(orderItem)
-                .rating(rating)
-                .build();
-    }
 
     public ReviewCreateResponse toReviewCreateResponse(Review review) {
         return ReviewCreateResponse.builder()

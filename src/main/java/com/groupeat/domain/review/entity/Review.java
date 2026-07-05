@@ -46,6 +46,9 @@ public class Review extends BaseEntity {
     @Column(nullable = false)
     private Integer perPersonBudget;
 
+    @Column(nullable = false)
+    private Integer rating;
+
     @Column(columnDefinition = "TEXT")
     private String content;
 }

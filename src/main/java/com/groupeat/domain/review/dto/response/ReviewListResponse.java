@@ -28,9 +28,6 @@ public record ReviewListResponse(
             @Schema(description = "작성자 닉네임", example = "세빙빙")
             String authorNickname,
 
-            @Schema(description = "작성자 프로필 이미지 URL (없을 경우 null)", example = "https://..")
-            String authorProfileImageUrl,
-
             @Schema(description = "리뷰 별점 (1~5)", example = "5")
             Integer rating,
 

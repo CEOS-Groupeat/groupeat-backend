@@ -69,8 +69,7 @@ public class ReviewConverter {
 
         return ReviewListResponse.ReviewDetailDTO.builder()
                 .reviewId(review.getId())
-                .authorNickname(review.getMember().getName())
-                .authorProfileImageUrl(null)
+                .authorNickname(maskNickname(review.getMember().getName()))
                 .rating(review.getRating())
                 .eventType(review.getEventType())
                 .headcount(review.getHeadcount())
@@ -81,5 +80,22 @@ public class ReviewConverter {
                 .orderedMenuNames(orderedMenuNames)
                 .ownerReply(ownerReply)
                 .build();
+    }
+
+    private String maskNickname(String nickname) {
+        if (nickname == null || nickname.isBlank()) {
+            return nickname;
+        }
+
+        // 이름이 1글자인 경우 마스킹 없이 그대로 반환
+        if (nickname.length() == 1) {
+            return nickname;
+        }
+
+        // 첫 글자만 자르고, 나머지 길이만큼 '*' 반복
+        String firstLetter = nickname.substring(0, 1);
+        String maskedPart = "*".repeat(nickname.length() - 1);
+
+        return firstLetter + maskedPart;
     }
 }

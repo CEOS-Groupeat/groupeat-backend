@@ -10,10 +10,12 @@ import com.groupeat.domain.orders.repository.OrderRepository;
 import com.groupeat.domain.review.converter.ReviewConverter;
 import com.groupeat.domain.review.dto.request.ReviewCreateRequest;
 import com.groupeat.domain.review.dto.response.ReviewCreateResponse;
+import com.groupeat.domain.review.dto.response.ReviewListResponse;
 import com.groupeat.domain.review.entity.Review;
 import com.groupeat.domain.review.entity.ReviewImage;
 import com.groupeat.domain.review.exception.ReviewErrorStatus;
 import com.groupeat.domain.review.repository.ReviewImageRepository;
+import com.groupeat.domain.review.repository.ReviewQueryRepository;
 import com.groupeat.domain.review.repository.ReviewRepository;
 import com.groupeat.domain.signup.exception.SignupErrorStatus;
 import com.groupeat.domain.store.entity.Store;
@@ -23,6 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +35,7 @@ public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final ReviewImageRepository reviewImageRepository;
+    private final ReviewQueryRepository reviewQueryRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
 
@@ -98,5 +103,55 @@ public class ReviewService {
         store.removeReviewStats(review.getRating());
 
         reviewRepository.delete(review);
+    }
+
+    // 특정 가게의 리뷰 목록 조회
+    public ReviewListResponse getStoreReviews(Long storeId, Long lastReviewId, int size) {
+        List<Review> reviews = reviewQueryRepository.findStoreReviewsByCursor(storeId, lastReviewId, size + 1);
+        return createPaginatedResponse(reviews, size);
+    }
+
+    // 내가 작성한 리뷰 목록 조회
+    public ReviewListResponse getMyReviews(Long memberId, Long lastReviewId, int size) {
+        List<Review> reviews = reviewQueryRepository.findMyReviewsByCursor(memberId, lastReviewId, size + 1);
+        return createPaginatedResponse(reviews, size);
+    }
+
+    // 커서 페이징 계산 및 데이터 조립
+    private ReviewListResponse createPaginatedResponse(List<Review> reviews, int size) {
+        boolean hasNext = false;
+        Long nextCursor = null;
+
+        if (reviews.size() > size) {
+            hasNext = true;
+            reviews.remove(size);
+        }
+
+        if (!reviews.isEmpty()) {
+            nextCursor = reviews.getLast().getId();
+        }
+
+        List<ReviewListResponse.ReviewDetailDTO> dtoList = assembleReviews(reviews);
+        return new ReviewListResponse(dtoList, hasNext, nextCursor);
+    }
+
+    private List<ReviewListResponse.ReviewDetailDTO> assembleReviews(List<Review> reviews) {
+        if (reviews.isEmpty()) return List.of();
+
+        List<Long> reviewIds = reviews.stream().map(Review::getId).toList();
+        List<Long> orderIds = reviews.stream().map(r -> r.getOrder().getId()).toList();
+
+        // 자식 데이터 한 방에 가져와서 메모리에서 매핑
+        Map<Long, List<ReviewImage>> imagesMap = reviewImageRepository.findByReviewIdIn(reviewIds).stream()
+                .collect(Collectors.groupingBy(image -> image.getReview().getId()));
+
+        Map<Long, List<OrderItem>> orderItemsMap = orderItemRepository.findByOrderIdIn(orderIds).stream()
+                .collect(Collectors.groupingBy(item -> item.getOrder().getId()));
+
+        return reviews.stream().map(review -> {
+            List<ReviewImage> images = imagesMap.getOrDefault(review.getId(), List.of());
+            List<OrderItem> orderItems = orderItemsMap.getOrDefault(review.getOrder().getId(), List.of());
+            return reviewConverter.toReviewDetailDTO(review, images, orderItems);
+        }).toList();
     }
 }

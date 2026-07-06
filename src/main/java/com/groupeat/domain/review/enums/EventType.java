@@ -1,5 +1,6 @@
 package com.groupeat.domain.review.enums;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -12,5 +13,6 @@ public enum EventType {
     SMALL_GROUP("소모임"),
     ETC("기타");
 
+    @JsonValue
     private final String description;
 }

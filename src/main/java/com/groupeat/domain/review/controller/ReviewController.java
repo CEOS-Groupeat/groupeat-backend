@@ -3,9 +3,11 @@ package com.groupeat.domain.review.controller;
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
 import com.groupeat.domain.review.dto.request.ReviewCreateRequest;
 import com.groupeat.domain.review.dto.response.ReviewCreateResponse;
+import com.groupeat.domain.review.dto.response.ReviewListResponse;
 import com.groupeat.domain.review.service.ReviewService;
 import com.groupeat.global.apiPayload.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -38,5 +40,17 @@ public class ReviewController {
     ) {
         reviewService.deleteReview(member.memberId(), reviewId);
         return ApiResponse.onSuccess("리뷰가 성공적으로 삭제되었습니다.");
+    }
+
+
+    @GetMapping("/my")
+    @Operation(summary = "내 리뷰 목록 조회", description = "내가 작성한 리뷰 목록을 최신순으로 조회합니다.")
+    public ApiResponse<ReviewListResponse> getMyReviews(
+            @AuthenticationPrincipal AuthenticatedMember member,
+            @RequestParam(required = false) @Schema(description = "마지막으로 조회된 리뷰 ID") Long lastReviewId,
+            @RequestParam(defaultValue = "10") @Schema(description = "조회할 개수") int size
+    ) {
+        ReviewListResponse response = reviewService.getMyReviews(member.memberId(), lastReviewId, size);
+        return ApiResponse.onSuccess(response);
     }
 }

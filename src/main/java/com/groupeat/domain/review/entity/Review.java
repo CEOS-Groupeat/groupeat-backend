@@ -10,6 +10,8 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Builder
@@ -51,4 +53,10 @@ public class Review extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     private String content;
+
+    @Column(columnDefinition = "TEXT")
+    private String ownerReplyContent;
+
+    @Column(name = "replied_at")
+    private LocalDateTime repliedAt;
 }

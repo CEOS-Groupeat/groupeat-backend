@@ -3,6 +3,7 @@ package com.groupeat.domain.orders.service;
 import com.groupeat.domain.orders.dto.OrderRejectPreparation;
 import com.groupeat.domain.orders.dto.response.OrderStatusChangeResponse;
 import com.groupeat.domain.orders.entity.Order;
+import com.groupeat.domain.orders.enums.PaymentMethod;
 import com.groupeat.domain.orders.enums.OrderStatus;
 import com.groupeat.domain.orders.exception.OrderErrorStatus;
 import com.groupeat.domain.orders.repository.OrderRepository;
@@ -144,7 +145,34 @@ class OrderOwnerActionTransactionServiceTest {
         ));
     }
 
+    @Test
+    void completePickup_createsPayoutSettlementFromOnSiteDeposit() {
+        Order order = order(OrderStatus.ACCEPTED, PaymentMethod.ON_SITE, 5000);
+        Payment payment = payment(order, PaymentType.ON_SITE, 10000, 5000, 5000);
+        when(orderRepository.findByIdAndStoreOwnerId(ORDER_ID, OWNER_ID)).thenReturn(Optional.of(order));
+        when(paymentRepository.findByOrderId(order.getOrderId())).thenReturn(Optional.of(payment));
+        when(settlementRepository.existsByOrderId(order.getId())).thenReturn(false);
+        when(settlementFeeCalculator.calculate(10000)).thenReturn(500);
+        when(settlementRepository.save(any(Settlement.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        OrderStatusChangeResponse response = orderOwnerActionTransactionService.completePickup(OWNER_ID, ORDER_ID);
+
+        assertThat(response.orderStatus()).isEqualTo(OrderStatus.COMPLETED);
+
+        verify(settlementRepository).save(argThat(settlement ->
+                settlement.getSettlementType() == SettlementType.PAYOUT
+                        && settlement.getOrderAmount().equals(10000)
+                        && settlement.getPlatformFeeAmount().equals(500)
+                        && settlement.getPayoutAmount().equals(4500)
+                        && settlement.getChargeAmount().equals(0)
+        ));
+    }
+
     private Order order(OrderStatus orderStatus) {
+        return order(orderStatus, PaymentMethod.PREPAID, 10000);
+    }
+
+    private Order order(OrderStatus orderStatus, PaymentMethod paymentMethod, Integer paymentAmount) {
         Store store = Store.builder()
                 .ownerId(OWNER_ID)
                 .storeName("테스트 가게")
@@ -159,27 +187,37 @@ class OrderOwnerActionTransactionServiceTest {
                 .store(store)
                 .totalOriginalPrice(10000)
                 .totalDiscountAmount(0)
-                .paymentAmount(10000)
+                .paymentAmount(paymentAmount)
                 .customerName("고객")
                 .customerPhone("010-1234-5678")
                 .pickupDate(LocalDate.now().plusDays(3))
                 .pickupTime(LocalTime.NOON)
-                .paymentMethod(com.groupeat.domain.orders.enums.PaymentMethod.PREPAID)
+                .paymentMethod(paymentMethod)
                 .orderStatus(orderStatus)
                 .build();
     }
 
     private Payment payment(Order order) {
+        return payment(order, PaymentType.PREPAID, 10000, 10000, 0);
+    }
+
+    private Payment payment(
+            Order order,
+            PaymentType paymentType,
+            Integer totalOrderAmount,
+            Integer paidAmount,
+            Integer remainingAmount
+    ) {
         return Payment.builder()
                 .order(order)
                 .orderId(order.getOrderId())
                 .memberId(order.getMemberId())
                 .paymentKey("payment-key")
-                .paymentType(PaymentType.PREPAID)
+                .paymentType(paymentType)
                 .paymentProvider(PaymentProvider.TOSS)
-                .totalOrderAmount(10000)
-                .paidAmount(10000)
-                .remainingAmount(0)
+                .totalOrderAmount(totalOrderAmount)
+                .paidAmount(paidAmount)
+                .remainingAmount(remainingAmount)
                 .paymentStatus(PaymentStatus.DONE)
                 .build();
     }

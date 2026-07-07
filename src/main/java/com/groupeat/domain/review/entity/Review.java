@@ -59,4 +59,9 @@ public class Review extends BaseEntity {
 
     @Column(name = "replied_at")
     private LocalDateTime repliedAt;
+
+    public void writeOwnerReply(String replyContent) {
+        this.ownerReplyContent = replyContent;
+        this.repliedAt = LocalDateTime.now();
+    }
 }

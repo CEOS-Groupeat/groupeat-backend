@@ -123,7 +123,6 @@ public class Store extends BaseEntity {
         this.reviewRating = (double) this.totalRatingScore / this.reviewCount;
     }
 
-    // 파라미터 타입이 double -> int 로 변경되었습니다.
     public void removeReviewStats(int oldRating) {
         if (this.reviewCount > 0) {
             this.reviewCount--;

@@ -102,6 +102,9 @@ public class ReviewService {
 
         store.removeReviewStats(review.getRating());
 
+        // 리뷰에 달린 이미지 삭제
+        reviewImageRepository.deleteByReviewId(reviewId);
+
         reviewRepository.delete(review);
     }
 

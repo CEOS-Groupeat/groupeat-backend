@@ -23,10 +23,12 @@ public record ReviewCreateRequest(
         EventType eventType,
 
         @Schema(description = "참여 인원", example = "56")
+        @NotNull
         @Positive(message = "참여 인원은 1명 이상이어야 합니다.")
         Integer headcount,
 
         @Schema(description = "1인당 예산", example = "3000")
+        @NotNull
         @Positive(message = "1인당 예산은 0원보다 커야 합니다.")
         Integer perPersonBudget,
 

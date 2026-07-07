@@ -4,6 +4,7 @@ import com.groupeat.domain.orders.dto.OrderCancelPreparation;
 import com.groupeat.domain.orders.dto.response.OrderCancelResponse;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.enums.OrderCancelledBy;
+import com.groupeat.domain.orders.enums.PaymentMethod;
 import com.groupeat.domain.orders.exception.OrderErrorStatus;
 import com.groupeat.domain.orders.repository.OrderRepository;
 import com.groupeat.domain.payment.dto.PaymentCancelResult;
@@ -24,6 +25,7 @@ public class OrderCancelTransactionService {
 
     private static final int FULL_REFUND_RATE = 100;
     private static final int HALF_REFUND_RATE = 50;
+    private static final int NO_REFUND_RATE = 0;
 
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
@@ -114,6 +116,10 @@ public class OrderCancelTransactionService {
         java.time.LocalDate refundDeadline = order.getPickupDate().minusDays(minOrderDays);
         if (!java.time.LocalDate.now().isAfter(refundDeadline)) {
             return FULL_REFUND_RATE;
+        }
+
+        if (order.getPaymentMethod() == PaymentMethod.ON_SITE) {
+            return NO_REFUND_RATE;
         }
 
         return HALF_REFUND_RATE;

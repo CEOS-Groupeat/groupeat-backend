@@ -7,6 +7,5 @@ import java.util.List;
 
 public record CartItemBulkAddRequest(
         @Schema(description = "장바구니에 담을 항목 리스트")
-        @NotEmpty(message = "장바구니에 담을 항목이 없습니다.")
         List<@Valid CartItemAddRequest> cartItems
 ) {}

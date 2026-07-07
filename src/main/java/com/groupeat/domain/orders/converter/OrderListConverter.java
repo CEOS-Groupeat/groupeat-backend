@@ -3,9 +3,11 @@ package com.groupeat.domain.orders.converter;
 import com.groupeat.domain.orders.dto.response.OrderListResponse;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.entity.OrderItem;
+import com.groupeat.domain.orders.enums.OrderStatus;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class OrderListConverter {
 
@@ -13,12 +15,13 @@ public class OrderListConverter {
             List<Order> orders,
             long totalElements,
             boolean hasNext,
-            Map<Long, List<OrderItem>> itemsByOrderId
+            Map<Long, List<OrderItem>> itemsByOrderId,
+            Set<Long> reviewedOrderIds
     ) {
         List<OrderListResponse.OrderCardDTO> cards = orders.stream()
                 .map(order -> {
                     List<OrderItem> items = itemsByOrderId.getOrDefault(order.getId(), List.of());
-                    return toOrderCardDTO(order, items);
+                    return toOrderCardDTO(order, items, reviewedOrderIds);
                 })
                 .toList();
 
@@ -33,7 +36,7 @@ public class OrderListConverter {
                 .build();
     }
 
-    private static OrderListResponse.OrderCardDTO toOrderCardDTO(Order order, List<OrderItem> items) {
+    private static OrderListResponse.OrderCardDTO toOrderCardDTO(Order order, List<OrderItem> items, Set<Long> reviewedOrderIds) {
         String menuSummary = "메뉴 없음";
         if (!items.isEmpty()) {
             menuSummary = items.get(0).getMenuName();
@@ -41,6 +44,9 @@ public class OrderListConverter {
                 menuSummary += " 외 " + (items.size() - 1) + "개";
             }
         }
+
+        boolean isPickupComplete = order.getOrderStatus() == OrderStatus.COMPLETED;
+        boolean hasReview = isPickupComplete && reviewedOrderIds.contains(order.getId());
 
         return OrderListResponse.OrderCardDTO.builder()
                 .orderId(order.getId())
@@ -51,6 +57,7 @@ public class OrderListConverter {
                 .pickupTime(order.getPickupTime())
                 .menuSummary(menuSummary)
                 .orderStatus(order.getOrderStatus())
+                .hasReview(hasReview)
                 .build();
     }
 }

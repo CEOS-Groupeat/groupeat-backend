@@ -1,6 +1,7 @@
 package com.groupeat.domain.review.converter;
 
 import com.groupeat.domain.orders.entity.OrderItem;
+import com.groupeat.domain.review.dto.response.OwnerReplyCreateResponse;
 import com.groupeat.domain.review.dto.response.OwnerReviewListResponse.OwnerReviewCardDTO;
 import com.groupeat.domain.review.dto.response.OwnerReviewSummaryResponse;
 import com.groupeat.domain.review.entity.Review;
@@ -75,5 +76,13 @@ public class OwnerReviewConverter {
         String firstLetter = nickname.substring(0, 1);
         String maskedPart = "*".repeat(nickname.length() - 1);
         return firstLetter + maskedPart;
+    }
+
+    public OwnerReplyCreateResponse toOwnerReplyCreateResponse(Review review) {
+        return OwnerReplyCreateResponse.builder()
+                .reviewId(review.getId())
+                .repliedAtDate(review.getRepliedAt().toLocalDate())
+                .repliedAtTime(review.getRepliedAt().toLocalTime())
+                .build();
     }
 }

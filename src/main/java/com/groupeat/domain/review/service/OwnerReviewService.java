@@ -9,6 +9,7 @@ import com.groupeat.domain.orders.entity.OrderItem;
 import com.groupeat.domain.orders.repository.OrderItemRepository;
 import com.groupeat.domain.review.converter.OwnerReviewConverter;
 import com.groupeat.domain.review.dto.request.OwnerReplyCreateRequest;
+import com.groupeat.domain.review.dto.response.OwnerReplyCreateResponse;
 import com.groupeat.domain.review.dto.response.OwnerReviewListResponse;
 import com.groupeat.domain.review.dto.response.OwnerReviewListResponse.OwnerReviewCardDTO;
 import com.groupeat.domain.review.dto.response.OwnerReviewSummaryResponse;
@@ -45,25 +46,25 @@ public class OwnerReviewService {
     private final MemberRepository memberRepository;
 
 
-    public OwnerReviewSummaryResponse getReviewSummary(Long ownerId, Long storeId) {
-        Store store = storeRepository.findById(storeId)
+    public OwnerReviewSummaryResponse getReviewSummary(Long ownerId) {
+        Store store = storeRepository.findByOwnerId(ownerId)
                 .orElseThrow(() -> new GeneralException(StoreErrorStatus.STORE_NOT_FOUND));
 
         // 사장님 본인의 가게가 맞는지 확인
         validateStoreOwner(store, ownerId);
 
-        List<Integer> ratings = reviewRepository.findRatingsByStoreId(storeId);
+        List<Integer> ratings = reviewRepository.findRatingsByStoreId(store.getId());
 
         return ownerReviewConverter.toSummaryResponse(store.getStoreName(), ratings);
     }
 
-    public OwnerReviewListResponse getStoreReviews(Long ownerId, Long storeId, Long lastReviewId, int size) {
-        Store store = storeRepository.findById(storeId)
+    public OwnerReviewListResponse getStoreReviews(Long ownerId, Long lastReviewId, int size) {
+        Store store = storeRepository.findByOwnerId(ownerId)
                 .orElseThrow(() -> new GeneralException(StoreErrorStatus.STORE_NOT_FOUND));
 
         validateStoreOwner(store, ownerId);
 
-        List<Review> reviews = reviewQueryRepository.findStoreReviewsByCursor(storeId, lastReviewId, size + 1);
+        List<Review> reviews = reviewQueryRepository.findStoreReviewsByCursor(store.getId(), lastReviewId, size + 1);
 
         boolean hasNext = false;
         Long nextCursor = null;
@@ -83,13 +84,15 @@ public class OwnerReviewService {
 
     // 답글 작성
     @Transactional
-    public void createReply(Long ownerId, Long reviewId, OwnerReplyCreateRequest request) {
+    public OwnerReplyCreateResponse createReply(Long ownerId, Long reviewId, OwnerReplyCreateRequest request) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new GeneralException(ReviewErrorStatus.REVIEW_NOT_FOUND));
 
         validateStoreOwner(review.getStore(), ownerId);
 
         review.writeOwnerReply(request.replyContent());
+
+        return ownerReviewConverter.toOwnerReplyCreateResponse(review);
     }
 
 

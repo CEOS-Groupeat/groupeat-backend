@@ -14,7 +14,8 @@ public enum ReviewErrorStatus implements BaseErrorCode {
     ORDER_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "REVIEW_4002", "픽업이 완료된 주문만 리뷰를 작성할 수 있습니다."),
     UNAUTHORIZED_REVIEW_ACCESS(HttpStatus.FORBIDDEN, "REVIEW_4003", "해당 주문의 리뷰를 작성할 권한이 없습니다."),
     REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "REVIEW_4004", "해당 리뷰를 찾을 수 없습니다."),
-    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "REVIEW_4005", "해당 주문 내역을 찾을 수 없습니다.");
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "REVIEW_4005", "해당 주문 내역을 찾을 수 없습니다."),
+    INVALID_EVENT_TYPE(HttpStatus.BAD_REQUEST, "REVIEW4006", "잘못된 행사 유형입니다. (영어로 입력해주세요)");
 
     private final HttpStatus httpStatus;
     private final String code;

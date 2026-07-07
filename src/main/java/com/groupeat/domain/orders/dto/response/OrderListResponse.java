@@ -48,6 +48,9 @@ public record OrderListResponse(
             String menuSummary,
 
             @Schema(description = "주문 상태", example = "PENDING")
-            OrderStatus orderStatus
+            OrderStatus orderStatus,
+
+            @Schema(description = "리뷰 작성 여부", example = "false")
+            boolean hasReview
     ) {}
 }

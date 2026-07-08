@@ -12,7 +12,7 @@ import com.groupeat.domain.review.dto.request.OwnerReplyCreateRequest;
 import com.groupeat.domain.review.dto.response.OwnerReplyCreateResponse;
 import com.groupeat.domain.review.dto.response.OwnerReviewListResponse;
 import com.groupeat.domain.review.dto.response.OwnerReviewListResponse.OwnerReviewCardDTO;
-import com.groupeat.domain.review.dto.response.OwnerReviewSummaryResponse;
+import com.groupeat.domain.review.dto.response.ReviewSummaryResponse;
 import com.groupeat.domain.review.entity.Review;
 import com.groupeat.domain.review.entity.ReviewImage;
 import com.groupeat.domain.review.exception.ReviewErrorStatus;
@@ -46,7 +46,7 @@ public class OwnerReviewService {
     private final MemberRepository memberRepository;
 
 
-    public OwnerReviewSummaryResponse getReviewSummary(Long ownerId) {
+    public ReviewSummaryResponse getReviewSummary(Long ownerId) {
         Store store = storeRepository.findByOwnerId(ownerId)
                 .orElseThrow(() -> new GeneralException(StoreErrorStatus.STORE_NOT_FOUND));
 

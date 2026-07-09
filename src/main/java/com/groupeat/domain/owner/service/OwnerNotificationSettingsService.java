@@ -6,6 +6,7 @@ import com.groupeat.domain.owner.dto.response.OwnerNotificationSettingsResponse;
 import com.groupeat.domain.terms.entity.MemberTermsAgreement;
 import com.groupeat.domain.terms.entity.Terms;
 import com.groupeat.domain.terms.enums.TermsTargetType;
+import com.groupeat.domain.terms.enums.TermsType;
 import com.groupeat.domain.terms.exception.TermsErrorStatus;
 import com.groupeat.domain.terms.repository.MemberTermsAgreementRepository;
 import com.groupeat.domain.terms.repository.TermsRepository;
@@ -87,10 +88,14 @@ public class OwnerNotificationSettingsService {
     }
 
     private Terms getMarketingTerms() {
-        return termsRepository.findByTargetTypeInAndActiveTrueAndRequiredFalse(OWNER_TARGET_TYPES)
-                .stream()
-                .filter(terms -> terms.getTitle().contains(MARKETING_TERMS_KEYWORD))
-                .findFirst()
+        return termsRepository.findFirstByTargetTypeInAndActiveTrueAndRequiredFalseAndType(
+                        OWNER_TARGET_TYPES,
+                        TermsType.MARKETING
+                )
+                .or(() -> termsRepository.findByTargetTypeInAndActiveTrueAndRequiredFalse(OWNER_TARGET_TYPES)
+                        .stream()
+                        .filter(terms -> terms.getTitle().contains(MARKETING_TERMS_KEYWORD))
+                        .findFirst())
                 .orElseThrow(() -> new GeneralException(TermsErrorStatus.MARKETING_TERMS_NOT_CONFIGURED));
     }
 }

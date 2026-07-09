@@ -7,12 +7,9 @@ public record CustomerMyPageResponse(
         long orderCount,
 
         @Schema(description = "리뷰 수. 리뷰 기능 구현 전까지 0 반환", example = "0")
-        long reviewCount,
-
-        @Schema(description = "즐겨찾기 수. 즐겨찾기 기능 구현 전까지 0 반환", example = "0")
-        long favoriteCount
+        long reviewCount
 ) {
     public static CustomerMyPageResponse of(long orderCount) {
-        return new CustomerMyPageResponse(orderCount, 0, 0);
+        return new CustomerMyPageResponse(orderCount, 0);
     }
 }

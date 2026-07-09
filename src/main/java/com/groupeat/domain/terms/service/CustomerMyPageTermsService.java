@@ -3,7 +3,6 @@ package com.groupeat.domain.terms.service;
 import com.groupeat.domain.member.service.CustomerMyPageService;
 import com.groupeat.domain.terms.dto.CustomerTermsDetailResponse;
 import com.groupeat.domain.terms.dto.CustomerTermsResponse;
-import com.groupeat.domain.terms.dto.TermsAgreementUpdateRequest;
 import com.groupeat.domain.terms.entity.MemberTermsAgreement;
 import com.groupeat.domain.terms.entity.Terms;
 import com.groupeat.domain.terms.enums.TermsTargetType;
@@ -50,6 +49,7 @@ public class CustomerMyPageTermsService {
                 ));
 
         return termsList.stream()
+                .filter(Terms::isRequired)
                 .map(terms -> CustomerTermsResponse.of(terms, agreementByTermsId.get(terms.getId())))
                 .toList();
     }
@@ -57,36 +57,13 @@ public class CustomerMyPageTermsService {
     public CustomerTermsDetailResponse getTermsDetail(Long memberId, Long termsId) {
         customerMyPageService.getActiveCustomer(memberId);
         Terms terms = getAccessibleTerms(termsId);
+        if (!terms.isRequired()) {
+            throw new GeneralException(TermsErrorStatus.TERMS_NOT_ACCESSIBLE);
+        }
         MemberTermsAgreement agreement = agreementRepository
                 .findFirstByMemberIdAndTermsIdOrderByIdDesc(memberId, termsId)
                 .orElse(null);
         return CustomerTermsDetailResponse.of(terms, agreement);
-    }
-
-    @Transactional
-    public CustomerTermsResponse updateTermsAgreement(
-            Long memberId,
-            Long termsId,
-            TermsAgreementUpdateRequest request
-    ) {
-        customerMyPageService.getActiveCustomer(memberId);
-        Terms terms = getAccessibleTerms(termsId);
-
-        if (terms.isRequired()) {
-            throw new GeneralException(TermsErrorStatus.REQUIRED_TERMS_NOT_MODIFIABLE);
-        }
-
-        // 기존 이력이 없는 선택 약관의 최초 동의 이력 생성
-        MemberTermsAgreement agreement = agreementRepository
-                .findFirstByMemberIdAndTermsIdOrderByIdDesc(memberId, termsId)
-                .orElseGet(() -> agreementRepository.save(
-                        MemberTermsAgreement.create(memberId, termsId, request.agreed())
-                ));
-
-        if (agreement.isAgreed() != request.agreed()) {
-            agreement.updateAgreement(request.agreed());
-        }
-        return CustomerTermsResponse.of(terms, agreement);
     }
 
     private Terms getAccessibleTerms(Long termsId) {

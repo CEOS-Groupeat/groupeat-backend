@@ -35,6 +35,7 @@ import com.groupeat.domain.payment.enums.PaymentType;
 import com.groupeat.domain.payment.repository.PaymentRepository;
 import com.groupeat.domain.payment.service.PaymentCancelService;
 import com.groupeat.domain.member.enums.MemberType;
+import com.groupeat.domain.review.repository.ReviewRepository;
 import com.groupeat.domain.store.entity.Menu;
 import com.groupeat.domain.store.entity.MenuOption;
 import com.groupeat.domain.store.entity.Store;
@@ -51,10 +52,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -77,6 +75,8 @@ public class OrderService {
     private final MenuRepository menuRepository;
     private final MenuOptionRepository menuOptionRepository;
 
+    private final ReviewRepository reviewRepository;
+
     private final CartCalculateService cartCalculateService;
     private final PaymentCancelService paymentCancelService;
     private final OrderCancelTransactionService orderCancelTransactionService;
@@ -92,7 +92,7 @@ public class OrderService {
             throw new GeneralException(CartErrorStatus.CART_ITEM_NOT_FOUND);
         }
 
-        // 2. 픽업 날짜/시간 동일성 검증 (하나라도 다르면 주문 불가)
+        // 픽업 날짜/시간 동일성 검증 (하나라도 다르면 주문 불가)
         long distinctPickupCount = cartItems.stream()
                 .map(item -> item.getPickupDate().toString() + item.getPickupTime().toString())
                 .distinct()
@@ -173,12 +173,6 @@ public class OrderService {
             orderItemOptionRepository.saveAll(orderItemOptionsToSave);
         }
 
-        // 장바구니 비우기
-        if (!allCartItemOptions.isEmpty()) {
-            cartItemOptionRepository.deleteAllInBatch(allCartItemOptions);
-        }
-        cartItemRepository.deleteAllByIdInBatch(cartItemIds);
-
         return OrderConverter.toOrderCreateResponse(savedOrder, savedPayment.getId());
     }
 
@@ -206,7 +200,10 @@ public class OrderService {
         Map<Long, List<OrderItem>> itemsByOrderId = allItems.stream()
                 .collect(Collectors.groupingBy(item -> item.getOrder().getId()));
 
-        return OrderListConverter.toOrderListResponse(orders, totalElements, hasNext, itemsByOrderId);
+        // 리뷰 존재 여부 조회
+        Set<Long> reviewedOrderIds = reviewRepository.findReviewedOrderIds(orderIds);
+
+        return OrderListConverter.toOrderListResponse(orders, totalElements, hasNext, itemsByOrderId, reviewedOrderIds);
     }
 
     @Transactional(readOnly = true)

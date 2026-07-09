@@ -41,6 +41,9 @@ public class StoreSearchResponse {
             @Schema(description = "별점", example = "4.7")
             Double rating,
 
+            @Schema(description = "리뷰 개수", example = "128")
+            Integer reviewCount,
+
             @Schema(description = "픽업 시간", example = "10:00 ~ 17:00")
             String pickupTimeRange
     ) {}

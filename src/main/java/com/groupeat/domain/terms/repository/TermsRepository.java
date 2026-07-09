@@ -14,6 +14,8 @@ public interface TermsRepository extends JpaRepository<Terms, Long> {
 
     List<Terms> findByTargetTypeInAndActiveTrue(Collection<TermsTargetType> targetTypes);
 
+    List<Terms> findByTargetTypeInAndActiveTrueAndRequiredFalse(Collection<TermsTargetType> targetTypes);
+
     Optional<Terms> findByIdAndActiveTrue(Long id);
 
     List<Terms> findByIdIn(Collection<Long> ids);

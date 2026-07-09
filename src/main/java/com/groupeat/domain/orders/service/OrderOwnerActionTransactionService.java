@@ -137,7 +137,7 @@ public class OrderOwnerActionTransactionService {
 
         Settlement settlement = payment.getPaymentType() == PaymentType.PREPAID
                 ? Settlement.payout(order, orderAmount, platformFeeAmount) // 선결제 주문 : 수수료 차감 후 점주에게 지급
-                : Settlement.feeCharge(order, orderAmount, platformFeeAmount); // 현장결제 주문 : 플랫폼은 점주에게 수수료만 청구
+                : Settlement.depositPayout(order, orderAmount, payment.getPaidAmount(), platformFeeAmount); // 현장결제 주문 : 예약금에서 수수료 차감 후 지급
 
         settlementRepository.save(settlement);
     }

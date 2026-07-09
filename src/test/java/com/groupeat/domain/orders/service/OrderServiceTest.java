@@ -9,6 +9,7 @@ import com.groupeat.domain.orders.dto.response.OrderCancelResponse;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.enums.OrderCancelledBy;
 import com.groupeat.domain.orders.enums.OrderStatus;
+import com.groupeat.domain.orders.enums.PaymentMethod;
 import com.groupeat.domain.orders.exception.OrderErrorStatus;
 import com.groupeat.domain.orders.repository.OrderItemOptionRepository;
 import com.groupeat.domain.orders.repository.OrderItemRepository;
@@ -112,6 +113,54 @@ class OrderServiceTest {
     }
 
     @Test
+    void cancelOrder_onSiteRefundsDepositBeforeStoreCancelDeadline() {
+        Order order = order(OrderStatus.PAID, LocalDate.now().plusDays(3), PaymentMethod.ON_SITE, 5000);
+        when(orderRepository.findByIdAndMemberId(ORDER_ID, MEMBER_ID)).thenReturn(Optional.of(order));
+        when(storeOrderScheduleRepository.findActiveScheduleByStoreIdAndDate(
+                order.getStore().getId(),
+                order.getPickupDate()
+        )).thenReturn(Optional.of(schedule(order.getStore(), order.getPickupDate(), 2)));
+
+        OrderCancelPreparation preparation = orderCancelTransactionService.prepareCustomerCancel(MEMBER_ID, ORDER_ID);
+        OrderCancelResponse response = orderCancelTransactionService.cancelCustomerOrder(
+                MEMBER_ID,
+                ORDER_ID,
+                "일정 변경",
+                preparation.refundRate(),
+                preparation.refundAmount(),
+                PaymentCancelResult.skipped()
+        );
+
+        assertThat(response.refundRate()).isEqualTo(100);
+        assertThat(response.refundAmount()).isEqualTo(5000);
+        assertThat(order.getCancelRefundAmount()).isEqualTo(5000);
+    }
+
+    @Test
+    void cancelOrder_onSiteDoesNotRefundDepositAfterStoreCancelDeadline() {
+        Order order = order(OrderStatus.ACCEPTED, LocalDate.now().plusDays(1), PaymentMethod.ON_SITE, 5000);
+        when(orderRepository.findByIdAndMemberId(ORDER_ID, MEMBER_ID)).thenReturn(Optional.of(order));
+        when(storeOrderScheduleRepository.findActiveScheduleByStoreIdAndDate(
+                order.getStore().getId(),
+                order.getPickupDate()
+        )).thenReturn(Optional.of(schedule(order.getStore(), order.getPickupDate(), 2)));
+
+        OrderCancelPreparation preparation = orderCancelTransactionService.prepareCustomerCancel(MEMBER_ID, ORDER_ID);
+        OrderCancelResponse response = orderCancelTransactionService.cancelCustomerOrder(
+                MEMBER_ID,
+                ORDER_ID,
+                "일정 변경",
+                preparation.refundRate(),
+                preparation.refundAmount(),
+                PaymentCancelResult.skipped()
+        );
+
+        assertThat(response.refundRate()).isEqualTo(0);
+        assertThat(response.refundAmount()).isEqualTo(0);
+        assertThat(order.getCancelRefundAmount()).isEqualTo(0);
+    }
+
+    @Test
     void cancelOrder_rejectsInvalidOrderStatus() {
         Order order = order(OrderStatus.COMPLETED, LocalDate.now().plusDays(3));
         when(orderRepository.findByIdAndMemberId(ORDER_ID, MEMBER_ID)).thenReturn(Optional.of(order));
@@ -123,6 +172,15 @@ class OrderServiceTest {
     }
 
     private Order order(OrderStatus orderStatus, LocalDate pickupDate) {
+        return order(orderStatus, pickupDate, PaymentMethod.PREPAID, 10000);
+    }
+
+    private Order order(
+            OrderStatus orderStatus,
+            LocalDate pickupDate,
+            PaymentMethod paymentMethod,
+            Integer paymentAmount
+    ) {
         Store store = Store.builder()
                 .ownerId(2L)
                 .storeName("테스트 가게")
@@ -137,12 +195,12 @@ class OrderServiceTest {
                 .store(store)
                 .totalOriginalPrice(10000)
                 .totalDiscountAmount(0)
-                .paymentAmount(10000)
+                .paymentAmount(paymentAmount)
                 .customerName("고객")
                 .customerPhone("010-1234-5678")
                 .pickupDate(pickupDate)
                 .pickupTime(java.time.LocalTime.NOON)
-                .paymentMethod(com.groupeat.domain.orders.enums.PaymentMethod.PREPAID)
+                .paymentMethod(paymentMethod)
                 .orderStatus(orderStatus)
                 .build();
     }

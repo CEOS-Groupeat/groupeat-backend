@@ -77,6 +77,26 @@ public class Settlement extends BaseEntity {
                 .build();
     }
 
+    public static Settlement depositPayout(
+            Order order,
+            Integer orderAmount,
+            Integer depositAmount,
+            Integer platformFeeAmount
+    ) {
+        Store store = order.getStore();
+
+        return Settlement.builder()
+                .order(order)
+                .store(store)
+                .ownerId(store.getOwnerId())
+                .orderAmount(orderAmount)
+                .platformFeeAmount(platformFeeAmount)
+                .payoutAmount(depositAmount - platformFeeAmount)
+                .chargeAmount(0)
+                .settlementType(SettlementType.PAYOUT)
+                .build();
+    }
+
     public static Settlement feeCharge(
             Order order,
             Integer orderAmount,

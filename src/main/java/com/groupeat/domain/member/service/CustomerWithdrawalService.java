@@ -72,9 +72,10 @@ public class CustomerWithdrawalService {
     }
 
     private void withdrawOptionalTerms(Long memberId) {
-        termsAgreementRepository.findOptionalTermsAgreementsByMemberId(memberId)
+        termsAgreementRepository.findLatestOptionalTermsAgreementsByMemberId(memberId)
                 .stream()
                 .filter(MemberTermsAgreement::isAgreed)
-                .forEach(agreement -> agreement.updateAgreement(false));
+                .map(agreement -> MemberTermsAgreement.create(memberId, agreement.getTermsId(), false))
+                .forEach(termsAgreementRepository::save);
     }
 }

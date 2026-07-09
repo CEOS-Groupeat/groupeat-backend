@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 public enum TermsErrorStatus implements BaseErrorCode {
 
     REQUIRED_TERMS_NOT_CONFIGURED(HttpStatus.INTERNAL_SERVER_ERROR, "TERMS5000", "활성화된 필수 약관이 존재하지 않습니다."),
+    MARKETING_TERMS_NOT_CONFIGURED(HttpStatus.INTERNAL_SERVER_ERROR, "TERMS5001", "활성화된 마케팅 정보 수신 동의 약관이 존재하지 않습니다."),
     REQUIRED_TERMS_NOT_AGREED(HttpStatus.BAD_REQUEST, "TERMS4000", "필수 약관에 동의하지 않았습니다."),
     INVALID_TERMS_TARGET(HttpStatus.BAD_REQUEST, "TERMS4001", "약관 대상이 올바르지 않습니다."),
     TERMS_NOT_FOUND(HttpStatus.NOT_FOUND, "TERMS4040", "존재하지 않는 약관입니다."),

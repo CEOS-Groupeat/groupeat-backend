@@ -8,6 +8,8 @@ import java.util.Optional;
 
 public interface StoreRepository extends JpaRepository<Store, Long> {
 
+    Optional<Store> findByOwnerId(Long ownerId);
+
     @Query("SELECT s FROM Store s WHERE s.id = :storeId AND s.deletedAt IS NULL")
     Optional<Store> findActiveStoreById(@Param("storeId") Long storeId);
 

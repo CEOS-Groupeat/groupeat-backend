@@ -163,7 +163,7 @@ public class ReviewService {
     }
 
     public ReviewSummaryResponse getReviewSummary(Long storeId) {
-        Store store = storeRepository.findById(storeId)
+        Store store = storeRepository.findActiveStoreById(storeId)
                 .orElseThrow(() -> new GeneralException(StoreErrorStatus.STORE_NOT_FOUND));
 
         // 해당 가게의 모든 별점 가져오기

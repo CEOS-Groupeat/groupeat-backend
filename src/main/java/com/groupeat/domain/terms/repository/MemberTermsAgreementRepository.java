@@ -29,4 +29,21 @@ public interface MemberTermsAgreementRepository extends JpaRepository<MemberTerm
     );
 
     Optional<MemberTermsAgreement> findFirstByMemberIdAndTermsIdOrderByIdDesc(Long memberId, Long termsId);
+
+    @Query("""
+            SELECT agreement
+            FROM MemberTermsAgreement agreement
+            WHERE agreement.memberId = :memberId
+              AND agreement.termsId IN (
+                  SELECT terms.id FROM Terms terms WHERE terms.required = false
+              )
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM MemberTermsAgreement latest
+                  WHERE latest.memberId = agreement.memberId
+                    AND latest.termsId = agreement.termsId
+                    AND latest.id > agreement.id
+              )
+            """)
+    List<MemberTermsAgreement> findLatestOptionalTermsAgreementsByMemberId(@Param("memberId") Long memberId);
 }

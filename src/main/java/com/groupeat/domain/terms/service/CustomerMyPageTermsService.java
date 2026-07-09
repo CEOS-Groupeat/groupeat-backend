@@ -38,14 +38,12 @@ public class CustomerMyPageTermsService {
         List<Terms> termsList = termsRepository.findByTargetTypeInAndActiveTrue(CUSTOMER_TARGET_TYPES);
         List<Long> termsIds = termsList.stream().map(Terms::getId).toList();
 
-        // 중복 이력이 존재하는 경우를 고려한 약관별 최신 동의 이력 구성
         Map<Long, MemberTermsAgreement> agreementByTermsId = agreementRepository
-                .findByMemberIdAndTermsIdIn(memberId, termsIds)
+                .findLatestByMemberIdAndTermsIdIn(memberId, termsIds)
                 .stream()
                 .collect(Collectors.toMap(
                         MemberTermsAgreement::getTermsId,
-                        Function.identity(),
-                        (previous, latest) -> previous.getId() > latest.getId() ? previous : latest
+                        Function.identity()
                 ));
 
         return termsList.stream()

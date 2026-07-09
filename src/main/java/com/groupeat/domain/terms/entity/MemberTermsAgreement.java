@@ -45,8 +45,4 @@ public class MemberTermsAgreement extends BaseEntity {
         return agreement;
     }
 
-    public void updateAgreement(boolean agreed) {
-        this.agreed = agreed;
-        this.agreedAt = agreed ? LocalDateTime.now() : null;
-    }
 }

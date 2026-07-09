@@ -72,11 +72,8 @@ public class CustomerNotificationSettingsService {
             MemberTermsAgreement agreement,
             boolean agreed
     ) {
-        if (agreement == null) {
+        if (agreement == null || agreement.isAgreed() != agreed) {
             return agreementRepository.save(MemberTermsAgreement.create(memberId, termsId, agreed));
-        }
-        if (agreement.isAgreed() != agreed) {
-            agreement.updateAgreement(agreed);
         }
         return agreement;
     }

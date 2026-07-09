@@ -43,6 +43,7 @@ public class SearchConverter {
                 .maxPrice(store.getMaxPrice())
                 .phoneNumber(store.getPhoneNumber())
                 .rating(store.getReviewRating())
+                .reviewCount(store.getReviewCount())
                 .pickupTimeRange(timeRange)
                 .build();
     }

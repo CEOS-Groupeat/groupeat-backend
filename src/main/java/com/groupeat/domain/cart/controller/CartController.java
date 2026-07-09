@@ -54,6 +54,15 @@ public class CartController {
         return ApiResponse.onSuccess("장바구니에서 메뉴가 삭제되었습니다.");
     }
 
+    @DeleteMapping
+    @Operation(summary = "장바구니 전체 비우기", description = "현재 유저의 장바구니에 담긴 모든 메뉴를 한 번에 삭제합니다.")
+    public ApiResponse<String> clearCart(
+            @AuthenticationPrincipal AuthenticatedMember member
+    ) {
+        cartService.clearCart(member.memberId());
+        return ApiResponse.onSuccess("장바구니가 성공적으로 비워졌습니다.");
+    }
+
     @PostMapping("/calculate")
     @Operation(summary = "장바구니 선택 항목 계산 및 주문 검증", description = "주문할 장바구니 항목들을 선택하여 총 결제 금액을 계산하고 단일 가게 제약을 검증합니다.")
     public ApiResponse<CartCalculateResponse> calculateCart(

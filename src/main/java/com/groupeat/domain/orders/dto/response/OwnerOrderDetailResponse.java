@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 public class OwnerOrderDetailResponse {
@@ -35,6 +36,9 @@ public class OwnerOrderDetailResponse {
 
             @Schema(description = "주문 일자", example = "2026-06-20")
             LocalDate orderDate,
+
+            @Schema(description = "주문 시간", example = "18:30")
+            LocalTime orderTime,
 
             @Schema(description = "요청사항", example = "픽업 시간에 맞춰서 준비해 주세요.")
             String requests

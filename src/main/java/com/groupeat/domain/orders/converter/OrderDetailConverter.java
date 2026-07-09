@@ -23,6 +23,7 @@ public class OrderDetailConverter {
                 .groupName(order.getGroupName())
                 .phoneNumber(order.getCustomerPhone())
                 .orderDate(order.getCreatedAt().toLocalDate())
+                .orderTime(order.getCreatedAt().toLocalTime())
                 .requests(order.getRequests())
                 .build();
 
@@ -73,6 +74,9 @@ public class OrderDetailConverter {
 
         // 최종 조립
         return OrderDetailResponse.OrderDetailDTO.builder()
+                .storeName(order.getStore().getStoreName())
+                .pickupDate(order.getPickupDate())
+                .pickupTime(order.getPickupTime())
                 .ordererInfo(ordererInfo)
                 .orderMenus(orderMenus)
                 .paymentInfo(paymentInfo)

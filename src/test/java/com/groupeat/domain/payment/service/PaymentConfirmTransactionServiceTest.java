@@ -1,5 +1,6 @@
 package com.groupeat.domain.payment.service;
 
+import com.groupeat.domain.cart.service.CartService;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.enums.OrderStatus;
 import com.groupeat.domain.payment.dto.PreparedPaymentConfirm;
@@ -38,11 +39,14 @@ class PaymentConfirmTransactionServiceTest {
     @Mock
     private PaymentRepository paymentRepository;
 
+    @Mock
+    private CartService cartService;
+
     private PaymentConfirmTransactionService paymentConfirmTransactionService;
 
     @BeforeEach
     void setUp() {
-        paymentConfirmTransactionService = new PaymentConfirmTransactionService(paymentRepository);
+        paymentConfirmTransactionService = new PaymentConfirmTransactionService(paymentRepository, cartService);
     }
 
     // 결제 준비 상태면 승인 진행 상태로 변경한다.

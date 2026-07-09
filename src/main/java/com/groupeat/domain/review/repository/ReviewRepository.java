@@ -13,6 +13,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     // 이미 리뷰가 작성된 주문인지 확인하기 위한 메서드
     boolean existsByOrderId(Long orderId);
 
+    long countByMemberId(Long memberId);
+
     // 넘겨받은 orderIds 중 리뷰가 존재하는 orderId만 추출
     @Query("SELECT r.order.id FROM Review r WHERE r.order.id IN :orderIds")
     Set<Long> findReviewedOrderIds(@Param("orderIds") List<Long> orderIds);

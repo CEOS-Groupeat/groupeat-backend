@@ -10,6 +10,7 @@ import com.groupeat.domain.member.exceptoin.MemberErrorStatus;
 import com.groupeat.domain.member.repository.MemberRepository;
 import com.groupeat.domain.member.repository.SocialAccountRepository;
 import com.groupeat.domain.orders.repository.OrderRepository;
+import com.groupeat.domain.review.repository.ReviewRepository;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,10 +25,13 @@ public class CustomerMyPageService {
     private final MemberRepository memberRepository;
     private final SocialAccountRepository socialAccountRepository;
     private final OrderRepository orderRepository;
+    private final ReviewRepository reviewRepository;
 
     public CustomerMyPageResponse getMyPage(Long memberId) {
         getActiveCustomer(memberId);
-        return CustomerMyPageResponse.of(orderRepository.countByMemberId(memberId));
+        long orderCount = orderRepository.countByMemberId(memberId);
+        long reviewCount = reviewRepository.countByMemberId(memberId);
+        return CustomerMyPageResponse.of(orderCount, reviewCount);
     }
 
     public CustomerAccountResponse getAccount(Long memberId) {

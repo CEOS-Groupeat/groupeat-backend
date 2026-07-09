@@ -28,7 +28,7 @@ public class CustomerMyPageController {
     @GetMapping
     @Operation(
             summary = "마이페이지 요약 조회",
-            description = "로그인한 고객의 전체 주문 수를 조회합니다. 리뷰 수는 기능 구현 전까지 0으로 반환합니다."
+            description = "로그인한 고객의 전체 주문 수와 작성 리뷰 수를 조회합니다."
     )
     public ApiResponse<CustomerMyPageResponse> getMyPage(
             @AuthenticationPrincipal AuthenticatedMember member

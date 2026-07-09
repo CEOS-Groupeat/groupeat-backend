@@ -15,6 +15,7 @@ import com.groupeat.domain.review.dto.response.OwnerReviewListResponse.OwnerRevi
 import com.groupeat.domain.review.dto.response.ReviewSummaryResponse;
 import com.groupeat.domain.review.entity.Review;
 import com.groupeat.domain.review.entity.ReviewImage;
+import com.groupeat.domain.review.enums.ReviewSortType;
 import com.groupeat.domain.review.exception.ReviewErrorStatus;
 import com.groupeat.domain.review.repository.ReviewImageRepository;
 import com.groupeat.domain.review.repository.ReviewQueryRepository;
@@ -64,7 +65,13 @@ public class OwnerReviewService {
 
         validateStoreOwner(store, ownerId);
 
-        List<Review> reviews = reviewQueryRepository.findStoreReviewsByCursor(store.getId(), lastReviewId, size + 1);
+        List<Review> reviews = reviewQueryRepository.findStoreReviewsByCursor(
+                store.getId(),
+                lastReviewId,
+                null,
+                ReviewSortType.LATEST,
+                size + 1
+        );
 
         boolean hasNext = false;
         Long nextCursor = null;

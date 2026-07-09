@@ -2,6 +2,7 @@ package com.groupeat.domain.store.controller;
 
 import com.groupeat.domain.review.dto.response.ReviewListResponse;
 import com.groupeat.domain.review.dto.response.ReviewSummaryResponse;
+import com.groupeat.domain.review.enums.ReviewSortType;
 import com.groupeat.domain.review.service.ReviewService;
 import com.groupeat.domain.store.dto.response.MenuListResponse;
 import com.groupeat.domain.store.dto.response.PickupTimeResponse;
@@ -64,10 +65,11 @@ public class StoreController {
     @Operation(summary = "가게 리뷰 목록 조회", description = "특정 가게에 작성된 리뷰 목록을 최신순으로 조회합니다.")
     public ApiResponse<ReviewListResponse> getStoreReviews(
             @PathVariable Long storeId,
+            @RequestParam(defaultValue = "LATEST") @Schema(description = "정렬 기준 (LATEST, HIGHEST_RATING, LOWEST_RATING)") ReviewSortType sortType,
             @RequestParam(required = false) @Schema(description = "마지막으로 조회된 리뷰 ID (첫 페이지는 null)") Long lastReviewId,
             @RequestParam(defaultValue = "10") @Schema(description = "조회할 개수") int size
     ) {
-        ReviewListResponse response = reviewService.getStoreReviews(storeId, lastReviewId, size);
+        ReviewListResponse response = reviewService.getStoreReviews(storeId, lastReviewId, sortType, size);
         return ApiResponse.onSuccess(response);
     }
 

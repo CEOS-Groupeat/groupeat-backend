@@ -14,6 +14,7 @@ import com.groupeat.domain.review.dto.response.ReviewListResponse;
 import com.groupeat.domain.review.dto.response.ReviewSummaryResponse;
 import com.groupeat.domain.review.entity.Review;
 import com.groupeat.domain.review.entity.ReviewImage;
+import com.groupeat.domain.review.enums.ReviewSortType;
 import com.groupeat.domain.review.exception.ReviewErrorStatus;
 import com.groupeat.domain.review.repository.ReviewImageRepository;
 import com.groupeat.domain.review.repository.ReviewQueryRepository;
@@ -113,19 +114,33 @@ public class ReviewService {
     }
 
     // 특정 가게의 리뷰 목록 조회
-    public ReviewListResponse getStoreReviews(Long storeId, Long lastReviewId, int size) {
-        List<Review> reviews = reviewQueryRepository.findStoreReviewsByCursor(storeId, lastReviewId, size + 1);
-        return createPaginatedResponse(reviews, size);
+    public ReviewListResponse getStoreReviews(Long storeId, Long lastReviewId, ReviewSortType sortType, int size) {
+
+        // 가게 정보 조회
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new GeneralException(StoreErrorStatus.STORE_NOT_FOUND));
+
+        Integer lastRating = null;
+        if (lastReviewId != null && sortType != ReviewSortType.LATEST) {
+            Review lastReview = reviewRepository.findById(lastReviewId).orElse(null);
+            if (lastReview != null) {
+                lastRating = lastReview.getRating();
+            }
+        }
+
+        List<Review> reviews = reviewQueryRepository.findStoreReviewsByCursor(storeId, lastReviewId, lastRating, sortType, size + 1);
+
+        return createPaginatedResponse(store.getStoreName(), reviews, size);
     }
 
     // 내가 작성한 리뷰 목록 조회
     public ReviewListResponse getMyReviews(Long memberId, Long lastReviewId, int size) {
         List<Review> reviews = reviewQueryRepository.findMyReviewsByCursor(memberId, lastReviewId, size + 1);
-        return createPaginatedResponse(reviews, size);
+        return createPaginatedResponse(null, reviews, size);
     }
 
     // 커서 페이징 계산 및 데이터 조립
-    private ReviewListResponse createPaginatedResponse(List<Review> reviews, int size) {
+    private ReviewListResponse createPaginatedResponse(String storeName, List<Review> reviews, int size) {
         boolean hasNext = false;
         Long nextCursor = null;
 
@@ -139,7 +154,8 @@ public class ReviewService {
         }
 
         List<ReviewListResponse.ReviewDetailDTO> dtoList = assembleReviews(reviews);
-        return new ReviewListResponse(dtoList, hasNext, nextCursor);
+
+        return reviewConverter.toReviewListResponse(storeName, dtoList, hasNext, nextCursor);
     }
 
     private List<ReviewListResponse.ReviewDetailDTO> assembleReviews(List<Review> reviews) {

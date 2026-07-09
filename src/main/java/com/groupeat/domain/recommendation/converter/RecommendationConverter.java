@@ -1,22 +1,16 @@
 package com.groupeat.domain.recommendation.converter;
 
-import com.groupeat.domain.recommendation.dto.response.RecommendationResponse;
-import com.groupeat.domain.recommendation.dto.response.RecommendationResponse.RecommendationCardDTO;
+import com.groupeat.domain.recommendation.dto.response.RecommendationListResponse;
+import com.groupeat.domain.recommendation.dto.response.RecommendationListResponse.RecommendationCardDTO;
 import com.groupeat.domain.store.entity.Store;
 
 import java.util.List;
 
 public class RecommendationConverter {
 
-    public static RecommendationResponse toRecommendationResponse(
-            List<Store> topRatedStores,
-            List<Store> highDiscountStores
-    ) {
-        return RecommendationResponse.builder()
-                .topRatedStores(topRatedStores.stream()
-                        .map(RecommendationConverter::toCardDTO)
-                        .toList())
-                .highDiscountStores(highDiscountStores.stream()
+    public static RecommendationListResponse toRecommendationListResponse(List<Store> stores) {
+        return RecommendationListResponse.builder()
+                .stores(stores.stream()
                         .map(RecommendationConverter::toCardDTO)
                         .toList())
                 .build();

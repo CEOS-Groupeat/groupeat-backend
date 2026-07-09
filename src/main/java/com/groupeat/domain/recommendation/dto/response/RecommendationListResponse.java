@@ -6,14 +6,11 @@ import lombok.Builder;
 import java.util.List;
 
 @Builder
-@Schema(name = "RecommendationResponse", description = "메인 화면 가게 추천 응답")
-public record RecommendationResponse(
+@Schema(name = "RecommendationListResponse", description = "가게 추천 목록 응답")
+public record RecommendationListResponse(
 
-        @Schema(description = "인기 만점 가게 목록 (별점 높은 순, 최대 2개)")
-        List<RecommendationCardDTO> topRatedStores,
-
-        @Schema(description = "할인율 높은 가게 목록 (할인율 높은 순, 최대 2개)")
-        List<RecommendationCardDTO> highDiscountStores
+        @Schema(description = "추천 가게 목록")
+        List<RecommendationCardDTO> stores
 ) {
     @Builder
     @Schema(name = "RecommendationCardDTO", description = "추천 가게 단일 카드 정보")

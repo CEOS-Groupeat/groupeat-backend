@@ -219,7 +219,19 @@ public class OrderService {
         Map<Long, List<OrderItemOption>> optionsByOrderItemId = allOptions.stream()
                 .collect(Collectors.groupingBy(opt -> opt.getOrderItem().getId()));
 
-        return OrderDetailConverter.toOrderDetailDTO(order, payment, optionsByOrderItemId);
+        List<Long> menuIds = order.getOrderItems().stream()
+                .map(OrderItem::getMenuId)
+                .distinct()
+                .toList();
+
+        Map<Long, String> menuImageUrls = menuRepository.findAllById(menuIds).stream()
+                .collect(Collectors.toMap(
+                        Menu::getId,
+                        Menu::getImageUrl,
+                        (existing, replacement) -> existing // 혹시 모를 중복 키 방어
+                ));
+
+        return OrderDetailConverter.toOrderDetailDTO(order, payment, optionsByOrderItemId, menuImageUrls);
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)

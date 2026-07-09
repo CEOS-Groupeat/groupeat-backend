@@ -16,4 +16,7 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
     @Query("SELECT s FROM Store s WHERE s.ownerId = :businessMemberId AND s.deletedAt IS NULL")
     Optional<Store> findActiveStoreByBusinessMemberId(@Param("businessMemberId") Long businessMemberId);
 
+    @Query("SELECT s FROM Store s WHERE s.ownerId = :businessMemberId")
+    Optional<Store> findByBusinessMemberId(@Param("businessMemberId") Long businessMemberId);
+
 }

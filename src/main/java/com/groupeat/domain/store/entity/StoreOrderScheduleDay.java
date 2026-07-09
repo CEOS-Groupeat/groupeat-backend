@@ -2,6 +2,7 @@ package com.groupeat.domain.store.entity;
 
 import com.groupeat.global.entity.BaseEntity;
 import jakarta.persistence.Column;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -11,6 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -18,9 +20,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.DayOfWeek;
-import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -62,33 +66,29 @@ public class StoreOrderScheduleDay extends BaseEntity {
     @Column(name = "max_order_quantity")
     private Integer maxOrderQuantity;
 
-    @Column(name = "pickup_open_time")
-    private LocalTime pickupOpenTime;
-
-    @Column(name = "pickup_close_time")
-    private LocalTime pickupCloseTime;
-
-    @Builder.Default
     @Column(name = "interval_minutes", nullable = false)
-    private Integer intervalMinutes = DEFAULT_INTERVAL_MINUTES;
+    private Integer intervalMinutes;
+
+    @BatchSize(size = 100)
+    @OneToMany(mappedBy = "scheduleDay", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<StoreOrderScheduleTimeRange> timeRanges = new ArrayList<>();
 
     public static StoreOrderScheduleDay createAvailable(
             DayOfWeek dayOfWeek,
             Integer minOrderQuantity,
             Integer maxOrderQuantity,
-            LocalTime pickupOpenTime,
-            LocalTime pickupCloseTime,
-            Integer intervalMinutes
+            List<StoreOrderScheduleTimeRange> timeRanges
     ) {
-        return StoreOrderScheduleDay.builder()
+        StoreOrderScheduleDay day = StoreOrderScheduleDay.builder()
                 .dayOfWeek(dayOfWeek)
                 .available(true)
                 .minOrderQuantity(minOrderQuantity)
                 .maxOrderQuantity(maxOrderQuantity)
-                .pickupOpenTime(pickupOpenTime)
-                .pickupCloseTime(pickupCloseTime)
-                .intervalMinutes(intervalMinutes != null ? intervalMinutes : DEFAULT_INTERVAL_MINUTES)
+                .intervalMinutes(DEFAULT_INTERVAL_MINUTES)
                 .build();
+        day.replaceTimeRanges(timeRanges);
+        return day;
     }
 
     public static StoreOrderScheduleDay createUnavailable(DayOfWeek dayOfWeek) {
@@ -103,12 +103,24 @@ public class StoreOrderScheduleDay extends BaseEntity {
         this.available = day.available;
         this.minOrderQuantity = day.minOrderQuantity;
         this.maxOrderQuantity = day.maxOrderQuantity;
-        this.pickupOpenTime = day.pickupOpenTime;
-        this.pickupCloseTime = day.pickupCloseTime;
         this.intervalMinutes = day.intervalMinutes;
+        replaceTimeRanges(day.timeRanges);
     }
 
     void assignSchedule(StoreOrderSchedule schedule) {
         this.schedule = schedule;
+    }
+
+    private void replaceTimeRanges(List<StoreOrderScheduleTimeRange> timeRanges) {
+        this.timeRanges.clear();
+        if (timeRanges == null) {
+            return;
+        }
+        timeRanges.forEach(this::addTimeRange);
+    }
+
+    public void addTimeRange(StoreOrderScheduleTimeRange timeRange) {
+        timeRange.assignScheduleDay(this);
+        this.timeRanges.add(timeRange);
     }
 }

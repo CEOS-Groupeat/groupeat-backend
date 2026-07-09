@@ -66,6 +66,8 @@ class OwnerStoreOrderScheduleServiceTest {
         assertThat(response.days()).allSatisfy(day -> {
             assertThat(day.available()).isFalse();
             assertThat(day.intervalMinutes()).isEqualTo(30);
+            assertThat(day.pickupTimeRanges()).isEmpty();
+            assertThat(day.breakTimeRanges()).isEmpty();
         });
     }
 
@@ -96,9 +98,14 @@ class OwnerStoreOrderScheduleServiceTest {
                     assertThat(day.available()).isTrue();
                     assertThat(day.minOrderQuantity()).isEqualTo(10);
                     assertThat(day.maxOrderQuantity()).isEqualTo(100);
-                    assertThat(day.pickupOpenTime()).isEqualTo(LocalTime.of(10, 0));
-                    assertThat(day.pickupCloseTime()).isEqualTo(LocalTime.of(17, 0));
                     assertThat(day.intervalMinutes()).isEqualTo(30);
+                    assertThat(day.pickupTimeRanges()).extracting("startTime", "endTime")
+                            .containsExactly(
+                                    org.assertj.core.groups.Tuple.tuple(LocalTime.of(10, 0), LocalTime.of(12, 0)),
+                                    org.assertj.core.groups.Tuple.tuple(LocalTime.of(14, 0), LocalTime.of(17, 0))
+                            );
+                    assertThat(day.breakTimeRanges()).extracting("startTime", "endTime")
+                            .containsExactly(org.assertj.core.groups.Tuple.tuple(LocalTime.of(10, 30), LocalTime.of(11, 0)));
                 });
         assertThat(response.days())
                 .filteredOn(day -> day.dayOfWeek() == DayOfWeek.TUESDAY)
@@ -193,12 +200,7 @@ class OwnerStoreOrderScheduleServiceTest {
     }
 
     private OwnerStoreOrderScheduleRequest requestWithMondayAvailable() {
-        return OwnerStoreOrderScheduleRequest.builder()
-                .startDate(LocalDate.of(2026, 5, 20))
-                .endDate(LocalDate.of(2027, 5, 20))
-                .minOrderDays(3)
-                .days(List.of(availableMonday()))
-                .build();
+        return requestWithDay(availableMonday());
     }
 
     private OwnerStoreOrderScheduleRequest.DayScheduleRequest availableMonday() {
@@ -207,9 +209,18 @@ class OwnerStoreOrderScheduleServiceTest {
                 .available(true)
                 .minOrderQuantity(10)
                 .maxOrderQuantity(100)
-                .pickupOpenTime(LocalTime.of(10, 0))
-                .pickupCloseTime(LocalTime.of(17, 0))
-                .intervalMinutes(30)
+                .pickupTimeRanges(List.of(
+                        timeRange(LocalTime.of(10, 0), LocalTime.of(12, 0)),
+                        timeRange(LocalTime.of(14, 0), LocalTime.of(17, 0))
+                ))
+                .breakTimeRanges(List.of(timeRange(LocalTime.of(10, 30), LocalTime.of(11, 0))))
+                .build();
+    }
+
+    private OwnerStoreOrderScheduleRequest.TimeRangeRequest timeRange(LocalTime startTime, LocalTime endTime) {
+        return OwnerStoreOrderScheduleRequest.TimeRangeRequest.builder()
+                .startTime(startTime)
+                .endTime(endTime)
                 .build();
     }
 

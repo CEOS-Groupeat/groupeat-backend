@@ -6,6 +6,7 @@ import com.groupeat.domain.orders.repository.OrderRepository;
 import com.groupeat.domain.store.entity.Store;
 import com.groupeat.domain.store.entity.StoreOrderSchedule;
 import com.groupeat.domain.store.entity.StoreOrderScheduleDay;
+import com.groupeat.domain.store.entity.StoreOrderScheduleTimeRange;
 import com.groupeat.domain.store.repository.StoreOrderScheduleRepository;
 import com.groupeat.global.exception.GeneralException;
 import org.junit.jupiter.api.BeforeEach;
@@ -155,9 +156,7 @@ class OrderScheduleValidationServiceTest {
                         DayOfWeek.MONDAY,
                         10,
                         100,
-                        LocalTime.of(10, 0),
-                        LocalTime.of(17, 0),
-                        30
+                        List.of(StoreOrderScheduleTimeRange.pickup(LocalTime.of(10, 0), LocalTime.of(17, 0), 0))
                 ))
         );
     }

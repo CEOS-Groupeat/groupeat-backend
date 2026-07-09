@@ -52,15 +52,25 @@ public record OwnerStoreOrderScheduleRequest(
             @Min(value = 1, message = "최대 주문 수량은 1 이상이어야 합니다.")
             Integer maxOrderQuantity,
 
-            @Schema(description = "픽업 시작 시간", example = "10:00")
-            LocalTime pickupOpenTime,
+            @Schema(description = "픽업 가능 시간 구간 목록")
+            @Valid
+            List<TimeRangeRequest> pickupTimeRanges,
 
-            @Schema(description = "픽업 종료 시간", example = "17:00")
-            LocalTime pickupCloseTime,
+            @Schema(description = "휴게 시간 구간 목록")
+            @Valid
+            List<TimeRangeRequest> breakTimeRanges
+    ) {
+    }
 
-            @Schema(description = "픽업 시간 간격(분)", example = "30")
-            @Min(value = 1, message = "픽업 시간 간격은 1분 이상이어야 합니다.")
-            Integer intervalMinutes
+    @Builder
+    public record TimeRangeRequest(
+            @Schema(description = "시작 시간", example = "10:00")
+            @NotNull(message = "시작 시간은 필수입니다.")
+            LocalTime startTime,
+
+            @Schema(description = "종료 시간", example = "17:00")
+            @NotNull(message = "종료 시간은 필수입니다.")
+            LocalTime endTime
     ) {
     }
 }

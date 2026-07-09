@@ -44,14 +44,24 @@ public record OwnerStoreOrderScheduleResponse(
             @Schema(description = "최대 주문 수량", example = "100")
             Integer maxOrderQuantity,
 
-            @Schema(description = "픽업 시작 시간", example = "10:00")
-            LocalTime pickupOpenTime,
-
-            @Schema(description = "픽업 종료 시간", example = "17:00")
-            LocalTime pickupCloseTime,
-
             @Schema(description = "픽업 시간 간격(분)", example = "30")
-            Integer intervalMinutes
+            Integer intervalMinutes,
+
+            @Schema(description = "픽업 가능 시간 구간 목록")
+            List<TimeRangeResponse> pickupTimeRanges,
+
+            @Schema(description = "휴게 시간 구간 목록")
+            List<TimeRangeResponse> breakTimeRanges
+    ) {
+    }
+
+    @Builder
+    public record TimeRangeResponse(
+            @Schema(description = "시작 시간", example = "10:00")
+            LocalTime startTime,
+
+            @Schema(description = "종료 시간", example = "17:00")
+            LocalTime endTime
     ) {
     }
 }

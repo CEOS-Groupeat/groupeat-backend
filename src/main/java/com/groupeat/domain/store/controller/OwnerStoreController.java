@@ -2,6 +2,7 @@ package com.groupeat.domain.store.controller;
 
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
 import com.groupeat.domain.store.dto.request.OwnerMenuRequest;
+import com.groupeat.domain.store.dto.request.OwnerStoreOrderScheduleDayRequest;
 import com.groupeat.domain.store.dto.request.OwnerStoreOrderScheduleRequest;
 import com.groupeat.domain.store.dto.request.OwnerStoreUpdateRequest;
 import com.groupeat.domain.store.dto.response.MenuListResponse;
@@ -28,6 +29,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.DayOfWeek;
 
 @Tag(name = "Owner Store", description = "사업자 가게 관리 API")
 @RestController
@@ -71,7 +74,11 @@ public class OwnerStoreController {
         return ApiResponse.onSuccess(result);
     }
 
-    @Operation(summary = "내 가게 주문 가능 일정 저장", description = "로그인한 사업자 회원의 가게 주문 가능 일정 설정을 저장합니다.")
+    @Operation(
+            summary = "내 가게 주문 가능 일정 전체 저장",
+            description = "주문 가능 일정의 기간, 최소 주문 가능 기한, 요일별 설정을 전체 저장합니다. "
+                    + "요청 days에 포함되지 않은 요일은 휴무 처리되므로, 전체 저장 시에는 7일 전체 설정을 보내는 것을 권장합니다."
+    )
     @PutMapping("/order-schedule")
     public ApiResponse<OwnerStoreOrderScheduleResponse> saveMyStoreOrderSchedule(
             @AuthenticationPrincipal AuthenticatedMember member,
@@ -81,12 +88,44 @@ public class OwnerStoreController {
         return ApiResponse.onSuccess(result);
     }
 
+    @Operation(
+            summary = "내 가게 주문 가능 일정 요일별 저장",
+            description = "기존 주문 가능 일정 설정에서 선택한 요일의 설정만 변경합니다. "
+                    + "다른 요일 설정은 변경하지 않고 유지합니다. "
+                    + "요청의 전체 기간(startDate/endDate), 최소 주문 가능 기한(minOrderDays)은 공통 설정으로 함께 저장합니다. "
+                    + "기존 주문 가능 일정 설정이 없으면 요청값으로 새 일정을 생성하고, 요청한 요일만 저장합니다. "
+                    + "요일 탭 하단 저장 버튼처럼 특정 요일만 저장하는 화면에서 사용합니다."
+    )
+    @PutMapping("/order-schedule/days/{dayOfWeek}")
+    public ApiResponse<OwnerStoreOrderScheduleResponse> saveMyStoreOrderScheduleDay(
+            @AuthenticationPrincipal AuthenticatedMember member,
+            @PathVariable DayOfWeek dayOfWeek,
+            @Valid @RequestBody OwnerStoreOrderScheduleDayRequest request
+    ) {
+        OwnerStoreOrderScheduleResponse result = ownerStoreOrderScheduleService.saveMyOrderScheduleDay(
+                member,
+                dayOfWeek,
+                request
+        );
+        return ApiResponse.onSuccess(result);
+    }
+
     @Operation(summary = "내 가게 메뉴 목록 조회", description = "로그인한 사업자 회원의 가게 메뉴 목록을 조회합니다.")
     @GetMapping("/menus")
     public ApiResponse<MenuListResponse> getMyStoreMenus(
             @AuthenticationPrincipal AuthenticatedMember member
     ) {
         MenuListResponse result = ownerMenuService.getMyStoreMenus(member);
+        return ApiResponse.onSuccess(result);
+    }
+
+    @Operation(summary = "내 가게 메뉴 상세 조회", description = "로그인한 사업자 회원의 가게 메뉴 상세 정보를 조회합니다.")
+    @GetMapping("/menus/{menuId}")
+    public ApiResponse<OwnerMenuResponse> getMyStoreMenu(
+            @AuthenticationPrincipal AuthenticatedMember member,
+            @PathVariable Long menuId
+    ) {
+        OwnerMenuResponse result = ownerMenuService.getMyStoreMenu(member, menuId);
         return ApiResponse.onSuccess(result);
     }
 

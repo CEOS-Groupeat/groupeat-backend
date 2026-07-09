@@ -3,10 +3,13 @@ package com.groupeat.domain.search.repository;
 import com.groupeat.domain.search.dto.request.StoreSearchCondition;
 import com.groupeat.domain.search.enums.StoreSortType;
 import com.groupeat.domain.store.entity.Store;
+import com.groupeat.domain.store.entity.QStoreOrderScheduleTimeRange;
 import com.groupeat.domain.store.enums.StoreCategory;
 import com.groupeat.domain.store.enums.StoreRegion;
+import com.groupeat.domain.store.enums.StoreOrderScheduleTimeRangeType;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +23,7 @@ import java.util.List;
 
 import static com.groupeat.domain.store.entity.QStoreOrderSchedule.storeOrderSchedule;
 import static com.groupeat.domain.store.entity.QStoreOrderScheduleDay.storeOrderScheduleDay;
+import static com.groupeat.domain.store.entity.QStoreOrderScheduleTimeRange.storeOrderScheduleTimeRange;
 import static com.groupeat.domain.store.entity.QStore.store;
 
 @Repository
@@ -102,8 +106,14 @@ public class SearchRepository {
                         storeOrderScheduleDay.available.isTrue(),
                         isPickupDayAvailable(condition.pickupDate()),
                         isLeadTimeEnough(condition.pickupDate()),
-                        isPickupTimesAvailable(condition.pickupTimes()),
                         isQuantitySatisfied(condition.quantity())
+                )
+                .join(storeOrderScheduleTimeRange)
+                .on(
+                        storeOrderScheduleTimeRange.scheduleDay.id.eq(storeOrderScheduleDay.id),
+                        storeOrderScheduleTimeRange.deletedAt.isNull(),
+                        storeOrderScheduleTimeRange.type.eq(StoreOrderScheduleTimeRangeType.PICKUP),
+                        isPickupTimesAvailable(condition.pickupTimes())
                 );
     }
 
@@ -147,13 +157,29 @@ public class SearchRepository {
         BooleanExpression result = null;
 
         for (LocalTime time : requestedTimes) {
-            BooleanExpression timeCondition = storeOrderScheduleDay.pickupOpenTime.loe(time)
-                    .and(storeOrderScheduleDay.pickupCloseTime.goe(time));
+            BooleanExpression timeCondition = storeOrderScheduleTimeRange.startTime.loe(time)
+                    .and(storeOrderScheduleTimeRange.endTime.goe(time))
+                    .and(isPickupTimeNotInBreakTime(time));
 
             result = (result == null) ? timeCondition : result.or(timeCondition);
         }
 
         return result;
+    }
+
+    private BooleanExpression isPickupTimeNotInBreakTime(LocalTime time) {
+        QStoreOrderScheduleTimeRange breakTimeRange = new QStoreOrderScheduleTimeRange("breakTimeRange");
+        return JPAExpressions
+                .selectOne()
+                .from(breakTimeRange)
+                .where(
+                        breakTimeRange.scheduleDay.id.eq(storeOrderScheduleDay.id),
+                        breakTimeRange.deletedAt.isNull(),
+                        breakTimeRange.type.eq(StoreOrderScheduleTimeRangeType.BREAK),
+                        breakTimeRange.startTime.loe(time),
+                        breakTimeRange.endTime.gt(time)
+                )
+                .notExists();
     }
 
     private BooleanExpression isQuantitySatisfied(Integer requestedQuantity) {

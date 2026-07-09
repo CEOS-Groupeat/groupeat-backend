@@ -5,6 +5,7 @@ import com.groupeat.domain.store.dto.response.StoreDetailResponse;
 import com.groupeat.domain.store.entity.Store;
 import com.groupeat.domain.store.entity.StoreOrderSchedule;
 import com.groupeat.domain.store.entity.StoreOrderScheduleDay;
+import com.groupeat.domain.store.entity.StoreOrderScheduleTimeRange;
 import com.groupeat.domain.store.enums.StoreCategory;
 import com.groupeat.domain.store.enums.StoreRegion;
 import com.groupeat.domain.store.exception.StoreErrorStatus;
@@ -53,17 +54,13 @@ class StoreServiceTest {
                                 DayOfWeek.MONDAY,
                                 10,
                                 100,
-                                LocalTime.of(10, 0),
-                                LocalTime.of(17, 0),
-                                30
+                                List.of(StoreOrderScheduleTimeRange.pickup(LocalTime.of(10, 0), LocalTime.of(17, 0), 0))
                         ),
                         StoreOrderScheduleDay.createAvailable(
                                 DayOfWeek.WEDNESDAY,
                                 10,
                                 100,
-                                LocalTime.of(9, 0),
-                                LocalTime.of(18, 0),
-                                30
+                                List.of(StoreOrderScheduleTimeRange.pickup(LocalTime.of(9, 0), LocalTime.of(18, 0), 0))
                         ),
                         StoreOrderScheduleDay.createUnavailable(DayOfWeek.TUESDAY)
                 )
@@ -94,9 +91,11 @@ class StoreServiceTest {
                         DayOfWeek.MONDAY,
                         10,
                         100,
-                        LocalTime.of(10, 0),
-                        LocalTime.of(17, 0),
-                        30
+                        List.of(
+                                StoreOrderScheduleTimeRange.pickup(LocalTime.of(10, 0), LocalTime.of(12, 0), 0),
+                                StoreOrderScheduleTimeRange.pickup(LocalTime.of(14, 0), LocalTime.of(17, 0), 1),
+                                StoreOrderScheduleTimeRange.breakTime(LocalTime.of(10, 30), LocalTime.of(11, 0), 0)
+                        )
                 ))
         );
         when(storeRepository.findActiveStoreById(STORE_ID)).thenReturn(Optional.of(store));
@@ -107,9 +106,14 @@ class StoreServiceTest {
 
         assertThat(response.date()).isEqualTo(pickupDate);
         assertThat(response.dailyAvailableQuantity()).isEqualTo(100);
-        assertThat(response.openTime()).isEqualTo(LocalTime.of(10, 0));
-        assertThat(response.closeTime()).isEqualTo(LocalTime.of(17, 0));
         assertThat(response.intervalMinutes()).isEqualTo(30);
+        assertThat(response.pickupTimeRanges()).extracting("startTime", "endTime")
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(LocalTime.of(10, 0), LocalTime.of(12, 0)),
+                        org.assertj.core.groups.Tuple.tuple(LocalTime.of(14, 0), LocalTime.of(17, 0))
+                );
+        assertThat(response.breakTimeRanges()).extracting("startTime", "endTime")
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(LocalTime.of(10, 30), LocalTime.of(11, 0)));
     }
 
     @Test
@@ -124,9 +128,9 @@ class StoreServiceTest {
 
         assertThat(response.date()).isEqualTo(pickupDate);
         assertThat(response.dailyAvailableQuantity()).isZero();
-        assertThat(response.openTime()).isNull();
-        assertThat(response.closeTime()).isNull();
         assertThat(response.intervalMinutes()).isNull();
+        assertThat(response.pickupTimeRanges()).isEmpty();
+        assertThat(response.breakTimeRanges()).isEmpty();
     }
 
     @Test
@@ -147,8 +151,8 @@ class StoreServiceTest {
         PickupTimeResponse response = storeService.getAvailablePickupTimes(STORE_ID, pickupDate);
 
         assertThat(response.dailyAvailableQuantity()).isZero();
-        assertThat(response.openTime()).isNull();
-        assertThat(response.closeTime()).isNull();
+        assertThat(response.pickupTimeRanges()).isEmpty();
+        assertThat(response.breakTimeRanges()).isEmpty();
     }
 
     @Test
@@ -164,9 +168,7 @@ class StoreServiceTest {
                         DayOfWeek.MONDAY,
                         10,
                         100,
-                        LocalTime.of(10, 0),
-                        LocalTime.of(17, 0),
-                        30
+                        List.of(StoreOrderScheduleTimeRange.pickup(LocalTime.of(10, 0), LocalTime.of(17, 0), 0))
                 ))
         );
         when(storeRepository.findActiveStoreById(STORE_ID)).thenReturn(Optional.of(store));
@@ -176,8 +178,8 @@ class StoreServiceTest {
         PickupTimeResponse response = storeService.getAvailablePickupTimes(STORE_ID, pickupDate);
 
         assertThat(response.dailyAvailableQuantity()).isZero();
-        assertThat(response.openTime()).isNull();
-        assertThat(response.closeTime()).isNull();
+        assertThat(response.pickupTimeRanges()).isEmpty();
+        assertThat(response.breakTimeRanges()).isEmpty();
     }
 
     @Test

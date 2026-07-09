@@ -4,9 +4,13 @@ import com.groupeat.domain.store.dto.response.OwnerStoreOrderScheduleResponse;
 import com.groupeat.domain.store.entity.Store;
 import com.groupeat.domain.store.entity.StoreOrderSchedule;
 import com.groupeat.domain.store.entity.StoreOrderScheduleDay;
+import com.groupeat.domain.store.entity.StoreOrderScheduleTimeRange;
+import com.groupeat.domain.store.enums.StoreOrderScheduleTimeRangeType;
 
 import java.time.DayOfWeek;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -51,9 +55,9 @@ public class StoreOrderScheduleConverter {
                 .available(day.isAvailable())
                 .minOrderQuantity(day.getMinOrderQuantity())
                 .maxOrderQuantity(day.getMaxOrderQuantity())
-                .pickupOpenTime(day.getPickupOpenTime())
-                .pickupCloseTime(day.getPickupCloseTime())
                 .intervalMinutes(day.getIntervalMinutes())
+                .pickupTimeRanges(toTimeRangeResponses(day, StoreOrderScheduleTimeRangeType.PICKUP))
+                .breakTimeRanges(toTimeRangeResponses(day, StoreOrderScheduleTimeRangeType.BREAK))
                 .build();
     }
 
@@ -62,6 +66,22 @@ public class StoreOrderScheduleConverter {
                 .dayOfWeek(dayOfWeek)
                 .available(false)
                 .intervalMinutes(StoreOrderScheduleDay.DEFAULT_INTERVAL_MINUTES)
+                .pickupTimeRanges(List.of())
+                .breakTimeRanges(List.of())
                 .build();
+    }
+
+    private static List<OwnerStoreOrderScheduleResponse.TimeRangeResponse> toTimeRangeResponses(
+            StoreOrderScheduleDay day,
+            StoreOrderScheduleTimeRangeType type
+    ) {
+        return day.getTimeRanges().stream()
+                .filter(timeRange -> timeRange.getType() == type)
+                .sorted(Comparator.comparing(StoreOrderScheduleTimeRange::getSortOrder))
+                .map(timeRange -> OwnerStoreOrderScheduleResponse.TimeRangeResponse.builder()
+                        .startTime(timeRange.getStartTime())
+                        .endTime(timeRange.getEndTime())
+                        .build())
+                .toList();
     }
 }

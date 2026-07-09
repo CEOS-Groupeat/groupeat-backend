@@ -28,12 +28,14 @@ public class OwnerMyPageService {
     private final SocialAccountRepository socialAccountRepository;
     private final BusinessProfileRepository businessProfileRepository;
 
+    // 사업자 프로필 조회
     public OwnerProfileResponse getProfile(Long memberId) {
         Member member = getActiveBusinessOwner(memberId);
         SocialAccount socialAccount = socialAccountRepository.findByMemberId(memberId).orElse(null);
         return OwnerProfileResponse.from(member, socialAccount);
     }
 
+    // 사업자 정보 조회
     public OwnerBusinessProfileResponse getBusinessProfile(Long memberId) {
         getActiveBusinessOwner(memberId);
         BusinessProfile businessProfile = businessProfileRepository.findByMemberId(memberId)
@@ -41,6 +43,7 @@ public class OwnerMyPageService {
         return OwnerBusinessProfileResponse.from(businessProfile);
     }
 
+    // 사업자 프로필 수정
     @Transactional
     public OwnerProfileResponse updateProfile(Long memberId, OwnerProfileUpdateRequest request) {
         Member member = getActiveBusinessOwner(memberId);
@@ -56,6 +59,7 @@ public class OwnerMyPageService {
         return OwnerProfileResponse.from(member, socialAccount);
     }
 
+    // 사업자 자격 검증
     public Member getActiveBusinessOwner(Long memberId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new GeneralException(MemberErrorStatus.MEMBER_NOT_FOUND));

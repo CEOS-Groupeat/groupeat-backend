@@ -25,12 +25,13 @@ import java.util.stream.Collectors;
 public class OwnerMyPageTermsService {
 
     private static final Set<TermsTargetType> OWNER_TARGET_TYPES =
-            Set.of(TermsTargetType.COMMON, TermsTargetType.BUSINESS);
+            Set.of(TermsTargetType.COMMON, TermsTargetType.BUSINESS); // 사업자용은 COMMON, BUSINESS 약관만 허용
 
     private final TermsRepository termsRepository;
     private final MemberTermsAgreementRepository agreementRepository;
     private final OwnerMyPageService ownerMyPageService;
 
+    // 사업자 약관 조회
     public List<CustomerTermsResponse> getTerms(Long memberId) {
         ownerMyPageService.getActiveBusinessOwner(memberId);
 
@@ -51,6 +52,7 @@ public class OwnerMyPageTermsService {
                 .toList();
     }
 
+    // 사업자 약관 상세 조회
     public CustomerTermsDetailResponse getTermsDetail(Long memberId, Long termsId) {
         ownerMyPageService.getActiveBusinessOwner(memberId);
         Terms terms = getAccessibleTerms(termsId);

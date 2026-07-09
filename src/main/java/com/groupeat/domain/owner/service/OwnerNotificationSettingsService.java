@@ -30,6 +30,7 @@ public class OwnerNotificationSettingsService {
     private final TermsRepository termsRepository;
     private final MemberTermsAgreementRepository agreementRepository;
 
+    // 사업자 알림설정 조회
     public OwnerNotificationSettingsResponse getSettings(Long memberId) {
         Member member = ownerMyPageService.getActiveBusinessOwner(memberId);
         Terms marketingTerms = getMarketingTerms();
@@ -38,6 +39,7 @@ public class OwnerNotificationSettingsService {
         return OwnerNotificationSettingsResponse.of(member, marketingTerms, marketingAgreement);
     }
 
+    // 사업자 알림설정 수정
     @Transactional
     public OwnerNotificationSettingsResponse updateSettings(
             Long memberId,

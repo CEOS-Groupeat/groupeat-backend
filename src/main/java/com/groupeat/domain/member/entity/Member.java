@@ -45,6 +45,9 @@ public class Member extends BaseEntity {
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean isAdmin = false;
 
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean orderStatusNotificationAgreed = true;
+
     private String name;
 
     @Column(unique = true)
@@ -110,4 +113,19 @@ public class Member extends BaseEntity {
     public boolean isBusiness() {
         return this.memberType == MemberType.BUSINESS;
     }
+
+    public void updateAccount(
+            String email,
+            LocalDate birthDate,
+            Gender gender
+    ) {
+        this.email = email;
+        this.birthDate = birthDate;
+        this.gender = gender;
+    }
+
+    public void updateOrderStatusNotificationAgreement(boolean agreed) {
+        this.orderStatusNotificationAgreed = agreed;
+    }
+
 }

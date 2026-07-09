@@ -5,6 +5,9 @@ import lombok.Builder;
 
 @Builder
 public record OwnerDashboardSummaryResponse(
+        @Schema(description = "가게 이름", example = "데이브런치")
+        String storeName,
+
         @Schema(description = "승인 대기 주문 건수", example = "3")
         long waitingCount,
 

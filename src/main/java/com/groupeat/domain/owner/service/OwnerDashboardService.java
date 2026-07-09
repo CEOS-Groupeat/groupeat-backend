@@ -10,6 +10,9 @@ import com.groupeat.domain.owner.dto.response.OwnerDashboardSummaryResponse;
 import com.groupeat.domain.owner.exception.OwnerErrorStatus;
 import com.groupeat.domain.owner.repository.OwnerOrderQueryRepository;
 import com.groupeat.domain.signup.exception.SignupErrorStatus;
+import com.groupeat.domain.store.entity.Store;
+import com.groupeat.domain.store.exception.StoreErrorStatus;
+import com.groupeat.domain.store.repository.StoreRepository;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,9 +28,13 @@ public class OwnerDashboardService {
 
     private final OwnerOrderQueryRepository ownerOrderQueryRepository;
     private final MemberRepository memberRepository;
+    private final StoreRepository storeRepository;
 
     public OwnerDashboardSummaryResponse getDashboardSummary(Long ownerId) {
         validateOwner(ownerId);
+
+        Store store = storeRepository.findActiveStoreByBusinessMemberId(ownerId)
+                .orElseThrow(() -> new GeneralException(StoreErrorStatus.OWNER_STORE_NOT_FOUND));
 
         List<OrderStatus> targetStatuses = List.of(OrderStatus.PAID, OrderStatus.ACCEPTED, OrderStatus.COMPLETED);
         Map<OrderStatus, Long> counts = ownerOrderQueryRepository.countOrdersByStatuses(ownerId, targetStatuses);
@@ -37,6 +44,7 @@ public class OwnerDashboardService {
         }
 
         return OwnerDashboardSummaryResponse.builder()
+                .storeName(store.getStoreName())
                 .waitingCount(counts.getOrDefault(OrderStatus.PAID, 0L))
                 .confirmedCount(counts.getOrDefault(OrderStatus.ACCEPTED, 0L))
                 .completedCount(counts.getOrDefault(OrderStatus.COMPLETED, 0L))

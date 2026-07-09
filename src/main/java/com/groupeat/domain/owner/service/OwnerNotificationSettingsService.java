@@ -25,7 +25,6 @@ public class OwnerNotificationSettingsService {
 
     private static final Set<TermsTargetType> OWNER_TARGET_TYPES =
             Set.of(TermsTargetType.COMMON, TermsTargetType.BUSINESS);
-    private static final String MARKETING_TERMS_KEYWORD = "마케팅";
 
     private final OwnerMyPageService ownerMyPageService;
     private final TermsRepository termsRepository;
@@ -92,10 +91,6 @@ public class OwnerNotificationSettingsService {
                         OWNER_TARGET_TYPES,
                         TermsType.MARKETING
                 )
-                .or(() -> termsRepository.findByTargetTypeInAndActiveTrueAndRequiredFalse(OWNER_TARGET_TYPES)
-                        .stream()
-                        .filter(terms -> terms.getTitle().contains(MARKETING_TERMS_KEYWORD))
-                        .findFirst())
                 .orElseThrow(() -> new GeneralException(TermsErrorStatus.MARKETING_TERMS_NOT_CONFIGURED));
     }
 }

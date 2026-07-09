@@ -25,7 +25,6 @@ public class CustomerNotificationSettingsService {
 
     private static final Set<TermsTargetType> CUSTOMER_TARGET_TYPES =
             Set.of(TermsTargetType.COMMON, TermsTargetType.CUSTOMER);
-    private static final String MARKETING_TERMS_KEYWORD = "마케팅";
 
     private final CustomerMyPageService customerMyPageService;
     private final TermsRepository termsRepository;
@@ -90,10 +89,6 @@ public class CustomerNotificationSettingsService {
                         CUSTOMER_TARGET_TYPES,
                         TermsType.MARKETING
                 )
-                .or(() -> termsRepository.findByTargetTypeInAndActiveTrueAndRequiredFalse(CUSTOMER_TARGET_TYPES)
-                        .stream()
-                        .filter(terms -> terms.getTitle().contains(MARKETING_TERMS_KEYWORD))
-                        .findFirst())
                 .orElseThrow(() -> new GeneralException(TermsErrorStatus.MARKETING_TERMS_NOT_CONFIGURED));
     }
 }

@@ -11,6 +11,7 @@ import com.groupeat.domain.review.converter.ReviewConverter;
 import com.groupeat.domain.review.dto.request.ReviewCreateRequest;
 import com.groupeat.domain.review.dto.response.ReviewCreateResponse;
 import com.groupeat.domain.review.dto.response.ReviewListResponse;
+import com.groupeat.domain.review.dto.response.ReviewSummaryResponse;
 import com.groupeat.domain.review.entity.Review;
 import com.groupeat.domain.review.entity.ReviewImage;
 import com.groupeat.domain.review.exception.ReviewErrorStatus;
@@ -19,6 +20,8 @@ import com.groupeat.domain.review.repository.ReviewQueryRepository;
 import com.groupeat.domain.review.repository.ReviewRepository;
 import com.groupeat.domain.signup.exception.SignupErrorStatus;
 import com.groupeat.domain.store.entity.Store;
+import com.groupeat.domain.store.exception.StoreErrorStatus;
+import com.groupeat.domain.store.repository.StoreRepository;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -41,6 +44,7 @@ public class ReviewService {
 
     private final ReviewConverter reviewConverter;
     private final MemberRepository memberRepository;
+    private final StoreRepository storeRepository;
 
     @Transactional
     public ReviewCreateResponse createReview(Long memberId, ReviewCreateRequest request) {
@@ -156,5 +160,28 @@ public class ReviewService {
             List<OrderItem> orderItems = orderItemsMap.getOrDefault(review.getOrder().getId(), List.of());
             return reviewConverter.toReviewDetailDTO(review, images, orderItems);
         }).toList();
+    }
+
+    public ReviewSummaryResponse getReviewSummary(Long storeId) {
+        Store store = storeRepository.findActiveStoreById(storeId)
+                .orElseThrow(() -> new GeneralException(StoreErrorStatus.STORE_NOT_FOUND));
+
+        // 해당 가게의 모든 별점 가져오기
+        List<Integer> ratings = reviewRepository.findRatingsByStoreId(storeId);
+
+        int totalReviewCount = ratings.size();
+        double averageRating = totalReviewCount == 0 ? 0.0 :
+                Math.round(ratings.stream().mapToInt(Integer::intValue).average().orElse(0.0) * 10) / 10.0;
+
+        return ReviewSummaryResponse.builder()
+                .storeName(store.getStoreName())
+                .averageRating(averageRating)
+                .totalReviewCount(totalReviewCount)
+                .rating5Count((int) ratings.stream().filter(r -> r == 5).count())
+                .rating4Count((int) ratings.stream().filter(r -> r == 4).count())
+                .rating3Count((int) ratings.stream().filter(r -> r == 3).count())
+                .rating2Count((int) ratings.stream().filter(r -> r == 2).count())
+                .rating1Count((int) ratings.stream().filter(r -> r == 1).count())
+                .build();
     }
 }

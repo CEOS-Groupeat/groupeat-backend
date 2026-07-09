@@ -3,7 +3,7 @@ package com.groupeat.domain.review.converter;
 import com.groupeat.domain.orders.entity.OrderItem;
 import com.groupeat.domain.review.dto.response.OwnerReplyCreateResponse;
 import com.groupeat.domain.review.dto.response.OwnerReviewListResponse.OwnerReviewCardDTO;
-import com.groupeat.domain.review.dto.response.OwnerReviewSummaryResponse;
+import com.groupeat.domain.review.dto.response.ReviewSummaryResponse;
 import com.groupeat.domain.review.entity.Review;
 import com.groupeat.domain.review.entity.ReviewImage;
 import org.springframework.stereotype.Component;
@@ -39,11 +39,11 @@ public class OwnerReviewConverter {
                 .build();
     }
 
-    public OwnerReviewSummaryResponse toSummaryResponse(String storeName, List<Integer> ratings) {
+    public ReviewSummaryResponse toSummaryResponse(String storeName, List<Integer> ratings) {
         int totalReviewCount = ratings.size();
 
         if (totalReviewCount == 0) {
-            return OwnerReviewSummaryResponse.builder()
+            return ReviewSummaryResponse.builder()
                     .storeName(storeName)
                     .averageRating(0.0)
                     .totalReviewCount(0)
@@ -54,7 +54,7 @@ public class OwnerReviewConverter {
 
         averageRating = Math.round(averageRating * 10) / 10.0;
 
-        return OwnerReviewSummaryResponse.builder()
+        return ReviewSummaryResponse.builder()
                 .storeName(storeName)
                 .averageRating(averageRating)
                 .totalReviewCount(totalReviewCount)

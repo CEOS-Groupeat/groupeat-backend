@@ -4,8 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 @Builder
-@Schema(name = "OwnerReviewSummaryResponse", description = "사장님 리뷰 관리 최상단 요약 정보")
-public record OwnerReviewSummaryResponse(
+@Schema(name = "ReviewSummaryResponse", description = "사장님 리뷰 관리 최상단 요약 정보")
+public record ReviewSummaryResponse(
         @Schema(description = "가게 이름", example = "데이브런치")
         String storeName,
 

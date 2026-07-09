@@ -4,8 +4,7 @@ import com.groupeat.domain.auth.jwt.AuthenticatedMember;
 import com.groupeat.domain.review.dto.request.OwnerReplyCreateRequest;
 import com.groupeat.domain.review.dto.response.OwnerReplyCreateResponse;
 import com.groupeat.domain.review.dto.response.OwnerReviewListResponse;
-import com.groupeat.domain.review.dto.response.OwnerReviewSummaryResponse;
-import com.groupeat.domain.review.dto.response.ReviewCreateResponse;
+import com.groupeat.domain.review.dto.response.ReviewSummaryResponse;
 import com.groupeat.domain.review.service.OwnerReviewService;
 import com.groupeat.global.apiPayload.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,10 +25,10 @@ public class OwnerReviewController {
 
     @GetMapping("/summary")
     @Operation(summary = "리뷰 요약 정보 조회", description = "가게의 총 평점 및 별점 분포 요약 정보를 조회합니다.")
-    public ApiResponse<OwnerReviewSummaryResponse> getReviewSummary(
+    public ApiResponse<ReviewSummaryResponse> getReviewSummary(
             @AuthenticationPrincipal AuthenticatedMember member
     ) {
-        OwnerReviewSummaryResponse response = ownerReviewService.getReviewSummary(member.memberId());
+        ReviewSummaryResponse response = ownerReviewService.getReviewSummary(member.memberId());
         return ApiResponse.onSuccess(response);
     }
 

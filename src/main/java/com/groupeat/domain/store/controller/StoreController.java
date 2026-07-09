@@ -1,6 +1,7 @@
 package com.groupeat.domain.store.controller;
 
 import com.groupeat.domain.review.dto.response.ReviewListResponse;
+import com.groupeat.domain.review.dto.response.ReviewSummaryResponse;
 import com.groupeat.domain.review.service.ReviewService;
 import com.groupeat.domain.store.dto.response.MenuListResponse;
 import com.groupeat.domain.store.dto.response.PickupTimeResponse;
@@ -67,6 +68,15 @@ public class StoreController {
             @RequestParam(defaultValue = "10") @Schema(description = "조회할 개수") int size
     ) {
         ReviewListResponse response = reviewService.getStoreReviews(storeId, lastReviewId, size);
+        return ApiResponse.onSuccess(response);
+    }
+
+    @Operation(summary = "가게 리뷰 요약 정보 조회", description = "가게의 총 평점 및 별점 분포 요약 정보를 조회합니다.")
+    @GetMapping("/{storeId}/reviews/summary")
+    public ApiResponse<ReviewSummaryResponse> getStoreReviewSummary(
+            @PathVariable Long storeId
+    ) {
+        ReviewSummaryResponse response = reviewService.getReviewSummary(storeId);
         return ApiResponse.onSuccess(response);
     }
 }

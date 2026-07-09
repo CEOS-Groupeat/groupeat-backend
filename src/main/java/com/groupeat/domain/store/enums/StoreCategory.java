@@ -14,7 +14,8 @@ public enum StoreCategory {
 
     SANDWICH_KIMBAP("샌드위치&김밥"),
     DESSERT("디저트"),
-    BEVERAGE("음료");
+    BEVERAGE("음료"),
+    ETC("기타");
 
     private final String description;
 

@@ -17,7 +17,7 @@ public class StoreOrderScheduleConverter {
         if (schedule == null) {
             return OwnerStoreOrderScheduleResponse.builder()
                     .storeId(store.getId())
-                    .days(Arrays.stream(DayOfWeek.values())
+                    .dailySchedules(Arrays.stream(DayOfWeek.values())
                             .map(StoreOrderScheduleConverter::toUnavailableDayResponse)
                             .toList())
                     .build();
@@ -31,14 +31,14 @@ public class StoreOrderScheduleConverter {
                 .storeId(store.getId())
                 .startDate(schedule.getStartDate())
                 .endDate(schedule.getEndDate())
-                .minOrderDays(schedule.getMinOrderDays())
-                .days(Arrays.stream(DayOfWeek.values())
+                .minimumOrderDeadlineDays(schedule.getMinOrderDays())
+                .dailySchedules(Arrays.stream(DayOfWeek.values())
                         .map(dayOfWeek -> toDayResponse(dayOfWeek, dayMap.get(dayOfWeek)))
                         .toList())
                 .build();
     }
 
-    private static OwnerStoreOrderScheduleResponse.DayScheduleResponse toDayResponse(
+    private static OwnerStoreOrderScheduleResponse.DailyScheduleResponse toDayResponse(
             DayOfWeek dayOfWeek,
             StoreOrderScheduleDay day
     ) {
@@ -46,22 +46,36 @@ public class StoreOrderScheduleConverter {
             return toUnavailableDayResponse(dayOfWeek);
         }
 
-        return OwnerStoreOrderScheduleResponse.DayScheduleResponse.builder()
+        return OwnerStoreOrderScheduleResponse.DailyScheduleResponse.builder()
                 .dayOfWeek(day.getDayOfWeek())
                 .available(day.isAvailable())
                 .minOrderQuantity(day.getMinOrderQuantity())
                 .maxOrderQuantity(day.getMaxOrderQuantity())
-                .pickupOpenTime(day.getPickupOpenTime())
-                .pickupCloseTime(day.getPickupCloseTime())
                 .intervalMinutes(day.getIntervalMinutes())
+                .pickupTimeRange(toTimeRangeResponse(day.getPickupStartTime(), day.getPickupEndTime()))
+                .breakTimeRange(toTimeRangeResponse(day.getBreakStartTime(), day.getBreakEndTime()))
                 .build();
     }
 
-    private static OwnerStoreOrderScheduleResponse.DayScheduleResponse toUnavailableDayResponse(DayOfWeek dayOfWeek) {
-        return OwnerStoreOrderScheduleResponse.DayScheduleResponse.builder()
+    private static OwnerStoreOrderScheduleResponse.DailyScheduleResponse toUnavailableDayResponse(DayOfWeek dayOfWeek) {
+        return OwnerStoreOrderScheduleResponse.DailyScheduleResponse.builder()
                 .dayOfWeek(dayOfWeek)
                 .available(false)
                 .intervalMinutes(StoreOrderScheduleDay.DEFAULT_INTERVAL_MINUTES)
+                .build();
+    }
+
+    private static OwnerStoreOrderScheduleResponse.TimeRangeResponse toTimeRangeResponse(
+            java.time.LocalTime startTime,
+            java.time.LocalTime endTime
+    ) {
+        if (startTime == null || endTime == null) {
+            return null;
+        }
+
+        return OwnerStoreOrderScheduleResponse.TimeRangeResponse.builder()
+                .startTime(startTime)
+                .endTime(endTime)
                 .build();
     }
 }

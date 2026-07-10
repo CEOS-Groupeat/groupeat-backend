@@ -1,7 +1,6 @@
 package com.groupeat.domain.store.entity;
 
 import com.groupeat.global.entity.BaseEntity;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -11,6 +10,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Column;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -62,32 +62,40 @@ public class StoreOrderScheduleDay extends BaseEntity {
     @Column(name = "max_order_quantity")
     private Integer maxOrderQuantity;
 
-    @Column(name = "pickup_open_time")
-    private LocalTime pickupOpenTime;
-
-    @Column(name = "pickup_close_time")
-    private LocalTime pickupCloseTime;
-
-    @Builder.Default
     @Column(name = "interval_minutes", nullable = false)
-    private Integer intervalMinutes = DEFAULT_INTERVAL_MINUTES;
+    private Integer intervalMinutes;
+
+    @Column(name = "pickup_start_time")
+    private LocalTime pickupStartTime;
+
+    @Column(name = "pickup_end_time")
+    private LocalTime pickupEndTime;
+
+    @Column(name = "break_start_time")
+    private LocalTime breakStartTime;
+
+    @Column(name = "break_end_time")
+    private LocalTime breakEndTime;
 
     public static StoreOrderScheduleDay createAvailable(
             DayOfWeek dayOfWeek,
             Integer minOrderQuantity,
             Integer maxOrderQuantity,
-            LocalTime pickupOpenTime,
-            LocalTime pickupCloseTime,
-            Integer intervalMinutes
+            LocalTime pickupStartTime,
+            LocalTime pickupEndTime,
+            LocalTime breakStartTime,
+            LocalTime breakEndTime
     ) {
         return StoreOrderScheduleDay.builder()
                 .dayOfWeek(dayOfWeek)
                 .available(true)
                 .minOrderQuantity(minOrderQuantity)
                 .maxOrderQuantity(maxOrderQuantity)
-                .pickupOpenTime(pickupOpenTime)
-                .pickupCloseTime(pickupCloseTime)
-                .intervalMinutes(intervalMinutes != null ? intervalMinutes : DEFAULT_INTERVAL_MINUTES)
+                .intervalMinutes(DEFAULT_INTERVAL_MINUTES)
+                .pickupStartTime(pickupStartTime)
+                .pickupEndTime(pickupEndTime)
+                .breakStartTime(breakStartTime)
+                .breakEndTime(breakEndTime)
                 .build();
     }
 
@@ -103,9 +111,11 @@ public class StoreOrderScheduleDay extends BaseEntity {
         this.available = day.available;
         this.minOrderQuantity = day.minOrderQuantity;
         this.maxOrderQuantity = day.maxOrderQuantity;
-        this.pickupOpenTime = day.pickupOpenTime;
-        this.pickupCloseTime = day.pickupCloseTime;
         this.intervalMinutes = day.intervalMinutes;
+        this.pickupStartTime = day.pickupStartTime;
+        this.pickupEndTime = day.pickupEndTime;
+        this.breakStartTime = day.breakStartTime;
+        this.breakEndTime = day.breakEndTime;
     }
 
     void assignSchedule(StoreOrderSchedule schedule) {

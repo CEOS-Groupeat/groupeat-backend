@@ -18,7 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
-import java.util.ArrayList;
+import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +59,7 @@ public class OwnerStoreOrderScheduleService {
                     store,
                     request.startDate(),
                     request.endDate(),
-                    request.minOrderDays(),
+                    request.minimumOrderDeadlineDays(),
                     days
             );
             schedule = scheduleRepository.save(schedule);
@@ -66,7 +67,7 @@ public class OwnerStoreOrderScheduleService {
             schedule.updatePeriod(
                     request.startDate(),
                     request.endDate(),
-                    request.minOrderDays()
+                    request.minimumOrderDeadlineDays()
             );
             schedule.updateDays(days);
         }
@@ -92,80 +93,108 @@ public class OwnerStoreOrderScheduleService {
     }
 
     private void validateRequest(OwnerStoreOrderScheduleRequest request) {
+        if (request == null
+                || request.startDate() == null
+                || request.endDate() == null
+                || request.minimumOrderDeadlineDays() == null
+                || request.dailySchedules() == null
+                || request.dailySchedules().size() != DayOfWeek.values().length) {
+            throw new GeneralException(StoreErrorStatus.INVALID_ORDER_SCHEDULE);
+        }
+
         if (request.startDate().isAfter(request.endDate())) {
             throw new GeneralException(StoreErrorStatus.INVALID_ORDER_SCHEDULE);
         }
 
-        Map<DayOfWeek, OwnerStoreOrderScheduleRequest.DayScheduleRequest> requestByDay =
+        Map<DayOfWeek, OwnerStoreOrderScheduleRequest.DailyScheduleRequest> dailySchedulesByDay =
                 new EnumMap<>(DayOfWeek.class);
 
-        for (OwnerStoreOrderScheduleRequest.DayScheduleRequest dayRequest : nonNullDays(request.days())) {
-            if (dayRequest == null || dayRequest.dayOfWeek() == null || dayRequest.available() == null) {
+        for (OwnerStoreOrderScheduleRequest.DailyScheduleRequest dailySchedule : request.dailySchedules()) {
+            if (dailySchedule == null || dailySchedule.dayOfWeek() == null || dailySchedule.available() == null) {
                 throw new GeneralException(StoreErrorStatus.INVALID_ORDER_SCHEDULE);
             }
-            if (requestByDay.put(dayRequest.dayOfWeek(), dayRequest) != null) {
+            if (dailySchedulesByDay.put(dailySchedule.dayOfWeek(), dailySchedule) != null) {
                 throw new GeneralException(StoreErrorStatus.INVALID_ORDER_SCHEDULE);
             }
-            validateDayRequest(dayRequest);
+            validateDailyScheduleRequest(dailySchedule);
+        }
+
+        if (!dailySchedulesByDay.keySet().containsAll(Arrays.asList(DayOfWeek.values()))) {
+            throw new GeneralException(StoreErrorStatus.INVALID_ORDER_SCHEDULE);
         }
     }
 
-    private void validateDayRequest(OwnerStoreOrderScheduleRequest.DayScheduleRequest dayRequest) {
-        if (!dayRequest.available()) {
+    private void validateDailyScheduleRequest(OwnerStoreOrderScheduleRequest.DailyScheduleRequest request) {
+        if (!request.available()) {
             return;
         }
 
-        if (dayRequest.minOrderQuantity() == null
-                || dayRequest.maxOrderQuantity() == null
-                || dayRequest.pickupOpenTime() == null
-                || dayRequest.pickupCloseTime() == null) {
+        if (request.minOrderQuantity() == null
+                || request.maxOrderQuantity() == null
+                || request.pickupTimeRange() == null) {
             throw new GeneralException(StoreErrorStatus.INVALID_ORDER_SCHEDULE);
         }
 
-        if (dayRequest.minOrderQuantity() > dayRequest.maxOrderQuantity()) {
+        if (request.minOrderQuantity() > request.maxOrderQuantity()) {
             throw new GeneralException(StoreErrorStatus.INVALID_ORDER_SCHEDULE);
         }
 
-        if (!dayRequest.pickupOpenTime().isBefore(dayRequest.pickupCloseTime())) {
-            throw new GeneralException(StoreErrorStatus.INVALID_ORDER_SCHEDULE);
+        validateTimeRange(request.pickupTimeRange());
+        if (request.breakTimeRange() != null) {
+            validateTimeRange(request.breakTimeRange());
+            validateBreakTimeWithinPickupTime(request.pickupTimeRange(), request.breakTimeRange());
         }
     }
 
     private List<StoreOrderScheduleDay> toScheduleDays(OwnerStoreOrderScheduleRequest request) {
-        Map<DayOfWeek, OwnerStoreOrderScheduleRequest.DayScheduleRequest> requestByDay =
-                new EnumMap<>(DayOfWeek.class);
-
-        for (OwnerStoreOrderScheduleRequest.DayScheduleRequest dayRequest : nonNullDays(request.days())) {
-            if (dayRequest == null || dayRequest.dayOfWeek() == null || dayRequest.available() == null) {
-                throw new GeneralException(StoreErrorStatus.INVALID_ORDER_SCHEDULE);
-            }
-            requestByDay.put(dayRequest.dayOfWeek(), dayRequest);
-        }
-
-        List<StoreOrderScheduleDay> days = new ArrayList<>();
-        for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
-            OwnerStoreOrderScheduleRequest.DayScheduleRequest dayRequest = requestByDay.get(dayOfWeek);
-            if (dayRequest == null || !dayRequest.available()) {
-                days.add(StoreOrderScheduleDay.createUnavailable(dayOfWeek));
-                continue;
-            }
-
-            days.add(StoreOrderScheduleDay.createAvailable(
-                    dayRequest.dayOfWeek(),
-                    dayRequest.minOrderQuantity(),
-                    dayRequest.maxOrderQuantity(),
-                    dayRequest.pickupOpenTime(),
-                    dayRequest.pickupCloseTime(),
-                    dayRequest.intervalMinutes()
-            ));
-        }
-
-        return days;
+        return request.dailySchedules().stream()
+                .map(this::toScheduleDay)
+                .toList();
     }
 
-    private List<OwnerStoreOrderScheduleRequest.DayScheduleRequest> nonNullDays(
-            List<OwnerStoreOrderScheduleRequest.DayScheduleRequest> days
+    private StoreOrderScheduleDay toScheduleDay(OwnerStoreOrderScheduleRequest.DailyScheduleRequest request) {
+        if (!request.available()) {
+            return StoreOrderScheduleDay.createUnavailable(request.dayOfWeek());
+        }
+
+        return StoreOrderScheduleDay.createAvailable(
+                request.dayOfWeek(),
+                request.minOrderQuantity(),
+                request.maxOrderQuantity(),
+                request.pickupTimeRange().startTime(),
+                request.pickupTimeRange().endTime(),
+                request.breakTimeRange() != null ? request.breakTimeRange().startTime() : null,
+                request.breakTimeRange() != null ? request.breakTimeRange().endTime() : null
+        );
+    }
+
+    private void validateTimeRange(OwnerStoreOrderScheduleRequest.TimeRangeRequest timeRange) {
+        if (timeRange == null || timeRange.startTime() == null || timeRange.endTime() == null) {
+            throw new GeneralException(StoreErrorStatus.INVALID_ORDER_SCHEDULE);
+        }
+        if (!timeRange.startTime().isBefore(timeRange.endTime())) {
+            throw new GeneralException(StoreErrorStatus.INVALID_ORDER_SCHEDULE);
+        }
+        if (!isThirtyMinuteUnit(timeRange.startTime()) || !isThirtyMinuteUnit(timeRange.endTime())) {
+            throw new GeneralException(StoreErrorStatus.INVALID_ORDER_SCHEDULE);
+        }
+    }
+
+    private void validateBreakTimeWithinPickupTime(
+            OwnerStoreOrderScheduleRequest.TimeRangeRequest pickupTimeRange,
+            OwnerStoreOrderScheduleRequest.TimeRangeRequest breakTimeRange
     ) {
-        return days != null ? days : List.of();
+        boolean includedInPickupTime = !breakTimeRange.startTime().isBefore(pickupTimeRange.startTime())
+                && !breakTimeRange.endTime().isAfter(pickupTimeRange.endTime());
+        if (!includedInPickupTime) {
+            throw new GeneralException(StoreErrorStatus.INVALID_ORDER_SCHEDULE);
+        }
     }
+
+    private boolean isThirtyMinuteUnit(LocalTime time) {
+        return time.getSecond() == 0
+                && time.getNano() == 0
+                && (time.getMinute() == 0 || time.getMinute() == 30);
+    }
+
 }

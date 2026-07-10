@@ -89,7 +89,7 @@ public class StoreConverter {
 
         return schedule.getDays().stream()
                 .filter(StoreOrderScheduleDay::isAvailable)
-                .map(StoreOrderScheduleDay::getPickupOpenTime)
+                .map(StoreOrderScheduleDay::getPickupStartTime)
                 .min(LocalTime::compareTo)
                 .orElse(null);
     }
@@ -101,7 +101,7 @@ public class StoreConverter {
 
         return schedule.getDays().stream()
                 .filter(StoreOrderScheduleDay::isAvailable)
-                .map(StoreOrderScheduleDay::getPickupCloseTime)
+                .map(StoreOrderScheduleDay::getPickupEndTime)
                 .max(LocalTime::compareTo)
                 .orElse(null);
     }

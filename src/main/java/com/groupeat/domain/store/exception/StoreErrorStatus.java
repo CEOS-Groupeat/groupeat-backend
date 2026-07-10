@@ -21,7 +21,8 @@ public enum StoreErrorStatus implements BaseErrorCode {
     INVALID_ORDER_SCHEDULE(HttpStatus.BAD_REQUEST, "STORE4006", "유효하지 않은 주문 가능 일정 설정입니다."),
     BUSINESS_MEMBER_REQUIRED(HttpStatus.FORBIDDEN, "STORE4030", "사업자 회원만 접근할 수 있습니다."),
     ACTIVE_BUSINESS_MEMBER_REQUIRED(HttpStatus.FORBIDDEN, "STORE4031", "활성 사업자 회원만 접근할 수 있습니다."),
-    OWNER_STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "STORE4042", "사업자 회원의 가게를 찾을 수 없습니다.");
+    OWNER_STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "STORE4042", "사업자 회원의 가게를 찾을 수 없습니다."),
+    OWNER_ORDER_SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "STORE4043", "사업자 회원의 주문 가능 일정 설정을 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

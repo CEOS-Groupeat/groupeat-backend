@@ -22,6 +22,8 @@ import com.groupeat.domain.orders.repository.OrderRepository;
 import com.groupeat.domain.payment.entity.Payment;
 import com.groupeat.domain.payment.repository.PaymentRepository;
 import com.groupeat.domain.signup.exception.SignupErrorStatus;
+import com.groupeat.domain.store.entity.Menu;
+import com.groupeat.domain.store.repository.MenuRepository;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,6 +44,7 @@ public class OwnerOrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderItemOptionRepository orderItemOptionRepository;
+    private final MenuRepository menuRepository;
     private final MemberRepository memberRepository;
     private final PaymentRepository paymentRepository;
 
@@ -119,7 +122,19 @@ public class OwnerOrderService {
         Map<Long, List<OrderItemOption>> optionsByOrderItemId = allOptions.stream()
                 .collect(Collectors.groupingBy(opt -> opt.getOrderItem().getId()));
 
-        return OwnerOrderDetailConverter.toOrderDetailDTO(order, payment, optionsByOrderItemId);
+        List<Long> menuIds = order.getOrderItems().stream()
+                .map(OrderItem::getMenuId)
+                .distinct()
+                .toList();
+
+        Map<Long, String> menuImageUrls = menuRepository.findAllById(menuIds).stream()
+                .collect(Collectors.toMap(
+                        Menu::getId,
+                        Menu::getImageUrl,
+                        (existing, replacement) -> existing
+                ));
+
+        return OwnerOrderDetailConverter.toOrderDetailDTO(order, payment, optionsByOrderItemId, menuImageUrls);
     }
 
     private void validateOwner(Long ownerId) {

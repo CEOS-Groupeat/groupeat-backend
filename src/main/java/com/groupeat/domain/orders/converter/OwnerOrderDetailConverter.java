@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 public class OwnerOrderDetailConverter {
 
-    public static OwnerOrderDetailResponse.OrderDetailDTO toOrderDetailDTO(Order order, Payment payment, Map<Long, List<OrderItemOption>> optionsByOrderItemId) {
+    public static OwnerOrderDetailResponse.OrderDetailDTO toOrderDetailDTO(Order order, Payment payment, Map<Long, List<OrderItemOption>> optionsByOrderItemId, Map<Long, String> menuImageUrls) {
 
         // 주문자 정보 매핑
         OwnerOrderDetailResponse.OrdererInfoDTO ordererInfo = OwnerOrderDetailResponse.OrdererInfoDTO.builder()
@@ -43,7 +43,7 @@ public class OwnerOrderDetailConverter {
                             .menuName(item.getMenuName())
                             .options(optionDTOs)
                             .quantity(item.getQuantity())
-                            .menuImageUrl(null)
+                            .menuImageUrl(menuImageUrls.getOrDefault(item.getMenuId(), null))
                             .discountRate(itemDiscountRate)
                             .totalAmount(item.getFinalPrice())
                             .build();

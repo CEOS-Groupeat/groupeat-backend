@@ -7,8 +7,6 @@ import com.groupeat.domain.orders.exception.OrderErrorStatus;
 import com.groupeat.domain.orders.repository.OrderRepository;
 import com.groupeat.domain.store.entity.StoreOrderSchedule;
 import com.groupeat.domain.store.entity.StoreOrderScheduleDay;
-import com.groupeat.domain.store.entity.StoreOrderScheduleTimeRange;
-import com.groupeat.domain.store.enums.StoreOrderScheduleTimeRangeType;
 import com.groupeat.domain.store.repository.StoreOrderScheduleRepository;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
@@ -89,16 +87,20 @@ public class OrderScheduleValidationService {
     }
 
     private void validatePickupTime(StoreOrderScheduleDay daySchedule, LocalTime pickupTime) {
-        boolean withinPickupTime = daySchedule.getTimeRanges().stream()
-                .filter(timeRange -> timeRange.getType() == StoreOrderScheduleTimeRangeType.PICKUP)
-                .anyMatch(timeRange -> containsInclusive(timeRange, pickupTime));
+        boolean withinPickupTime = containsInclusive(
+                daySchedule.getPickupStartTime(),
+                daySchedule.getPickupEndTime(),
+                pickupTime
+        );
         if (!withinPickupTime) {
             throw new GeneralException(OrderErrorStatus.ORDER_SCHEDULE_NOT_AVAILABLE);
         }
 
-        boolean withinBreakTime = daySchedule.getTimeRanges().stream()
-                .filter(timeRange -> timeRange.getType() == StoreOrderScheduleTimeRangeType.BREAK)
-                .anyMatch(timeRange -> containsStartInclusiveEndExclusive(timeRange, pickupTime));
+        boolean withinBreakTime = containsStartInclusiveEndExclusive(
+                daySchedule.getBreakStartTime(),
+                daySchedule.getBreakEndTime(),
+                pickupTime
+        );
         if (withinBreakTime) {
             throw new GeneralException(OrderErrorStatus.ORDER_SCHEDULE_NOT_AVAILABLE);
         }
@@ -110,12 +112,18 @@ public class OrderScheduleValidationService {
         }
     }
 
-    private boolean containsInclusive(StoreOrderScheduleTimeRange timeRange, LocalTime pickupTime) {
-        return !pickupTime.isBefore(timeRange.getStartTime()) && !pickupTime.isAfter(timeRange.getEndTime());
+    private boolean containsInclusive(LocalTime startTime, LocalTime endTime, LocalTime pickupTime) {
+        return startTime != null
+                && endTime != null
+                && !pickupTime.isBefore(startTime)
+                && !pickupTime.isAfter(endTime);
     }
 
-    private boolean containsStartInclusiveEndExclusive(StoreOrderScheduleTimeRange timeRange, LocalTime pickupTime) {
-        return !pickupTime.isBefore(timeRange.getStartTime()) && pickupTime.isBefore(timeRange.getEndTime());
+    private boolean containsStartInclusiveEndExclusive(LocalTime startTime, LocalTime endTime, LocalTime pickupTime) {
+        return startTime != null
+                && endTime != null
+                && !pickupTime.isBefore(startTime)
+                && pickupTime.isBefore(endTime);
     }
 
     private void validateRequestedQuantity(StoreOrderScheduleDay daySchedule, int requestedQuantity) {

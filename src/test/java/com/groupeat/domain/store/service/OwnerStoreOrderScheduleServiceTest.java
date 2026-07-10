@@ -62,17 +62,17 @@ class OwnerStoreOrderScheduleServiceTest {
 
         assertThat(response.storeId()).isEqualTo(store.getId());
         assertThat(response.scheduleId()).isNull();
-        assertThat(response.days()).hasSize(7);
-        assertThat(response.days()).allSatisfy(day -> {
+        assertThat(response.dailySchedules()).hasSize(7);
+        assertThat(response.dailySchedules()).allSatisfy(day -> {
             assertThat(day.available()).isFalse();
             assertThat(day.intervalMinutes()).isEqualTo(30);
-            assertThat(day.pickupTimeRanges()).isEmpty();
-            assertThat(day.breakTimeRanges()).isEmpty();
+            assertThat(day.pickupTimeRange()).isNull();
+            assertThat(day.breakTimeRange()).isNull();
         });
     }
 
     @Test
-    void saveMyOrderSchedule_createsScheduleAndTreatsMissingDaysAsUnavailable() {
+    void saveMyOrderSchedule_withoutSchedule_createsScheduleFromFinalState() {
         Store store = store();
         when(storeRepository.findActiveStoreByBusinessMemberId(BUSINESS_MEMBER_ID))
                 .thenReturn(Optional.of(store));
@@ -83,39 +83,31 @@ class OwnerStoreOrderScheduleServiceTest {
 
         OwnerStoreOrderScheduleResponse response = ownerStoreOrderScheduleService.saveMyOrderSchedule(
                 activeBusinessMember(),
-                requestWithMondayAvailable()
+                fullRequest()
         );
 
         assertThat(response.storeId()).isEqualTo(store.getId());
         assertThat(response.startDate()).isEqualTo(LocalDate.of(2026, 5, 20));
         assertThat(response.endDate()).isEqualTo(LocalDate.of(2027, 5, 20));
-        assertThat(response.minOrderDays()).isEqualTo(3);
-        assertThat(response.days()).hasSize(7);
-        assertThat(response.days())
+        assertThat(response.minimumOrderDeadlineDays()).isEqualTo(3);
+        assertThat(response.dailySchedules()).hasSize(7);
+        assertThat(response.dailySchedules())
                 .filteredOn(day -> day.dayOfWeek() == DayOfWeek.MONDAY)
                 .singleElement()
                 .satisfies(day -> {
                     assertThat(day.available()).isTrue();
-                    assertThat(day.minOrderQuantity()).isEqualTo(10);
-                    assertThat(day.maxOrderQuantity()).isEqualTo(100);
-                    assertThat(day.intervalMinutes()).isEqualTo(30);
-                    assertThat(day.pickupTimeRanges()).extracting("startTime", "endTime")
-                            .containsExactly(
-                                    org.assertj.core.groups.Tuple.tuple(LocalTime.of(10, 0), LocalTime.of(12, 0)),
-                                    org.assertj.core.groups.Tuple.tuple(LocalTime.of(14, 0), LocalTime.of(17, 0))
-                            );
-                    assertThat(day.breakTimeRanges()).extracting("startTime", "endTime")
-                            .containsExactly(org.assertj.core.groups.Tuple.tuple(LocalTime.of(10, 30), LocalTime.of(11, 0)));
+                    assertThat(day.pickupTimeRange())
+                            .extracting("startTime", "endTime")
+                            .containsExactly(LocalTime.of(10, 0), LocalTime.of(17, 0));
                 });
-        assertThat(response.days())
-                .filteredOn(day -> day.dayOfWeek() == DayOfWeek.TUESDAY)
-                .singleElement()
-                .satisfies(day -> assertThat(day.available()).isFalse());
+        assertThat(response.dailySchedules())
+                .filteredOn(day -> day.dayOfWeek() != DayOfWeek.MONDAY)
+                .allSatisfy(day -> assertThat(day.available()).isFalse());
         verify(scheduleRepository).save(any(StoreOrderSchedule.class));
     }
 
     @Test
-    void saveMyOrderSchedule_updatesExistingSchedule() {
+    void saveMyOrderSchedule_withExistingSchedule_replacesFinalState() {
         Store store = store();
         StoreOrderSchedule existingSchedule = existingSchedule(store);
         Map<DayOfWeek, StoreOrderScheduleDay> existingDays = existingSchedule.getDays().stream()
@@ -127,19 +119,44 @@ class OwnerStoreOrderScheduleServiceTest {
 
         OwnerStoreOrderScheduleResponse response = ownerStoreOrderScheduleService.saveMyOrderSchedule(
                 activeBusinessMember(),
-                requestWithMondayAvailable()
+                fullRequest()
         );
 
         assertThat(response.startDate()).isEqualTo(LocalDate.of(2026, 5, 20));
         assertThat(response.endDate()).isEqualTo(LocalDate.of(2027, 5, 20));
-        assertThat(response.minOrderDays()).isEqualTo(3);
+        assertThat(response.minimumOrderDeadlineDays()).isEqualTo(3);
         assertThat(existingSchedule.getDays()).hasSize(7);
         assertThat(existingSchedule.getDays()).allSatisfy(day ->
                 assertThat(day).isSameAs(existingDays.get(day.getDayOfWeek()))
         );
         assertThat(existingDays.get(DayOfWeek.MONDAY).isAvailable()).isTrue();
+        assertThat(existingDays.get(DayOfWeek.MONDAY).getPickupStartTime()).isEqualTo(LocalTime.of(10, 0));
+        assertThat(existingDays.get(DayOfWeek.MONDAY).getPickupEndTime()).isEqualTo(LocalTime.of(17, 0));
+        assertThat(existingDays.get(DayOfWeek.MONDAY).getBreakStartTime()).isEqualTo(LocalTime.of(10, 30));
+        assertThat(existingDays.get(DayOfWeek.MONDAY).getBreakEndTime()).isEqualTo(LocalTime.of(11, 0));
         assertThat(existingDays.get(DayOfWeek.TUESDAY).isAvailable()).isFalse();
         verify(scheduleRepository, never()).save(any(StoreOrderSchedule.class));
+    }
+
+    @Test
+    void saveMyOrderSchedule_lessThanSevenDailySchedules_throwsInvalidSchedule() {
+        Store store = store();
+        when(storeRepository.findActiveStoreByBusinessMemberId(BUSINESS_MEMBER_ID))
+                .thenReturn(Optional.of(store));
+
+        OwnerStoreOrderScheduleRequest request = requestWithDailySchedules(List.of(
+                unavailableDay(DayOfWeek.MONDAY),
+                unavailableDay(DayOfWeek.TUESDAY),
+                unavailableDay(DayOfWeek.WEDNESDAY),
+                unavailableDay(DayOfWeek.THURSDAY),
+                unavailableDay(DayOfWeek.FRIDAY),
+                unavailableDay(DayOfWeek.SATURDAY)
+        ));
+
+        assertThatThrownBy(() -> ownerStoreOrderScheduleService.saveMyOrderSchedule(activeBusinessMember(), request))
+                .isInstanceOfSatisfying(GeneralException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(StoreErrorStatus.INVALID_ORDER_SCHEDULE)
+                );
     }
 
     @Test
@@ -148,12 +165,34 @@ class OwnerStoreOrderScheduleServiceTest {
         when(storeRepository.findActiveStoreByBusinessMemberId(BUSINESS_MEMBER_ID))
                 .thenReturn(Optional.of(store));
 
-        OwnerStoreOrderScheduleRequest request = OwnerStoreOrderScheduleRequest.builder()
-                .startDate(LocalDate.of(2026, 5, 20))
-                .endDate(LocalDate.of(2027, 5, 20))
-                .minOrderDays(3)
-                .days(List.of(availableMonday(), availableMonday()))
-                .build();
+        OwnerStoreOrderScheduleRequest request = requestWithDailySchedules(List.of(
+                unavailableDay(DayOfWeek.MONDAY),
+                unavailableDay(DayOfWeek.MONDAY),
+                unavailableDay(DayOfWeek.TUESDAY),
+                unavailableDay(DayOfWeek.WEDNESDAY),
+                unavailableDay(DayOfWeek.THURSDAY),
+                unavailableDay(DayOfWeek.FRIDAY),
+                unavailableDay(DayOfWeek.SATURDAY)
+        ));
+
+        assertThatThrownBy(() -> ownerStoreOrderScheduleService.saveMyOrderSchedule(activeBusinessMember(), request))
+                .isInstanceOfSatisfying(GeneralException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(StoreErrorStatus.INVALID_ORDER_SCHEDULE)
+                );
+    }
+
+    @Test
+    void saveMyOrderSchedule_breakTimeOutsidePickupTime_throwsInvalidSchedule() {
+        Store store = store();
+        when(storeRepository.findActiveStoreByBusinessMemberId(BUSINESS_MEMBER_ID))
+                .thenReturn(Optional.of(store));
+
+        OwnerStoreOrderScheduleRequest request = requestWithDailySchedules(Arrays.stream(DayOfWeek.values())
+                .map(dayOfWeek -> dayOfWeek == DayOfWeek.MONDAY
+                        ? availableDay(dayOfWeek, timeRange(LocalTime.of(10, 0), LocalTime.of(17, 0)),
+                        timeRange(LocalTime.of(9, 30), LocalTime.of(10, 30)))
+                        : unavailableDay(dayOfWeek))
+                .toList());
 
         assertThatThrownBy(() -> ownerStoreOrderScheduleService.saveMyOrderSchedule(activeBusinessMember(), request))
                 .isInstanceOfSatisfying(GeneralException.class, exception ->
@@ -170,7 +209,7 @@ class OwnerStoreOrderScheduleServiceTest {
                 false
         );
 
-        assertThatThrownBy(() -> ownerStoreOrderScheduleService.saveMyOrderSchedule(member, requestWithMondayAvailable()))
+        assertThatThrownBy(() -> ownerStoreOrderScheduleService.saveMyOrderSchedule(member, fullRequest()))
                 .isInstanceOfSatisfying(GeneralException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(StoreErrorStatus.BUSINESS_MEMBER_REQUIRED)
                 );
@@ -183,7 +222,7 @@ class OwnerStoreOrderScheduleServiceTest {
 
         assertThatThrownBy(() -> ownerStoreOrderScheduleService.saveMyOrderSchedule(
                 activeBusinessMember(),
-                requestWithMondayAvailable()
+                fullRequest()
         ))
                 .isInstanceOfSatisfying(GeneralException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(StoreErrorStatus.OWNER_STORE_NOT_FOUND)
@@ -199,21 +238,45 @@ class OwnerStoreOrderScheduleServiceTest {
         );
     }
 
-    private OwnerStoreOrderScheduleRequest requestWithMondayAvailable() {
-        return requestWithDay(availableMonday());
+    private OwnerStoreOrderScheduleRequest fullRequest() {
+        return requestWithDailySchedules(Arrays.stream(DayOfWeek.values())
+                .map(dayOfWeek -> dayOfWeek == DayOfWeek.MONDAY
+                        ? availableDay(dayOfWeek, timeRange(LocalTime.of(10, 0), LocalTime.of(17, 0)),
+                        timeRange(LocalTime.of(10, 30), LocalTime.of(11, 0)))
+                        : unavailableDay(dayOfWeek))
+                .toList());
     }
 
-    private OwnerStoreOrderScheduleRequest.DayScheduleRequest availableMonday() {
-        return OwnerStoreOrderScheduleRequest.DayScheduleRequest.builder()
-                .dayOfWeek(DayOfWeek.MONDAY)
+    private OwnerStoreOrderScheduleRequest requestWithDailySchedules(
+            List<OwnerStoreOrderScheduleRequest.DailyScheduleRequest> dailySchedules
+    ) {
+        return OwnerStoreOrderScheduleRequest.builder()
+                .startDate(LocalDate.of(2026, 5, 20))
+                .endDate(LocalDate.of(2027, 5, 20))
+                .minimumOrderDeadlineDays(3)
+                .dailySchedules(dailySchedules)
+                .build();
+    }
+
+    private OwnerStoreOrderScheduleRequest.DailyScheduleRequest availableDay(
+            DayOfWeek dayOfWeek,
+            OwnerStoreOrderScheduleRequest.TimeRangeRequest pickupTimeRange,
+            OwnerStoreOrderScheduleRequest.TimeRangeRequest breakTimeRange
+    ) {
+        return OwnerStoreOrderScheduleRequest.DailyScheduleRequest.builder()
+                .dayOfWeek(dayOfWeek)
                 .available(true)
                 .minOrderQuantity(10)
                 .maxOrderQuantity(100)
-                .pickupTimeRanges(List.of(
-                        timeRange(LocalTime.of(10, 0), LocalTime.of(12, 0)),
-                        timeRange(LocalTime.of(14, 0), LocalTime.of(17, 0))
-                ))
-                .breakTimeRanges(List.of(timeRange(LocalTime.of(10, 30), LocalTime.of(11, 0))))
+                .pickupTimeRange(pickupTimeRange)
+                .breakTimeRange(breakTimeRange)
+                .build();
+    }
+
+    private OwnerStoreOrderScheduleRequest.DailyScheduleRequest unavailableDay(DayOfWeek dayOfWeek) {
+        return OwnerStoreOrderScheduleRequest.DailyScheduleRequest.builder()
+                .dayOfWeek(dayOfWeek)
+                .available(false)
                 .build();
     }
 

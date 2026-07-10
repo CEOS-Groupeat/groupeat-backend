@@ -23,15 +23,15 @@ public record OwnerStoreOrderScheduleResponse(
         @Schema(description = "일정 적용 종료일", example = "2027-05-20")
         LocalDate endDate,
 
-        @Schema(description = "최소 주문 가능 기한(픽업 n일 전까지 주문 가능)", example = "3")
-        Integer minOrderDays,
+        @Schema(description = "최소 주문 가능 기한(픽업 n일 전까지 주문 가능). 가게 공통 설정값입니다.", example = "3")
+        Integer minimumOrderDeadlineDays,
 
-        @Schema(description = "요일별 주문 가능 일정")
-        List<DayScheduleResponse> days
+        @Schema(description = "요일별 운영정보")
+        List<DailyScheduleResponse> dailySchedules
 ) {
 
     @Builder
-    public record DayScheduleResponse(
+    public record DailyScheduleResponse(
             @Schema(description = "요일", example = "MONDAY")
             DayOfWeek dayOfWeek,
 
@@ -47,11 +47,11 @@ public record OwnerStoreOrderScheduleResponse(
             @Schema(description = "픽업 시간 간격(분)", example = "30")
             Integer intervalMinutes,
 
-            @Schema(description = "픽업 가능 시간 구간 목록")
-            List<TimeRangeResponse> pickupTimeRanges,
+            @Schema(description = "영업/픽업 가능 시간")
+            TimeRangeResponse pickupTimeRange,
 
-            @Schema(description = "휴게 시간 구간 목록")
-            List<TimeRangeResponse> breakTimeRanges
+            @Schema(description = "휴게 시간. 휴게시간이 없으면 null")
+            TimeRangeResponse breakTimeRange
     ) {
     }
 

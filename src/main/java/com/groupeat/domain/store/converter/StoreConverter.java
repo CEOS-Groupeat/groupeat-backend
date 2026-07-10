@@ -5,8 +5,6 @@ import com.groupeat.domain.store.dto.response.StoreDetailResponse;
 import com.groupeat.domain.store.entity.Store;
 import com.groupeat.domain.store.entity.StoreOrderSchedule;
 import com.groupeat.domain.store.entity.StoreOrderScheduleDay;
-import com.groupeat.domain.store.entity.StoreOrderScheduleTimeRange;
-import com.groupeat.domain.store.enums.StoreOrderScheduleTimeRangeType;
 
 import java.time.LocalTime;
 import java.util.Comparator;
@@ -91,9 +89,7 @@ public class StoreConverter {
 
         return schedule.getDays().stream()
                 .filter(StoreOrderScheduleDay::isAvailable)
-                .flatMap(day -> day.getTimeRanges().stream())
-                .filter(timeRange -> timeRange.getType() == StoreOrderScheduleTimeRangeType.PICKUP)
-                .map(StoreOrderScheduleTimeRange::getStartTime)
+                .map(StoreOrderScheduleDay::getPickupStartTime)
                 .min(LocalTime::compareTo)
                 .orElse(null);
     }
@@ -105,9 +101,7 @@ public class StoreConverter {
 
         return schedule.getDays().stream()
                 .filter(StoreOrderScheduleDay::isAvailable)
-                .flatMap(day -> day.getTimeRanges().stream())
-                .filter(timeRange -> timeRange.getType() == StoreOrderScheduleTimeRangeType.PICKUP)
-                .map(StoreOrderScheduleTimeRange::getEndTime)
+                .map(StoreOrderScheduleDay::getPickupEndTime)
                 .max(LocalTime::compareTo)
                 .orElse(null);
     }

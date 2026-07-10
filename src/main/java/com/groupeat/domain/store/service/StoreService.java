@@ -6,8 +6,6 @@ import com.groupeat.domain.store.dto.response.StoreDetailResponse;
 import com.groupeat.domain.store.entity.Store;
 import com.groupeat.domain.store.entity.StoreOrderSchedule;
 import com.groupeat.domain.store.entity.StoreOrderScheduleDay;
-import com.groupeat.domain.store.entity.StoreOrderScheduleTimeRange;
-import com.groupeat.domain.store.enums.StoreOrderScheduleTimeRangeType;
 import com.groupeat.domain.store.exception.StoreErrorStatus;
 import com.groupeat.domain.store.repository.StoreOrderScheduleRepository;
 import com.groupeat.domain.store.repository.StoreRepository;
@@ -19,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -64,8 +61,8 @@ public class StoreService {
                 .date(date)
                 .dailyAvailableQuantity(daySchedule.getMaxOrderQuantity())
                 .intervalMinutes(daySchedule.getIntervalMinutes())
-                .pickupTimeRanges(toTimeRangeResponses(daySchedule, StoreOrderScheduleTimeRangeType.PICKUP))
-                .breakTimeRanges(toTimeRangeResponses(daySchedule, StoreOrderScheduleTimeRangeType.BREAK))
+                .pickupTimeRanges(toPickupTimeRangeResponses(daySchedule))
+                .breakTimeRanges(toBreakTimeRangeResponses(daySchedule))
                 .build();
     }
 
@@ -90,17 +87,25 @@ public class StoreService {
                 .build();
     }
 
+    private List<PickupTimeResponse.TimeRangeResponse> toPickupTimeRangeResponses(StoreOrderScheduleDay daySchedule) {
+        return toTimeRangeResponses(daySchedule.getPickupStartTime(), daySchedule.getPickupEndTime());
+    }
+
+    private List<PickupTimeResponse.TimeRangeResponse> toBreakTimeRangeResponses(StoreOrderScheduleDay daySchedule) {
+        return toTimeRangeResponses(daySchedule.getBreakStartTime(), daySchedule.getBreakEndTime());
+    }
+
     private List<PickupTimeResponse.TimeRangeResponse> toTimeRangeResponses(
-            StoreOrderScheduleDay daySchedule,
-            StoreOrderScheduleTimeRangeType type
+            java.time.LocalTime startTime,
+            java.time.LocalTime endTime
     ) {
-        return daySchedule.getTimeRanges().stream()
-                .filter(timeRange -> timeRange.getType() == type)
-                .sorted(Comparator.comparing(StoreOrderScheduleTimeRange::getSortOrder))
-                .map(timeRange -> PickupTimeResponse.TimeRangeResponse.builder()
-                        .startTime(timeRange.getStartTime())
-                        .endTime(timeRange.getEndTime())
-                        .build())
-                .toList();
+        if (startTime == null || endTime == null) {
+            return List.of();
+        }
+
+        return List.of(PickupTimeResponse.TimeRangeResponse.builder()
+                .startTime(startTime)
+                .endTime(endTime)
+                .build());
     }
 }

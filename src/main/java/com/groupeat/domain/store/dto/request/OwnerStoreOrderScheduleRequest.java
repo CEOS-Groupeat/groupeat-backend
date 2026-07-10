@@ -15,50 +15,50 @@ import java.util.List;
 @Builder
 public record OwnerStoreOrderScheduleRequest(
 
-        @Schema(description = "일정 적용 시작일", example = "2026-05-20")
-        @NotNull(message = "일정 적용 시작일은 필수입니다.")
+        @Schema(description = "운영정보 적용 시작일", example = "2026-05-20")
+        @NotNull(message = "운영정보 적용 시작일은 필수입니다.")
         LocalDate startDate,
 
-        @Schema(description = "일정 적용 종료일", example = "2027-05-20")
-        @NotNull(message = "일정 적용 종료일은 필수입니다.")
+        @Schema(description = "운영정보 적용 종료일", example = "2027-05-20")
+        @NotNull(message = "운영정보 적용 종료일은 필수입니다.")
         LocalDate endDate,
 
-        @Schema(description = "최소 주문 가능 기한(픽업 n일 전까지 주문 가능)", example = "3")
+        @Schema(description = "최소 주문 가능 기한(픽업 n일 전까지 주문 가능). 가게 공통 설정값입니다.", example = "3")
         @NotNull(message = "최소 주문 가능 기한은 필수입니다.")
         @Min(value = 0, message = "최소 주문 가능 기한은 0 이상이어야 합니다.")
-        Integer minOrderDays,
+        Integer minimumOrderDeadlineDays,
 
-        @Schema(description = "요일별 주문 가능 일정. 포함되지 않은 요일은 휴무 처리됩니다.")
+        @Schema(description = "요일별 운영정보 최종 상태. MONDAY~SUNDAY가 중복 없이 모두 포함되어야 합니다.")
         @Valid
-        @Size(max = 7, message = "요일별 일정은 최대 7개까지 설정할 수 있습니다.")
-        List<DayScheduleRequest> days
+        @Size(min = 7, max = 7, message = "요일별 운영정보는 7개여야 합니다.")
+        List<DailyScheduleRequest> dailySchedules
 ) {
 
     @Builder
-    public record DayScheduleRequest(
+    public record DailyScheduleRequest(
             @Schema(description = "요일", example = "MONDAY")
             @NotNull(message = "요일은 필수입니다.")
             DayOfWeek dayOfWeek,
 
-            @Schema(description = "주문 가능 여부", example = "true")
+            @Schema(description = "주문 가능 여부. false이면 해당 요일을 휴무 처리합니다.", example = "true")
             @NotNull(message = "주문 가능 여부는 필수입니다.")
             Boolean available,
 
-            @Schema(description = "최소 주문 수량", example = "10")
+            @Schema(description = "최소 주문 수량. available=true일 때 필수입니다.", example = "10")
             @Min(value = 1, message = "최소 주문 수량은 1 이상이어야 합니다.")
             Integer minOrderQuantity,
 
-            @Schema(description = "최대 주문 수량", example = "100")
+            @Schema(description = "최대 주문 수량. available=true일 때 필수입니다.", example = "100")
             @Min(value = 1, message = "최대 주문 수량은 1 이상이어야 합니다.")
             Integer maxOrderQuantity,
 
-            @Schema(description = "픽업 가능 시간 구간 목록")
+            @Schema(description = "영업/픽업 가능 시간. available=true일 때 필수입니다.")
             @Valid
-            List<TimeRangeRequest> pickupTimeRanges,
+            TimeRangeRequest pickupTimeRange,
 
-            @Schema(description = "휴게 시간 구간 목록")
+            @Schema(description = "휴게 시간. 비어 있거나 null이면 휴게시간 없음으로 처리합니다.")
             @Valid
-            List<TimeRangeRequest> breakTimeRanges
+            TimeRangeRequest breakTimeRange
     ) {
     }
 

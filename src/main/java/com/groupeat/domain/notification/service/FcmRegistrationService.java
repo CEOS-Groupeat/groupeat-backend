@@ -4,7 +4,9 @@ import com.groupeat.domain.member.entity.Member;
 import com.groupeat.domain.member.enums.MemberStatus;
 import com.groupeat.domain.member.exceptoin.MemberErrorStatus;
 import com.groupeat.domain.member.repository.MemberRepository;
+import com.groupeat.domain.notification.dto.request.FcmRegistrationDeactivateRequest;
 import com.groupeat.domain.notification.dto.request.FcmRegistrationRequest;
+import com.groupeat.domain.notification.dto.response.FcmRegistrationDeactivateResponse;
 import com.groupeat.domain.notification.dto.response.FcmRegistrationResponse;
 import com.groupeat.domain.notification.entity.FcmRegistration;
 import com.groupeat.domain.notification.repository.FcmRegistrationRepository;
@@ -43,6 +45,21 @@ public class FcmRegistrationService {
                 )));
 
         return FcmRegistrationResponse.from(registration);
+    }
+
+    // 활성 회원의 FCM registration token을 멱등적으로 비활성화
+    @Transactional
+    public FcmRegistrationDeactivateResponse deactivate(Long memberId, FcmRegistrationDeactivateRequest request) {
+        validateActiveMember(memberId);
+
+        return fcmRegistrationRepository
+                .findByMemberIdAndRegistrationToken(memberId, request.registrationToken().trim())
+                .filter(FcmRegistration::isActive)
+                .map(registration -> {
+                    registration.deactivate();
+                    return new FcmRegistrationDeactivateResponse(true);
+                })
+                .orElseGet(() -> new FcmRegistrationDeactivateResponse(false));
     }
 
     private void validateActiveMember(Long memberId) {

@@ -22,6 +22,12 @@ public record ReviewListResponse(
     @Builder
     @Schema(name = "ReviewDetailDTO", description = "단일 리뷰 상세 정보")
     public record ReviewDetailDTO(
+            @Schema(description = "가게 ID", example = "1")
+            Long storeId,
+
+            @Schema(description = "가게 이름", example = "데이브런치")
+            String storeName,
+
             @Schema(description = "리뷰 ID", example = "1")
             Long reviewId,
 

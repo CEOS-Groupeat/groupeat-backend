@@ -14,7 +14,7 @@ import com.groupeat.domain.notification.enums.FcmPlatform;
 import com.groupeat.domain.notification.repository.FcmRegistrationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +24,7 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@ConditionalOnBean(FirebaseMessaging.class)
+@ConditionalOnProperty(prefix = "firebase", name = "enabled", havingValue = "true")
 @Transactional(readOnly = true)
 public class FirebaseFcmMessageSender implements FcmMessageSender {
 

@@ -69,8 +69,7 @@ public class OwnerWithdrawalService {
 
     // 주문 및 정산 이력 보존을 위해 가게는 물리 삭제하지 않고 일반 조회에서만 제외
     private void stopOperatingStore(Long memberId) {
-        storeRepository.findByBusinessMemberId(memberId)
-                .filter(store -> store.getDeletedAt() == null)
+        storeRepository.findActiveStoreByBusinessMemberId(memberId)
                 .ifPresent(Store::markAsDeleted);
     }
 }

@@ -1,16 +1,22 @@
 package com.groupeat.domain.owner.controller;
 
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
+import com.groupeat.domain.auth.service.AuthCookieService;
+import com.groupeat.domain.owner.controller.docs.OwnerWithdrawalApiDocs;
 import com.groupeat.domain.owner.dto.request.OwnerProfileUpdateRequest;
 import com.groupeat.domain.owner.dto.response.OwnerBusinessProfileResponse;
 import com.groupeat.domain.owner.dto.response.OwnerProfileResponse;
+import com.groupeat.domain.owner.dto.response.OwnerWithdrawalResponse;
 import com.groupeat.domain.owner.service.OwnerMyPageService;
+import com.groupeat.domain.owner.service.OwnerWithdrawalService;
 import com.groupeat.global.apiPayload.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,6 +30,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class OwnerMyPageController {
 
     private final OwnerMyPageService ownerMyPageService;
+    private final OwnerWithdrawalService ownerWithdrawalService;
+    private final AuthCookieService authCookieService;
 
     @GetMapping("/profile")
     @Operation(
@@ -57,5 +65,16 @@ public class OwnerMyPageController {
             @AuthenticationPrincipal AuthenticatedMember member
     ) {
         return ApiResponse.onSuccess(ownerMyPageService.getBusinessProfile(member.memberId()));
+    }
+
+    @DeleteMapping("/account")
+    @OwnerWithdrawalApiDocs
+    public ApiResponse<OwnerWithdrawalResponse> withdraw(
+            @AuthenticationPrincipal AuthenticatedMember member,
+            HttpServletResponse response
+    ) {
+        OwnerWithdrawalResponse result = ownerWithdrawalService.withdraw(member.memberId());
+        authCookieService.clearAuthTokenCookies(response); // 탈퇴 후 로그인 쿠키 제거
+        return ApiResponse.onSuccess(result);
     }
 }

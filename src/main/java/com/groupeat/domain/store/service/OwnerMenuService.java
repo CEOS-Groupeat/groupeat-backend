@@ -36,6 +36,13 @@ public class OwnerMenuService {
         return MenuConverter.toMenuListResponse(menus);
     }
 
+    public OwnerMenuResponse getMyStoreMenu(AuthenticatedMember member, Long menuId) {
+        Store store = findMyStore(member);
+        Menu menu = findOwnedMenu(store.getId(), menuId);
+
+        return MenuConverter.toOwnerMenuResponse(menu);
+    }
+
     @Transactional
     public OwnerMenuResponse createMenu(AuthenticatedMember member, OwnerMenuRequest request) {
         Store store = findMyStore(member);

@@ -8,6 +8,7 @@ import com.groupeat.domain.store.entity.StoreOrderScheduleDay;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class SearchConverter {
@@ -55,7 +56,8 @@ public class SearchConverter {
 
         return schedule.getDays().stream()
                 .filter(StoreOrderScheduleDay::isAvailable)
-                .map(StoreOrderScheduleDay::getPickupOpenTime)
+                .map(StoreOrderScheduleDay::getPickupStartTime)
+                .filter(Objects::nonNull)
                 .min(LocalTime::compareTo)
                 .orElse(null);
     }
@@ -67,7 +69,8 @@ public class SearchConverter {
 
         return schedule.getDays().stream()
                 .filter(StoreOrderScheduleDay::isAvailable)
-                .map(StoreOrderScheduleDay::getPickupCloseTime)
+                .map(StoreOrderScheduleDay::getPickupEndTime)
+                .filter(Objects::nonNull)
                 .max(LocalTime::compareTo)
                 .orElse(null);
     }

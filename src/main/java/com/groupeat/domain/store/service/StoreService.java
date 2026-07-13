@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -59,9 +60,9 @@ public class StoreService {
         return PickupTimeResponse.builder()
                 .date(date)
                 .dailyAvailableQuantity(daySchedule.getMaxOrderQuantity())
-                .openTime(daySchedule.getPickupOpenTime())
-                .closeTime(daySchedule.getPickupCloseTime())
                 .intervalMinutes(daySchedule.getIntervalMinutes())
+                .pickupTimeRanges(toPickupTimeRangeResponses(daySchedule))
+                .breakTimeRanges(toBreakTimeRangeResponses(daySchedule))
                 .build();
     }
 
@@ -81,6 +82,30 @@ public class StoreService {
         return PickupTimeResponse.builder()
                 .date(date)
                 .dailyAvailableQuantity(0)
+                .pickupTimeRanges(List.of())
+                .breakTimeRanges(List.of())
                 .build();
+    }
+
+    private List<PickupTimeResponse.TimeRangeResponse> toPickupTimeRangeResponses(StoreOrderScheduleDay daySchedule) {
+        return toTimeRangeResponses(daySchedule.getPickupStartTime(), daySchedule.getPickupEndTime());
+    }
+
+    private List<PickupTimeResponse.TimeRangeResponse> toBreakTimeRangeResponses(StoreOrderScheduleDay daySchedule) {
+        return toTimeRangeResponses(daySchedule.getBreakStartTime(), daySchedule.getBreakEndTime());
+    }
+
+    private List<PickupTimeResponse.TimeRangeResponse> toTimeRangeResponses(
+            java.time.LocalTime startTime,
+            java.time.LocalTime endTime
+    ) {
+        if (startTime == null || endTime == null) {
+            return List.of();
+        }
+
+        return List.of(PickupTimeResponse.TimeRangeResponse.builder()
+                .startTime(startTime)
+                .endTime(endTime)
+                .build());
     }
 }

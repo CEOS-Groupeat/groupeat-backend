@@ -71,7 +71,11 @@ public class OwnerStoreController {
         return ApiResponse.onSuccess(result);
     }
 
-    @Operation(summary = "내 가게 주문 가능 일정 저장", description = "로그인한 사업자 회원의 가게 주문 가능 일정 설정을 저장합니다.")
+    @Operation(
+            summary = "내 가게 주문 가능 일정 전체 저장",
+            description = "운영정보의 최종 상태를 전체 저장합니다. "
+                    + "공통 설정과 MONDAY~SUNDAY 7개 요일 설정을 모두 보내야 하며, 누락/중복 요일이 있으면 실패합니다."
+    )
     @PutMapping("/order-schedule")
     public ApiResponse<OwnerStoreOrderScheduleResponse> saveMyStoreOrderSchedule(
             @AuthenticationPrincipal AuthenticatedMember member,
@@ -87,6 +91,16 @@ public class OwnerStoreController {
             @AuthenticationPrincipal AuthenticatedMember member
     ) {
         MenuListResponse result = ownerMenuService.getMyStoreMenus(member);
+        return ApiResponse.onSuccess(result);
+    }
+
+    @Operation(summary = "내 가게 메뉴 상세 조회", description = "로그인한 사업자 회원의 가게 메뉴 상세 정보를 조회합니다.")
+    @GetMapping("/menus/{menuId}")
+    public ApiResponse<OwnerMenuResponse> getMyStoreMenu(
+            @AuthenticationPrincipal AuthenticatedMember member,
+            @PathVariable Long menuId
+    ) {
+        OwnerMenuResponse result = ownerMenuService.getMyStoreMenu(member, menuId);
         return ApiResponse.onSuccess(result);
     }
 

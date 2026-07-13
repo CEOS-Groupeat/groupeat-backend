@@ -12,6 +12,8 @@ import java.util.Optional;
 public interface CartRepository extends JpaRepository<Cart, Long> {
     Optional<Cart> findByMemberId(Long memberId);
 
+    void deleteByMemberId(Long memberId);
+
     // 동시성 방지를 위한 쓰기 락(Pessimistic Write) 적용 조회
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT c FROM Cart c WHERE c.memberId = :memberId")

@@ -2,6 +2,10 @@ package com.groupeat.domain.cart.repository;
 
 import com.groupeat.domain.cart.entity.CartItemOption;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import java.util.List;
 
 public interface CartItemOptionRepository extends JpaRepository<CartItemOption, Long> {
@@ -13,4 +17,13 @@ public interface CartItemOptionRepository extends JpaRepository<CartItemOption, 
 
     // 특정 장바구니 아이템의 옵션들 찾기
     List<CartItemOption> findByCartItemId(Long cartItemId);
+
+    @Modifying
+    @Query("""
+            DELETE FROM CartItemOption option
+            WHERE option.cartItem.id IN (
+                SELECT item.id FROM CartItem item WHERE item.cart.memberId = :memberId
+            )
+            """)
+    void deleteAllByCartMemberId(@Param("memberId") Long memberId);
 }

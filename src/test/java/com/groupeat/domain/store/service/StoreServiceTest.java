@@ -55,7 +55,8 @@ class StoreServiceTest {
                                 100,
                                 LocalTime.of(10, 0),
                                 LocalTime.of(17, 0),
-                                30
+                                null,
+                                null
                         ),
                         StoreOrderScheduleDay.createAvailable(
                                 DayOfWeek.WEDNESDAY,
@@ -63,7 +64,8 @@ class StoreServiceTest {
                                 100,
                                 LocalTime.of(9, 0),
                                 LocalTime.of(18, 0),
-                                30
+                                null,
+                                null
                         ),
                         StoreOrderScheduleDay.createUnavailable(DayOfWeek.TUESDAY)
                 )
@@ -96,7 +98,8 @@ class StoreServiceTest {
                         100,
                         LocalTime.of(10, 0),
                         LocalTime.of(17, 0),
-                        30
+                        LocalTime.of(10, 30),
+                        LocalTime.of(11, 0)
                 ))
         );
         when(storeRepository.findActiveStoreById(STORE_ID)).thenReturn(Optional.of(store));
@@ -107,9 +110,11 @@ class StoreServiceTest {
 
         assertThat(response.date()).isEqualTo(pickupDate);
         assertThat(response.dailyAvailableQuantity()).isEqualTo(100);
-        assertThat(response.openTime()).isEqualTo(LocalTime.of(10, 0));
-        assertThat(response.closeTime()).isEqualTo(LocalTime.of(17, 0));
         assertThat(response.intervalMinutes()).isEqualTo(30);
+        assertThat(response.pickupTimeRanges()).extracting("startTime", "endTime")
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(LocalTime.of(10, 0), LocalTime.of(17, 0)));
+        assertThat(response.breakTimeRanges()).extracting("startTime", "endTime")
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(LocalTime.of(10, 30), LocalTime.of(11, 0)));
     }
 
     @Test
@@ -124,9 +129,9 @@ class StoreServiceTest {
 
         assertThat(response.date()).isEqualTo(pickupDate);
         assertThat(response.dailyAvailableQuantity()).isZero();
-        assertThat(response.openTime()).isNull();
-        assertThat(response.closeTime()).isNull();
         assertThat(response.intervalMinutes()).isNull();
+        assertThat(response.pickupTimeRanges()).isEmpty();
+        assertThat(response.breakTimeRanges()).isEmpty();
     }
 
     @Test
@@ -147,8 +152,8 @@ class StoreServiceTest {
         PickupTimeResponse response = storeService.getAvailablePickupTimes(STORE_ID, pickupDate);
 
         assertThat(response.dailyAvailableQuantity()).isZero();
-        assertThat(response.openTime()).isNull();
-        assertThat(response.closeTime()).isNull();
+        assertThat(response.pickupTimeRanges()).isEmpty();
+        assertThat(response.breakTimeRanges()).isEmpty();
     }
 
     @Test
@@ -166,7 +171,8 @@ class StoreServiceTest {
                         100,
                         LocalTime.of(10, 0),
                         LocalTime.of(17, 0),
-                        30
+                        null,
+                        null
                 ))
         );
         when(storeRepository.findActiveStoreById(STORE_ID)).thenReturn(Optional.of(store));
@@ -176,8 +182,8 @@ class StoreServiceTest {
         PickupTimeResponse response = storeService.getAvailablePickupTimes(STORE_ID, pickupDate);
 
         assertThat(response.dailyAvailableQuantity()).isZero();
-        assertThat(response.openTime()).isNull();
-        assertThat(response.closeTime()).isNull();
+        assertThat(response.pickupTimeRanges()).isEmpty();
+        assertThat(response.breakTimeRanges()).isEmpty();
     }
 
     @Test

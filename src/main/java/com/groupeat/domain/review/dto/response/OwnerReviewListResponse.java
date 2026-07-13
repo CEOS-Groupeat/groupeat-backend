@@ -17,7 +17,10 @@ public record OwnerReviewListResponse(
         boolean hasNext,
 
         @Schema(description = "다음 커서 ID (마지막 리뷰의 PK ID)", example = "42")
-        Long nextCursor
+        Long nextCursor,
+
+        @Schema(description = "다음 별점 커서 (별점순 정렬 시 필수, 그 외엔 null)", example = "4")
+        Integer nextRating
 ) {
     @Builder
     @Schema(name = "OwnerReviewCardDTO", description = "사장님용 단일 리뷰 상세 카드")

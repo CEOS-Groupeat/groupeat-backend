@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "member")
@@ -45,6 +46,9 @@ public class Member extends BaseEntity {
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean isAdmin = false;
 
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean orderStatusNotificationAgreed = true;
+
     private String name;
 
     @Column(unique = true)
@@ -57,6 +61,8 @@ public class Member extends BaseEntity {
 
     @Column(nullable = false)
     private String phoneNumber;
+
+    private LocalDateTime withdrawnAt;
 
     public static Member createInProgress(
             MemberType memberType,
@@ -109,5 +115,29 @@ public class Member extends BaseEntity {
 
     public boolean isBusiness() {
         return this.memberType == MemberType.BUSINESS;
+    }
+
+    public void updateAccount(
+            String email,
+            LocalDate birthDate,
+            Gender gender
+    ) {
+        this.email = email;
+        this.birthDate = birthDate;
+        this.gender = gender;
+    }
+
+    public void updateOrderStatusNotificationAgreement(boolean agreed) {
+        this.orderStatusNotificationAgreed = agreed;
+    }
+
+    public void withdraw() {
+        this.name = "탈퇴회원";
+        this.email = null;
+        this.birthDate = null;
+        this.gender = null;
+        this.phoneNumber = "WITHDRAWN_" + this.id;
+        this.memberStatus = MemberStatus.WITHDRAWN;
+        this.withdrawnAt = LocalDateTime.now();
     }
 }

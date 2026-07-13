@@ -62,6 +62,42 @@ class OwnerMenuServiceTest {
     }
 
     @Test
+    void getMyStoreMenu_returnsOwnedStoreMenuDetail() {
+        Store store = store();
+        Menu menu = menu(10L, store, "햄치즈 샌드위치", 7800);
+        when(storeRepository.findActiveStoreByBusinessMemberId(BUSINESS_MEMBER_ID))
+                .thenReturn(Optional.of(store));
+        when(menuRepository.findActiveByIdAndStoreId(menu.getId(), store.getId()))
+                .thenReturn(Optional.of(menu));
+
+        OwnerMenuResponse response = ownerMenuService.getMyStoreMenu(activeBusinessMember(), menu.getId());
+
+        assertThat(response.menuId()).isEqualTo(10L);
+        assertThat(response.name()).isEqualTo("햄치즈 샌드위치");
+        assertThat(response.basePrice()).isEqualTo(7800);
+        assertThat(response.description()).isEqualTo("메뉴 설명");
+        assertThat(response.imageUrl()).isEqualTo("https://example.com/menu.jpg");
+        assertThat(response.optionGroups()).hasSize(1);
+        assertThat(response.optionGroups().get(0).optionGroupId()).isEqualTo(20L);
+        assertThat(response.optionGroups().get(0).options()).hasSize(1);
+        assertThat(response.optionGroups().get(0).options().get(0).optionId()).isEqualTo(30L);
+    }
+
+    @Test
+    void getMyStoreMenu_notOwnedMenu_throwsMenuNotFound() {
+        Store store = store();
+        when(storeRepository.findActiveStoreByBusinessMemberId(BUSINESS_MEMBER_ID))
+                .thenReturn(Optional.of(store));
+        when(menuRepository.findActiveByIdAndStoreId(999L, store.getId()))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> ownerMenuService.getMyStoreMenu(activeBusinessMember(), 999L))
+                .isInstanceOfSatisfying(GeneralException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(StoreErrorStatus.MENU_NOT_FOUND)
+                );
+    }
+
+    @Test
     void createMenu_savesMenuToOwnedStore() {
         Store store = store();
         Menu savedMenu = menu(10L, store, "햄치즈 샌드위치", 7800);

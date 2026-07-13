@@ -15,7 +15,8 @@ public class OrderDetailConverter {
     public static OrderDetailResponse.OrderDetailDTO toOrderDetailDTO(
             Order order,
             Payment payment,
-            Map<Long, List<OrderItemOption>> optionsByOrderItemId
+            Map<Long, List<OrderItemOption>> optionsByOrderItemId,
+            Map<Long, String> menuImageUrls
     ) {
         // 주문자 정보 매핑
         OrderDetailResponse.OrdererInfoDTO ordererInfo = OrderDetailResponse.OrdererInfoDTO.builder()
@@ -46,7 +47,7 @@ public class OrderDetailConverter {
                             .menuName(item.getMenuName())
                             .options(optionDTOs)
                             .quantity(item.getQuantity())
-                            .menuImageUrl(null) // 필요시 매핑
+                            .menuImageUrl(menuImageUrls.getOrDefault(item.getMenuId(), null))
                             .discountRate(itemDiscountRate)
                             .totalAmount(item.getFinalPrice())
                             .build();

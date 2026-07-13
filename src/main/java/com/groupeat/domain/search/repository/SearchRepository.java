@@ -102,8 +102,8 @@ public class SearchRepository {
                         storeOrderScheduleDay.available.isTrue(),
                         isPickupDayAvailable(condition.pickupDate()),
                         isLeadTimeEnough(condition.pickupDate()),
-                        isPickupTimesAvailable(condition.pickupTimes()),
-                        isQuantitySatisfied(condition.quantity())
+                        isQuantitySatisfied(condition.quantity()),
+                        isPickupTimesAvailable(condition.pickupTimes())
                 );
     }
 
@@ -147,13 +147,21 @@ public class SearchRepository {
         BooleanExpression result = null;
 
         for (LocalTime time : requestedTimes) {
-            BooleanExpression timeCondition = storeOrderScheduleDay.pickupOpenTime.loe(time)
-                    .and(storeOrderScheduleDay.pickupCloseTime.goe(time));
+            BooleanExpression timeCondition = storeOrderScheduleDay.pickupStartTime.loe(time)
+                    .and(storeOrderScheduleDay.pickupEndTime.goe(time))
+                    .and(isPickupTimeNotInBreakTime(time));
 
             result = (result == null) ? timeCondition : result.or(timeCondition);
         }
 
         return result;
+    }
+
+    private BooleanExpression isPickupTimeNotInBreakTime(LocalTime time) {
+        return storeOrderScheduleDay.breakStartTime.isNull()
+                .or(storeOrderScheduleDay.breakEndTime.isNull())
+                .or(storeOrderScheduleDay.breakStartTime.gt(time))
+                .or(storeOrderScheduleDay.breakEndTime.loe(time));
     }
 
     private BooleanExpression isQuantitySatisfied(Integer requestedQuantity) {

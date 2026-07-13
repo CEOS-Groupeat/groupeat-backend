@@ -1,8 +1,14 @@
 package com.groupeat.domain.review.enums;
 
-public enum ReviewSortType {
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-    LATEST,         // 최신순
-    HIGHEST_RATING, // 별점 높은 순
-    LOWEST_RATING   // 별점 낮은 순
+@Getter
+@RequiredArgsConstructor
+public enum ReviewSortType {
+    LATEST("최신순"),
+    HIGHEST_RATING("별점 높은 순"),
+    LOWEST_RATING("별점 낮은 순");
+
+    private final String description;
 }

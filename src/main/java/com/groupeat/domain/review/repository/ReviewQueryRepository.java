@@ -2,7 +2,6 @@ package com.groupeat.domain.review.repository;
 
 import com.groupeat.domain.review.entity.Review;
 import com.groupeat.domain.review.enums.ReviewSortType;
-import com.querydsl.core.types.EntityPath;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -56,31 +55,60 @@ public class ReviewQueryRepository {
         return lastReviewId != null ? review.id.lt(lastReviewId) : null;
     }
 
-    private BooleanExpression cursorCondition(Long lastReviewId, Integer lastRating, ReviewSortType sortType) {
-        if (lastReviewId == null) return null;
+    public List<Review> findOwnerReviewsByCursor(
+            Long storeId,
+            Long lastReviewId,
+            Integer lastRating,
+            ReviewSortType sortType,
+            int limit
+    ) {
+        return queryFactory
+                .selectFrom(review)
+                .join(review.member, member).fetchJoin()
+                .join(review.store, store).fetchJoin()
+                .join(review.order, order).fetchJoin()
+                .where(
+                        review.store.id.eq(storeId),
+                        cursorCondition(lastReviewId, lastRating, sortType)
+                )
+                .orderBy(getSortSpecifiers(sortType))
+                .limit(limit)
+                .fetch();
+    }
 
-        // 별점순 정렬일 때는 동점자 처리를 위해 별점과 ID를 함께 비교
-        if (sortType == ReviewSortType.HIGHEST_RATING && lastRating != null) {
+    // 동적 커서(WHERE) 조건 생성
+    private BooleanExpression cursorCondition(Long lastReviewId, Integer lastRating, ReviewSortType sortType) {
+        if (lastReviewId == null) {
+            return null;
+        }
+
+        if (sortType == null || sortType == ReviewSortType.LATEST) {
+            return review.id.lt(lastReviewId);
+        }
+
+        if (lastRating == null) {
+            return review.id.lt(lastReviewId);
+        }
+
+        if (sortType == ReviewSortType.HIGHEST_RATING) {
+            // 별점이 더 낮거나 OR (별점은 같은데 ID가 더 작음)
             return review.rating.lt(lastRating)
                     .or(review.rating.eq(lastRating).and(review.id.lt(lastReviewId)));
-        }
-        if (sortType == ReviewSortType.LOWEST_RATING && lastRating != null) {
+        } else { // LOWEST_RATING
+            // 별점이 더 높거나 OR (별점은 같은데 ID가 더 작음)
             return review.rating.gt(lastRating)
                     .or(review.rating.eq(lastRating).and(review.id.lt(lastReviewId)));
         }
-
-        // 기본 최신순
-        return review.id.lt(lastReviewId);
     }
 
+    // 동적 정렬 조건 생성
     private OrderSpecifier<?>[] getSortSpecifiers(ReviewSortType sortType) {
-        if (sortType == ReviewSortType.HIGHEST_RATING) {
-            return new OrderSpecifier[]{review.rating.desc(), review.id.desc()};
+        if (sortType == null || sortType == ReviewSortType.LATEST) {
+            return new OrderSpecifier[]{ review.id.desc() };
+        } else if (sortType == ReviewSortType.HIGHEST_RATING) {
+            return new OrderSpecifier[]{ review.rating.desc(), review.id.desc() };
+        } else { // LOWEST_RATING
+            return new OrderSpecifier[]{ review.rating.asc(), review.id.desc() };
         }
-        if (sortType == ReviewSortType.LOWEST_RATING) {
-            return new OrderSpecifier[]{review.rating.asc(), review.id.desc()};
-        }
-        // 기본 최신순
-        return new OrderSpecifier[]{review.id.desc()};
     }
 }

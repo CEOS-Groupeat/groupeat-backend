@@ -87,14 +87,43 @@ public class OrderScheduleValidationService {
     }
 
     private void validatePickupTime(StoreOrderScheduleDay daySchedule, LocalTime pickupTime) {
-        if (pickupTime.isBefore(daySchedule.getPickupOpenTime()) || pickupTime.isAfter(daySchedule.getPickupCloseTime())) {
+        boolean withinPickupTime = containsInclusive(
+                daySchedule.getPickupStartTime(),
+                daySchedule.getPickupEndTime(),
+                pickupTime
+        );
+        if (!withinPickupTime) {
             throw new GeneralException(OrderErrorStatus.ORDER_SCHEDULE_NOT_AVAILABLE);
         }
 
-        long minutesFromOpen = ChronoUnit.MINUTES.between(daySchedule.getPickupOpenTime(), pickupTime);
-        if (minutesFromOpen % daySchedule.getIntervalMinutes() != 0) {
+        boolean withinBreakTime = containsStartInclusiveEndExclusive(
+                daySchedule.getBreakStartTime(),
+                daySchedule.getBreakEndTime(),
+                pickupTime
+        );
+        if (withinBreakTime) {
             throw new GeneralException(OrderErrorStatus.ORDER_SCHEDULE_NOT_AVAILABLE);
         }
+
+        if (pickupTime.getSecond() != 0
+                || pickupTime.getNano() != 0
+                || (pickupTime.getMinute() != 0 && pickupTime.getMinute() != 30)) {
+            throw new GeneralException(OrderErrorStatus.ORDER_SCHEDULE_NOT_AVAILABLE);
+        }
+    }
+
+    private boolean containsInclusive(LocalTime startTime, LocalTime endTime, LocalTime pickupTime) {
+        return startTime != null
+                && endTime != null
+                && !pickupTime.isBefore(startTime)
+                && !pickupTime.isAfter(endTime);
+    }
+
+    private boolean containsStartInclusiveEndExclusive(LocalTime startTime, LocalTime endTime, LocalTime pickupTime) {
+        return startTime != null
+                && endTime != null
+                && !pickupTime.isBefore(startTime)
+                && pickupTime.isBefore(endTime);
     }
 
     private void validateRequestedQuantity(StoreOrderScheduleDay daySchedule, int requestedQuantity) {

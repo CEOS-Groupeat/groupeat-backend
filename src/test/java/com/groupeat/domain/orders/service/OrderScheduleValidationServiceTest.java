@@ -157,7 +157,8 @@ class OrderScheduleValidationServiceTest {
                         100,
                         LocalTime.of(10, 0),
                         LocalTime.of(17, 0),
-                        30
+                        null,
+                        null
                 ))
         );
     }

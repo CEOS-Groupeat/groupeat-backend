@@ -15,13 +15,23 @@ public record PickupTimeResponse(
         @Schema(description = "총 주문 가능 수량", example = "100")
         Integer dailyAvailableQuantity,
 
-        @Schema(description = "픽업 시작 시간", example = "10:00")
-        LocalTime openTime,
-
-        @Schema(description = "픽업 종료 시간", example = "17:00")
-        LocalTime closeTime,
-
         @Schema(description = "시간 간격(분)", example = "30")
-        Integer intervalMinutes
+        Integer intervalMinutes,
 
-) {}
+        @Schema(description = "픽업 가능 시간 구간 목록")
+        List<TimeRangeResponse> pickupTimeRanges,
+
+        @Schema(description = "휴게 시간 구간 목록")
+        List<TimeRangeResponse> breakTimeRanges
+
+) {
+    @Builder
+    public record TimeRangeResponse(
+            @Schema(description = "시작 시간", example = "10:00")
+            LocalTime startTime,
+
+            @Schema(description = "종료 시간", example = "17:00")
+            LocalTime endTime
+    ) {
+    }
+}

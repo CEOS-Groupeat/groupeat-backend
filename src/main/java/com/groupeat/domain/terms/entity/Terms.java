@@ -1,6 +1,7 @@
 package com.groupeat.domain.terms.entity;
 
 import com.groupeat.domain.terms.enums.TermsTargetType;
+import com.groupeat.domain.terms.enums.TermsType;
 import com.groupeat.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -35,6 +36,13 @@ public class Terms extends BaseEntity {
      */
     @Column(nullable = false)
     private boolean required;
+
+    /**
+     * 약관 유형
+     * 기존 데이터 호환을 위해 nullable로 관리한다.
+     */
+    @Enumerated(EnumType.STRING)
+    private TermsType type;
 
     /**
      * 약관 대상

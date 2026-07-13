@@ -2,6 +2,7 @@ package com.groupeat.domain.terms.repository;
 
 import com.groupeat.domain.terms.entity.Terms;
 import com.groupeat.domain.terms.enums.TermsTargetType;
+import com.groupeat.domain.terms.enums.TermsType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
@@ -15,6 +16,11 @@ public interface TermsRepository extends JpaRepository<Terms, Long> {
     List<Terms> findByTargetTypeInAndActiveTrue(Collection<TermsTargetType> targetTypes);
 
     List<Terms> findByTargetTypeInAndActiveTrueAndRequiredFalse(Collection<TermsTargetType> targetTypes);
+
+    Optional<Terms> findFirstByTargetTypeInAndActiveTrueAndRequiredFalseAndType(
+            Collection<TermsTargetType> targetTypes,
+            TermsType type
+    );
 
     Optional<Terms> findByIdAndActiveTrue(Long id);
 

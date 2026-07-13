@@ -1,8 +1,8 @@
-package com.groupeat.domain.member.service;
+package com.groupeat.domain.owner.service;
 
-import com.groupeat.domain.member.dto.request.CustomerNotificationSettingsUpdateRequest;
-import com.groupeat.domain.member.dto.response.CustomerNotificationSettingsResponse;
 import com.groupeat.domain.member.entity.Member;
+import com.groupeat.domain.owner.dto.request.OwnerNotificationSettingsUpdateRequest;
+import com.groupeat.domain.owner.dto.response.OwnerNotificationSettingsResponse;
 import com.groupeat.domain.terms.entity.MemberTermsAgreement;
 import com.groupeat.domain.terms.entity.Terms;
 import com.groupeat.domain.terms.enums.TermsTargetType;
@@ -21,33 +21,35 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class CustomerNotificationSettingsService {
+public class OwnerNotificationSettingsService {
 
-    private static final Set<TermsTargetType> CUSTOMER_TARGET_TYPES =
-            Set.of(TermsTargetType.COMMON, TermsTargetType.CUSTOMER);
+    private static final Set<TermsTargetType> OWNER_TARGET_TYPES =
+            Set.of(TermsTargetType.COMMON, TermsTargetType.BUSINESS);
 
-    private final CustomerMyPageService customerMyPageService;
+    private final OwnerMyPageService ownerMyPageService;
     private final TermsRepository termsRepository;
     private final MemberTermsAgreementRepository agreementRepository;
 
-    public CustomerNotificationSettingsResponse getSettings(Long memberId) {
-        Member member = customerMyPageService.getActiveCustomer(memberId);
+    // 사업자 알림설정 조회
+    public OwnerNotificationSettingsResponse getSettings(Long memberId) {
+        Member member = ownerMyPageService.getActiveBusinessOwner(memberId);
         Terms marketingTerms = getMarketingTerms();
         MemberTermsAgreement marketingAgreement = getMarketingAgreement(memberId, marketingTerms.getId());
 
-        return CustomerNotificationSettingsResponse.of(member, marketingTerms, marketingAgreement);
+        return OwnerNotificationSettingsResponse.of(member, marketingTerms, marketingAgreement);
     }
 
+    // 사업자 알림설정 수정
     @Transactional
-    public CustomerNotificationSettingsResponse updateSettings(
+    public OwnerNotificationSettingsResponse updateSettings(
             Long memberId,
-            CustomerNotificationSettingsUpdateRequest request
+            OwnerNotificationSettingsUpdateRequest request
     ) {
         if (!request.hasAnySetting()) {
             throw new GeneralException(GlobalErrorStatus._BAD_REQUEST);
         }
 
-        Member member = customerMyPageService.getActiveCustomer(memberId);
+        Member member = ownerMyPageService.getActiveBusinessOwner(memberId);
         Terms marketingTerms = getMarketingTerms();
         MemberTermsAgreement marketingAgreement = getMarketingAgreement(memberId, marketingTerms.getId());
 
@@ -63,7 +65,7 @@ public class CustomerNotificationSettingsService {
             member.updateOrderStatusNotificationAgreement(request.orderStatusNotificationAgreed());
         }
 
-        return CustomerNotificationSettingsResponse.of(member, marketingTerms, marketingAgreement);
+        return OwnerNotificationSettingsResponse.of(member, marketingTerms, marketingAgreement);
     }
 
     private MemberTermsAgreement updateMarketingAgreement(
@@ -86,7 +88,7 @@ public class CustomerNotificationSettingsService {
 
     private Terms getMarketingTerms() {
         return termsRepository.findFirstByTargetTypeInAndActiveTrueAndRequiredFalseAndType(
-                        CUSTOMER_TARGET_TYPES,
+                        OWNER_TARGET_TYPES,
                         TermsType.MARKETING
                 )
                 .orElseThrow(() -> new GeneralException(TermsErrorStatus.MARKETING_TERMS_NOT_CONFIGURED));

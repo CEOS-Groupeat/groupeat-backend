@@ -15,7 +15,8 @@ public enum BusinessErrorStatus implements BaseErrorCode {
     INVALID_BUSINESS_NUMBER(HttpStatus.BAD_REQUEST, "BUSINESS4001", "국세청에 등록되지 않은 사업자번호입니다."),
     CLOSED_BUSINESS_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "BUSINESS4002", "휴업 또는 폐업 상태의 사업자는 가입할 수 없습니다."),
     BUSINESS_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "BUSINESS4011", "사업자 검증 토큰이 만료되었습니다. 다시 인증해주세요."),
-    INVALID_BUSINESS_TOKEN(HttpStatus.UNAUTHORIZED, "BUSINESS4012", "유효하지 않거나 변조된 사업자 검증 토큰입니다.");
+    INVALID_BUSINESS_TOKEN(HttpStatus.UNAUTHORIZED, "BUSINESS4012", "유효하지 않거나 변조된 사업자 검증 토큰입니다."),
+    BUSINESS_PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "BUSINESS4040", "사업자 정보를 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

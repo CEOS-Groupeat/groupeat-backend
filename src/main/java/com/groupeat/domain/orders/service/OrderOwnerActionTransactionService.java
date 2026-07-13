@@ -7,6 +7,7 @@ import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.enums.OrderStatus;
 import com.groupeat.domain.orders.exception.OrderErrorStatus;
 import com.groupeat.domain.orders.repository.OrderRepository;
+import com.groupeat.domain.notification.event.OrderStatusNotificationEvent;
 import com.groupeat.domain.payment.dto.PaymentCancelResult;
 import com.groupeat.domain.payment.entity.Payment;
 import com.groupeat.domain.payment.enums.PaymentType;
@@ -17,6 +18,7 @@ import com.groupeat.domain.settlement.repository.SettlementRepository;
 import com.groupeat.domain.settlement.service.SettlementFeeCalculator;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,7 @@ public class OrderOwnerActionTransactionService {
     private final SettlementRepository settlementRepository;
     private final SettlementFeeCalculator settlementFeeCalculator;
     private final OrderScheduleValidationService orderScheduleValidationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public OrderStatusChangeResponse acceptOrder(Long ownerId, Long orderId) {
@@ -42,6 +45,7 @@ public class OrderOwnerActionTransactionService {
 
         LocalDateTime acceptedAt = LocalDateTime.now();
         order.accept(acceptedAt);
+        publishOrderStatusNotificationEvent(order);
 
         return OrderConverter.toOrderStatusChangeResponse(order, acceptedAt);
     }
@@ -71,6 +75,7 @@ public class OrderOwnerActionTransactionService {
 
         LocalDateTime rejectedAt = LocalDateTime.now();
         order.reject(rejectedAt);
+        publishOrderStatusNotificationEvent(order);
 
         paymentRepository.findByOrderId(order.getOrderId())
                 .ifPresent(payment -> applyPaymentCancel(payment, refundAmount, paymentCancelResult));
@@ -140,5 +145,15 @@ public class OrderOwnerActionTransactionService {
                 : Settlement.depositPayout(order, orderAmount, payment.getPaidAmount(), platformFeeAmount); // 현장결제 주문 : 예약금에서 수수료 차감 후 지급
 
         settlementRepository.save(settlement);
+    }
+
+    // 주문 승인/거절 상태 변경 알림 이벤트 발행
+    private void publishOrderStatusNotificationEvent(Order order) {
+        eventPublisher.publishEvent(new OrderStatusNotificationEvent(
+                order.getId(),
+                order.getMemberId(),
+                order.getOrderStatus(),
+                order.getStore().getStoreName()
+        ));
     }
 }

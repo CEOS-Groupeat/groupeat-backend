@@ -37,6 +37,9 @@ dependencies {
     implementation platform('software.amazon.awssdk:bom:2.31.78')
     implementation 'software.amazon.awssdk:s3'
 
+    // Firebase
+    implementation 'com.google.firebase:firebase-admin:9.5.0'
+
     // Database
     runtimeOnly 'org.postgresql:postgresql'
 

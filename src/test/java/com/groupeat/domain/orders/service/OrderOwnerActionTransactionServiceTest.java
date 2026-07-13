@@ -19,6 +19,7 @@ import com.groupeat.domain.settlement.repository.SettlementRepository;
 import com.groupeat.domain.settlement.service.SettlementFeeCalculator;
 import com.groupeat.domain.store.entity.Store;
 import com.groupeat.global.exception.GeneralException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -42,6 +43,7 @@ class OrderOwnerActionTransactionServiceTest {
     private SettlementRepository settlementRepository;
     private SettlementFeeCalculator settlementFeeCalculator;
     private OrderScheduleValidationService orderScheduleValidationService;
+    private ApplicationEventPublisher eventPublisher;
     private OrderOwnerActionTransactionService orderOwnerActionTransactionService;
 
     @BeforeEach
@@ -51,12 +53,14 @@ class OrderOwnerActionTransactionServiceTest {
         settlementRepository = mock(SettlementRepository.class);
         settlementFeeCalculator = mock(SettlementFeeCalculator.class);
         orderScheduleValidationService = mock(OrderScheduleValidationService.class);
+        eventPublisher = mock(ApplicationEventPublisher.class);
         orderOwnerActionTransactionService = new OrderOwnerActionTransactionService(
                 orderRepository,
                 paymentRepository,
                 settlementRepository,
                 settlementFeeCalculator,
-                orderScheduleValidationService
+                orderScheduleValidationService,
+                eventPublisher
         );
     }
 

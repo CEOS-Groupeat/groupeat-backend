@@ -21,7 +21,7 @@ import java.util.Date;
 @Component
 public class AuthTokenProvider {
 
-    public static final Duration ACCESS_TOKEN_VALID_TIME = Duration.ofMinutes(30);
+    public static final Duration ACCESS_TOKEN_VALID_TIME = Duration.ofMinutes(60);
     public static final Duration REFRESH_TOKEN_VALID_TIME = Duration.ofDays(14);
 
     private final SecretKey accessSecretKey;

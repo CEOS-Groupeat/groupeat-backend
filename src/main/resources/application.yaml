@@ -80,6 +80,10 @@ nts:
     base-url: "https://api.odcloud.kr/api/nts-businessman/v1"
     service-key: ${NTS_SERVICE_KEY}
 
+firebase:
+  enabled: ${FIREBASE_ENABLED:false}
+  project-id: ${FIREBASE_PROJECT_ID:}
+
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}

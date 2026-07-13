@@ -3,6 +3,7 @@ package com.groupeat;
 import com.groupeat.domain.auth.config.AuthCookieProperties;
 import com.groupeat.domain.auth.config.OAuth2RedirectProperties;
 import com.groupeat.domain.business.config.NtsApiProperties;
+import com.groupeat.domain.notification.config.FirebaseProperties;
 import com.groupeat.domain.payment.config.TossPaymentProperties;
 import com.groupeat.domain.settlement.config.SettlementProperties;
 import com.groupeat.global.config.CorsProperties;
@@ -21,7 +22,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 		TossPaymentProperties.class,
 		SettlementProperties.class,
         NtsApiProperties.class,
-		S3Properties.class
+		S3Properties.class,
+		FirebaseProperties.class
 })
 public class GroupeatBackendApplication {
 

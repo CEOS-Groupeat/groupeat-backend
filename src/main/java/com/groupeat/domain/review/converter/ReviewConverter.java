@@ -68,6 +68,8 @@ public class ReviewConverter {
         }
 
         return ReviewListResponse.ReviewDetailDTO.builder()
+                .storeId(review.getOrder().getStore().getId())
+                .storeName(review.getOrder().getStore().getStoreName())
                 .reviewId(review.getId())
                 .authorNickname(maskNickname(review.getMember().getName()))
                 .rating(review.getRating())

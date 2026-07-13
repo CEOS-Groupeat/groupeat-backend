@@ -2,13 +2,17 @@ package com.groupeat.domain.review.converter;
 
 import com.groupeat.domain.orders.entity.OrderItem;
 import com.groupeat.domain.review.dto.response.OwnerReplyCreateResponse;
+import com.groupeat.domain.review.dto.response.OwnerReviewListResponse;
 import com.groupeat.domain.review.dto.response.OwnerReviewListResponse.OwnerReviewCardDTO;
 import com.groupeat.domain.review.dto.response.ReviewSummaryResponse;
 import com.groupeat.domain.review.entity.Review;
 import com.groupeat.domain.review.entity.ReviewImage;
+import com.groupeat.domain.review.enums.ReviewSortType;
+import com.groupeat.global.dto.CursorResponse;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class OwnerReviewConverter {
@@ -83,6 +87,41 @@ public class OwnerReviewConverter {
                 .reviewId(review.getId())
                 .repliedAtDate(review.getRepliedAt().toLocalDate())
                 .repliedAtTime(review.getRepliedAt().toLocalTime())
+                .build();
+    }
+
+    public OwnerReviewListResponse toEmptyOwnerReviewListResponse() {
+        return OwnerReviewListResponse.builder()
+                .reviewList(List.of())
+                .hasNext(false)
+                .nextCursor(null)
+                .nextRating(null)
+                .build();
+    }
+
+    public OwnerReviewListResponse toOwnerReviewListResponse(
+            CursorResponse<Review> cursorResponse,
+            Map<Long, List<ReviewImage>> imagesMap,
+            Map<Long, List<OrderItem>> orderItemsMap,
+            ReviewSortType sortType
+    ) {
+        // 엔티티 -> DTO 변환
+        CursorResponse<OwnerReviewCardDTO> dtoCursorResponse = cursorResponse.map(review -> {
+            List<ReviewImage> images = imagesMap.getOrDefault(review.getId(), List.of());
+            List<OrderItem> orderItems = orderItemsMap.getOrDefault(review.getOrder().getId(), List.of());
+            return toOwnerReviewCardDTO(review, images, orderItems);
+        });
+
+        Integer nextRating = null;
+        if (sortType != null && sortType != ReviewSortType.LATEST && !cursorResponse.content().isEmpty()) {
+            nextRating = cursorResponse.content().getLast().getRating();
+        }
+
+        return OwnerReviewListResponse.builder()
+                .reviewList(dtoCursorResponse.content())
+                .hasNext(dtoCursorResponse.hasNext())
+                .nextCursor(dtoCursorResponse.nextCursor())
+                .nextRating(nextRating)
                 .build();
     }
 }

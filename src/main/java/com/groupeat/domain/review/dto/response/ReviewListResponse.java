@@ -10,6 +10,9 @@ import java.util.List;
 @Builder
 @Schema(name = "ReviewListResponse", description = "리뷰 목록 조회 응답")
 public record ReviewListResponse(
+        @Schema(description = "가게 이름", example = "데이브런치")
+        String storeName,
+
         @Schema(description = "리뷰 목록")
         List<ReviewDetailDTO> reviewList,
 

@@ -2,7 +2,6 @@ package com.groupeat.domain.review.repository;
 
 import com.groupeat.domain.review.entity.Review;
 import com.groupeat.domain.review.enums.ReviewSortType;
-import com.querydsl.core.types.EntityPath;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -22,7 +21,7 @@ public class ReviewQueryRepository {
 
     private final JPAQueryFactory queryFactory;
 
-    public List<Review> findStoreReviewsByCursor(Long storeId, Long lastReviewId, int limit) {
+    public List<Review> findStoreReviewsByCursor(Long storeId, Long lastReviewId, Integer lastRating, ReviewSortType sortType, int limit) {
         return queryFactory
                 .selectFrom(review)
                 .join(review.member, member).fetchJoin()
@@ -30,9 +29,9 @@ public class ReviewQueryRepository {
                 .join(review.order, order).fetchJoin()
                 .where(
                         review.store.id.eq(storeId),
-                        ltReviewId(lastReviewId)
+                        cursorCondition(lastReviewId, lastRating, sortType)
                 )
-                .orderBy(review.id.desc())
+                .orderBy(getSortSpecifiers(sortType))
                 .limit(limit)
                 .fetch();
     }
@@ -70,26 +69,15 @@ public class ReviewQueryRepository {
                 .join(review.order, order).fetchJoin()
                 .where(
                         review.store.id.eq(storeId),
-                        dynamicCursor(sortType, lastReviewId, lastRating)
+                        cursorCondition(lastReviewId, lastRating, sortType)
                 )
-                .orderBy(dynamicOrderSpecifiers(sortType))
+                .orderBy(getSortSpecifiers(sortType))
                 .limit(limit)
                 .fetch();
     }
 
-    // 동적 정렬 조건 생성
-    private OrderSpecifier<?>[] dynamicOrderSpecifiers(ReviewSortType sortType) {
-        if (sortType == null || sortType == ReviewSortType.LATEST) {
-            return new OrderSpecifier[]{ review.id.desc() };
-        } else if (sortType == ReviewSortType.HIGHEST_RATING) {
-            return new OrderSpecifier[]{ review.rating.desc(), review.id.desc() };
-        } else { // LOWEST_RATING
-            return new OrderSpecifier[]{ review.rating.asc(), review.id.desc() };
-        }
-    }
-
     // 동적 커서(WHERE) 조건 생성
-    private BooleanExpression dynamicCursor(ReviewSortType sortType, Long lastReviewId, Integer lastRating) {
+    private BooleanExpression cursorCondition(Long lastReviewId, Integer lastRating, ReviewSortType sortType) {
         if (lastReviewId == null) {
             return null;
         }
@@ -110,6 +98,17 @@ public class ReviewQueryRepository {
             // 별점이 더 높거나 OR (별점은 같은데 ID가 더 작음)
             return review.rating.gt(lastRating)
                     .or(review.rating.eq(lastRating).and(review.id.lt(lastReviewId)));
+        }
+    }
+
+    // 동적 정렬 조건 생성
+    private OrderSpecifier<?>[] getSortSpecifiers(ReviewSortType sortType) {
+        if (sortType == null || sortType == ReviewSortType.LATEST) {
+            return new OrderSpecifier[]{ review.id.desc() };
+        } else if (sortType == ReviewSortType.HIGHEST_RATING) {
+            return new OrderSpecifier[]{ review.rating.desc(), review.id.desc() };
+        } else { // LOWEST_RATING
+            return new OrderSpecifier[]{ review.rating.asc(), review.id.desc() };
         }
     }
 }

@@ -100,4 +100,18 @@ public class ReviewConverter {
 
         return firstLetter + maskedPart;
     }
+
+    public ReviewListResponse toReviewListResponse(
+            String storeName,
+            List<ReviewListResponse.ReviewDetailDTO> reviewList,
+            boolean hasNext,
+            Long nextCursor
+    ) {
+        return ReviewListResponse.builder()
+                .storeName(storeName)
+                .reviewList(reviewList)
+                .hasNext(hasNext)
+                .nextCursor(nextCursor)
+                .build();
+    }
 }

@@ -39,6 +39,7 @@ public class FirebaseFcmMessageSender implements FcmMessageSender {
                 .findAllByMemberIdAndPlatformAndActiveTrue(request.memberId(), FcmPlatform.WEB);
 
         if (registrations.isEmpty()) {
+            log.info("FCM send skipped because active registration is empty. memberId={}", request.memberId());
             return FcmSendResult.empty();
         }
 
@@ -49,6 +50,13 @@ public class FirebaseFcmMessageSender implements FcmMessageSender {
         try {
             BatchResponse response = firebaseMessaging.sendEach(messages);
             deactivateInvalidRegistrations(registrations, response.getResponses());
+            log.info(
+                    "FCM send completed. memberId={}, targetCount={}, successCount={}, failureCount={}",
+                    request.memberId(),
+                    registrations.size(),
+                    response.getSuccessCount(),
+                    response.getFailureCount()
+            );
             return new FcmSendResult(registrations.size(), response.getSuccessCount(), response.getFailureCount());
         } catch (FirebaseMessagingException e) {
             log.warn(
@@ -92,6 +100,13 @@ public class FirebaseFcmMessageSender implements FcmMessageSender {
 
             FirebaseMessagingException exception = response.getException();
             MessagingErrorCode errorCode = exception == null ? null : exception.getMessagingErrorCode();
+            log.warn(
+                    "FCM send failed for registration. fcmRegistrationId={}, memberId={}, messagingErrorCode={}, message={}",
+                    registrations.get(i).getId(),
+                    registrations.get(i).getMemberId(),
+                    errorCode,
+                    exception != null ? exception.getMessage() : null
+            );
             if (isInvalidRegistration(errorCode)) {
                 registrations.get(i).deactivate();
             }

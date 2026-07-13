@@ -37,3 +37,6 @@ data/
 # 환경 변수 관리 파일
 .env
 .env.local
+
+# Local FCM web push test page
+fcm-test/

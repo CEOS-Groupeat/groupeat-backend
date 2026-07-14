@@ -35,16 +35,16 @@ public class StoreSearchResponse {
             @Schema(description = "최대 가격", example = "12000")
             Integer maxPrice,
 
-            @Schema(description = "연락처", example = "051-1234-5678")
-            String phoneNumber,
-
             @Schema(description = "별점", example = "4.7")
             Double rating,
 
             @Schema(description = "리뷰 개수", example = "128")
             Integer reviewCount,
 
-            @Schema(description = "픽업 시간", example = "10:00 ~ 17:00")
-            String pickupTimeRange
+            @Schema(description = "지역 (구)", example = "마포구")
+            String district,
+
+            @Schema(description = "상세 지역 (동)", example = "아현동")
+            String neighborhood
     ) {}
 }

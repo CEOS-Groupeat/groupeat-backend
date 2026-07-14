@@ -1,7 +1,6 @@
 package com.groupeat.domain.store.entity;
 
 import com.groupeat.domain.store.enums.StoreCategory;
-import com.groupeat.domain.store.enums.StoreRegion;
 import com.groupeat.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -44,10 +43,6 @@ public class Store extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "category", length = 50)
     private StoreCategory category;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "region", length = 50)
-    private StoreRegion region;
 
     @Column(length = 20)
     private String dong;

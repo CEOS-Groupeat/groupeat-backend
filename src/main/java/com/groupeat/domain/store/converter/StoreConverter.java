@@ -52,7 +52,7 @@ public class StoreConverter {
     private static OwnerStoreResponse.LocationDTO toLocationDTO(Store store) {
         return OwnerStoreResponse.LocationDTO.builder()
                 .address(store.getAddress())
-                .district(store.getDistrict() != null ? store.getDistrict() : getRegionDescription(store))
+                .district(store.getDistrict() != null ? store.getDistrict() : getDistrictDescription(store))
                 .neighborhood(store.getNeighborhood())
                 .detailAddress(store.getDetailAddress())
                 .build();
@@ -65,8 +65,8 @@ public class StoreConverter {
                 .build();
     }
 
-    private static String getRegionDescription(Store store) {
-        return store.getRegion() != null ? store.getRegion().getDescription() : null;
+    private static String getDistrictDescription(Store store) {
+        return store.getDistrict() != null ? store.getDistrict() : null;
     }
 
     private static String toClosedDays(StoreOrderSchedule schedule) {

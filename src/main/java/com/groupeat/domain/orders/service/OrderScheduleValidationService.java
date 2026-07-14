@@ -32,7 +32,7 @@ public class OrderScheduleValidationService {
             LocalTime pickupTime,
             int requestedQuantity
     ) {
-        StoreOrderScheduleDay daySchedule = validateSchedule(storeId, pickupDate, pickupTime, requestedQuantity);
+        StoreOrderScheduleDay daySchedule = validateScheduleForCreation(storeId, pickupDate, pickupTime, requestedQuantity);
         validateAcceptedQuantityLimit(storeId, pickupDate, requestedQuantity, daySchedule);
     }
 
@@ -40,7 +40,7 @@ public class OrderScheduleValidationService {
         int orderQuantity = order.getOrderItems().stream()
                 .mapToInt(OrderItem::getQuantity)
                 .sum();
-        StoreOrderScheduleDay daySchedule = validateSchedule(
+        StoreOrderScheduleDay daySchedule = validateScheduleForCreation(
                 order.getStore().getId(),
                 order.getPickupDate(),
                 order.getPickupTime(),
@@ -49,7 +49,7 @@ public class OrderScheduleValidationService {
         validateAcceptedQuantityLimit(order.getStore().getId(), order.getPickupDate(), orderQuantity, daySchedule);
     }
 
-    private StoreOrderScheduleDay validateSchedule(
+    private StoreOrderScheduleDay validateScheduleForCreation(
             Long storeId,
             LocalDate pickupDate,
             LocalTime pickupTime,
@@ -59,6 +59,7 @@ public class OrderScheduleValidationService {
                 .findActiveScheduleByStoreIdAndDate(storeId, pickupDate)
                 .orElseThrow(() -> new GeneralException(OrderErrorStatus.ORDER_SCHEDULE_NOT_AVAILABLE));
 
+        // 🌟 Lead Time 검사는 주문 생성(Creation)할 때만 합니다!
         if (!isLeadTimeEnough(schedule, pickupDate)) {
             throw new GeneralException(OrderErrorStatus.ORDER_SCHEDULE_NOT_AVAILABLE);
         }

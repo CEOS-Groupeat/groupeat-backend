@@ -7,18 +7,20 @@ import com.groupeat.domain.cart.entity.CartItemOption;
 import com.groupeat.domain.cart.exception.CartErrorStatus;
 import com.groupeat.domain.cart.repository.CartItemOptionRepository;
 import com.groupeat.domain.cart.repository.CartItemRepository;
-import com.groupeat.domain.store.entity.Menu;
-import com.groupeat.domain.store.entity.MenuOption;
-import com.groupeat.domain.store.entity.Store;
+import com.groupeat.domain.store.entity.*;
 import com.groupeat.domain.store.exception.StoreErrorStatus;
 import com.groupeat.domain.store.repository.MenuOptionRepository;
 import com.groupeat.domain.store.repository.MenuRepository;
+import com.groupeat.domain.store.repository.StoreOrderScheduleRepository;
 import com.groupeat.domain.store.repository.StoreRepository;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,7 @@ public class CartCalculateService {
     private final StoreRepository storeRepository;
     private final MenuRepository menuRepository;
     private final MenuOptionRepository menuOptionRepository;
+    private final StoreOrderScheduleRepository storeOrderScheduleRepository;
 
     public CartCalculateResponse calculate(Long memberId, CartCalculateRequest request) {
         List<Long> targetIds = request.cartItemIds();
@@ -69,6 +72,12 @@ public class CartCalculateService {
 
         Store store = storeRepository.findById(storeIds.get(0))
                 .orElseThrow(() -> new GeneralException(StoreErrorStatus.STORE_NOT_FOUND));
+
+        int totalQuantity = cartItems.stream().mapToInt(CartItem::getQuantity).sum();
+        LocalDate pickupDate = cartItems.get(0).getPickupDate();
+        LocalTime pickupTime = cartItems.get(0).getPickupTime();
+
+        validateScheduleAndQuantity(store.getId(), pickupDate, pickupTime, totalQuantity);
 
         Map<Long, Menu> menuMap = menuRepository.findAllById(
                 cartItems.stream().map(CartItem::getMenuId).distinct().toList()
@@ -117,7 +126,7 @@ public class CartCalculateService {
                     && totalGroupQuantity >= store.getDiscountConditionQuantity())
                     ? store.getDiscountRate() : 0;
 
-            int itemDiscountAmount = (int) (itemOriginalPrice * (discountRate / 100.0));
+            int itemDiscountAmount = (itemOriginalPrice * discountRate) / 100;
             int itemFinalPrice = itemOriginalPrice - itemDiscountAmount;
 
             totalOriginalPrice += itemOriginalPrice;
@@ -132,5 +141,47 @@ public class CartCalculateService {
                 store.getId(), totalQuantity, totalOriginalPrice, totalDiscountAmount,
                 (totalOriginalPrice - totalDiscountAmount), calculatedItems
         );
+    }
+
+    private void validateScheduleAndQuantity(Long storeId, LocalDate pickupDate, LocalTime pickupTime, int totalQuantity) {
+        if (pickupDate.isBefore(LocalDate.now()) ||
+                (pickupDate.isEqual(LocalDate.now()) && pickupTime.isBefore(LocalTime.now()))) {
+            throw new GeneralException(CartErrorStatus.PICKUP_TIME_IN_PAST);
+        }
+
+        StoreOrderSchedule schedule = storeOrderScheduleRepository
+                .findActiveScheduleByStoreIdAndDate(storeId, pickupDate)
+                .orElseThrow(() -> new GeneralException(CartErrorStatus.STORE_SCHEDULE_NOT_FOUND));
+
+        long daysBetween = ChronoUnit.DAYS.between(LocalDate.now(), pickupDate);
+        if (daysBetween < schedule.getMinOrderDays()) {
+            throw new GeneralException(CartErrorStatus.PICKUP_DATE_BEFORE_LEAD_TIME);
+        }
+
+        StoreOrderScheduleDay scheduleDay = schedule.getDays().stream()
+                .filter(day -> day.getDayOfWeek() == pickupDate.getDayOfWeek())
+                .findFirst()
+                .orElseThrow(() -> new GeneralException(CartErrorStatus.STORE_NOT_AVAILABLE_ON_DAY));
+
+        if (!scheduleDay.isAvailable()) {
+            throw new GeneralException(CartErrorStatus.STORE_NOT_AVAILABLE_ON_DAY);
+        }
+
+        if (pickupTime.isBefore(scheduleDay.getPickupStartTime()) || pickupTime.isAfter(scheduleDay.getPickupEndTime())) {
+            throw new GeneralException(CartErrorStatus.STORE_NOT_AVAILABLE_ON_DAY);
+        }
+        if (scheduleDay.getBreakStartTime() != null && scheduleDay.getBreakEndTime() != null) {
+            boolean isDuringBreak = !pickupTime.isBefore(scheduleDay.getBreakStartTime()) && !pickupTime.isAfter(scheduleDay.getBreakEndTime());
+            if (isDuringBreak) {
+                throw new GeneralException(CartErrorStatus.STORE_NOT_AVAILABLE_ON_DAY);
+            }
+        }
+
+        if (scheduleDay.getMinOrderQuantity() != null && totalQuantity < scheduleDay.getMinOrderQuantity()) {
+            throw new GeneralException(CartErrorStatus.MIN_ORDER_QUANTITY_NOT_SATISFIED);
+        }
+        if (scheduleDay.getMaxOrderQuantity() != null && totalQuantity > scheduleDay.getMaxOrderQuantity()) {
+            throw new GeneralException(CartErrorStatus.MAX_ORDER_QUANTITY_EXCEEDED);
+        }
     }
 }

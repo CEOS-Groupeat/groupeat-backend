@@ -2,24 +2,18 @@ package com.groupeat.domain.search.converter;
 
 import com.groupeat.domain.search.dto.response.StoreSearchResponse;
 import com.groupeat.domain.store.entity.Store;
-import com.groupeat.domain.store.entity.StoreOrderSchedule;
-import com.groupeat.domain.store.entity.StoreOrderScheduleDay;
 
-import java.time.LocalTime;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class SearchConverter {
 
     public static StoreSearchResponse.StoreListDTO toStoreListDTO(
             List<Store> stores,
-            long totalElements,
-            Map<Long, StoreOrderSchedule> scheduleMap
+            long totalElements
     ) {
         List<StoreSearchResponse.StoreCardDTO> storeCards = stores.stream()
-                .map(store -> toStoreCardDTO(store, scheduleMap.get(store.getId())))
+                .map(SearchConverter::toStoreCardDTO)
                 .collect(Collectors.toList());
 
         return StoreSearchResponse.StoreListDTO.builder()
@@ -28,13 +22,7 @@ public class SearchConverter {
                 .build();
     }
 
-    private static StoreSearchResponse.StoreCardDTO toStoreCardDTO(Store store, StoreOrderSchedule schedule) {
-        LocalTime pickupOpenTime = toEarliestPickupOpenTime(schedule);
-        LocalTime pickupCloseTime = toLatestPickupCloseTime(schedule);
-        String timeRange = (pickupOpenTime != null && pickupCloseTime != null)
-                ? pickupOpenTime + " ~ " + pickupCloseTime
-                : "시간 정보 없음";
-
+    private static StoreSearchResponse.StoreCardDTO toStoreCardDTO(Store store) {
         return StoreSearchResponse.StoreCardDTO.builder()
                 .storeId(store.getId())
                 .imageUrl(store.getImageUrl())
@@ -42,36 +30,10 @@ public class SearchConverter {
                 .category(store.getCategory() != null ? store.getCategory().getDescription() : null)
                 .minPrice(store.getMinPrice())
                 .maxPrice(store.getMaxPrice())
-                .phoneNumber(store.getPhoneNumber())
                 .rating(store.getReviewRating())
                 .reviewCount(store.getReviewCount())
-                .pickupTimeRange(timeRange)
+                .district(store.getDistrict() != null ? store.getDistrict() : null)
+                .neighborhood(store.getNeighborhood())
                 .build();
-    }
-
-    private static LocalTime toEarliestPickupOpenTime(StoreOrderSchedule schedule) {
-        if (schedule == null) {
-            return null;
-        }
-
-        return schedule.getDays().stream()
-                .filter(StoreOrderScheduleDay::isAvailable)
-                .map(StoreOrderScheduleDay::getPickupStartTime)
-                .filter(Objects::nonNull)
-                .min(LocalTime::compareTo)
-                .orElse(null);
-    }
-
-    private static LocalTime toLatestPickupCloseTime(StoreOrderSchedule schedule) {
-        if (schedule == null) {
-            return null;
-        }
-
-        return schedule.getDays().stream()
-                .filter(StoreOrderScheduleDay::isAvailable)
-                .map(StoreOrderScheduleDay::getPickupEndTime)
-                .filter(Objects::nonNull)
-                .max(LocalTime::compareTo)
-                .orElse(null);
     }
 }

@@ -13,6 +13,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
+import java.util.TimeZone;
+
 @EnableJpaAuditing
 @SpringBootApplication
 @EnableConfigurationProperties({
@@ -28,6 +30,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 public class GroupeatBackendApplication {
 
 	public static void main(String[] args) {
+		TimeZone.setDefault(TimeZone.getTimeZone("Asia/Seoul"));
 		SpringApplication.run(GroupeatBackendApplication.class, args);
 	}
 

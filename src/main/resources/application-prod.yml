@@ -13,6 +13,8 @@ spring:
         show_sql: false
         format_sql: false
         default_batch_fetch_size: 100
+        jdbc:
+          time_zone: Asia/Seoul
 
 springdoc:
   swagger-ui:

@@ -2,6 +2,9 @@ spring:
   application:
     name: groupeat-backend
 
+  jackson:
+    time-zone: Asia/Seoul
+
   threads:
     virtual:
       enabled: true
@@ -20,6 +23,8 @@ spring:
         show_sql: true
         format_sql: true
         default_batch_fetch_size: 100
+        jdbc:
+          time_zone: Asia/Seoul
 
   security:
     oauth2:

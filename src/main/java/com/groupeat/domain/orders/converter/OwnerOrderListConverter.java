@@ -73,6 +73,7 @@ public class OwnerOrderListConverter {
                 .items(itemDTOs)
                 .isReorder(isReorder)
                 .paymentMethod(tab.isConfirmedTab() ? order.getPaymentMethod() : null)
+                .canCompletePickup(order.canCompletePickupAt(LocalDateTime.now()))
                 .remainingHours(remainingHours)
                 .build();
     }

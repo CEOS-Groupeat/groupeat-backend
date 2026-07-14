@@ -58,6 +58,9 @@ public class OwnerOrderListResponse {
             @Schema(description = "결제 방식 (확정 탭에서만 노출, 그 외엔 null)", example = "PREPAID")
             PaymentMethod paymentMethod,
 
+            @Schema(description = "픽업 완료 처리 가능 여부", example = "true")
+            Boolean canCompletePickup,
+
             @Schema(description = "승인 마감까지 남은 시간 (대기 중 탭에서만 노출, 그 외엔 null)", example = "18")
             Integer remainingHours
     ) {}

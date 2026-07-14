@@ -117,11 +117,13 @@ public class OrderOwnerActionTransactionService {
     }
 
     private void validatePickupCompletable(Order order) {
-        if (order.getOrderStatus() == OrderStatus.ACCEPTED) {
-            return;
+        if (order.getOrderStatus() != OrderStatus.ACCEPTED) {
+            throw new GeneralException(OrderErrorStatus.ORDER_PICKUP_COMPLETE_NOT_ALLOWED);
         }
 
-        throw new GeneralException(OrderErrorStatus.ORDER_PICKUP_COMPLETE_NOT_ALLOWED);
+        if (!order.canCompletePickupAt(LocalDateTime.now())) {
+            throw new GeneralException(OrderErrorStatus.ORDER_PICKUP_COMPLETE_TOO_EARLY);
+        }
     }
 
     private void applyPaymentCancel(Payment payment, int refundAmount, PaymentCancelResult paymentCancelResult) {

@@ -22,6 +22,8 @@ import java.util.List;
 @Table(name = "orders")
 public class Order extends BaseEntity {
 
+    private static final long PICKUP_COMPLETE_AVAILABLE_BEFORE_HOURS = 1; // 한시간
+
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "order_pk")
     private Long id; // DB 내부 PK
@@ -138,5 +140,11 @@ public class Order extends BaseEntity {
     public void completePickup(LocalDateTime pickupCompletedAt) {
         this.orderStatus = OrderStatus.COMPLETED;
         this.pickupCompletedAt = pickupCompletedAt;
+    }
+
+    public boolean canCompletePickupAt(LocalDateTime now) {
+        LocalDateTime availableAt = LocalDateTime.of(pickupDate, pickupTime)
+                .minusHours(PICKUP_COMPLETE_AVAILABLE_BEFORE_HOURS);
+        return orderStatus == OrderStatus.ACCEPTED && !now.isBefore(availableAt);
     }
 }

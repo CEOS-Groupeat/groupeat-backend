@@ -118,6 +118,7 @@ public class SignupService {
     public BusinessSignupResponse signupBusiness(BusinessSignupRequest request) {
         Member member = memberRepository.findById(request.memberId())
                 .orElseThrow(() -> new GeneralException(SignupErrorStatus.MEMBER_NOT_FOUND));
+        String email = normalizeOptionalText(request.email());
 
         validateBusinessSignupAvailable(member);
 
@@ -125,7 +126,7 @@ public class SignupService {
         BusinessValidationTokenPayload payload = businessValidationTokenProvider.getPayload(request.businessValidationToken());
         String validBusinessNumber = payload.businessRegistrationNumber();
 
-        validateBusinessUniqueFields(request, validBusinessNumber);
+        validateBusinessUniqueFields(request, email, validBusinessNumber);
 
         termsAgreementValidator.validateRequiredTermsAgreed(
                 TermsTargetType.BUSINESS,
@@ -136,7 +137,7 @@ public class SignupService {
 
         member.completeBusinessBasicInfo(
                 request.representativeName(),
-                request.email(),
+                email,
                 request.birthDate(),
                 request.gender()
         );
@@ -233,8 +234,8 @@ public class SignupService {
         }
     }
 
-    private void validateBusinessUniqueFields(BusinessSignupRequest request, String validBusinessNumber) {
-        if (memberRepository.existsByEmail(request.email())) {
+    private void validateBusinessUniqueFields(BusinessSignupRequest request, String email, String validBusinessNumber) {
+        if (email != null && memberRepository.existsByEmail(email)) {
             throw new GeneralException(SignupErrorStatus.EMAIL_ALREADY_EXISTS);
         }
 

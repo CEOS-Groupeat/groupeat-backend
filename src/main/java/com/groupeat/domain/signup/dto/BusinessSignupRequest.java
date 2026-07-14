@@ -35,15 +35,12 @@ public record BusinessSignupRequest(
         @NotBlank(message = "사업자등록증 URL은 필수입니다.")
         String businessRegistrationCertificateUrl,
 
-        @NotBlank(message = "이메일은 필수입니다.")
         @Email(message = "이메일 형식이 올바르지 않습니다.")
         String email,
 
-        @NotNull(message = "생년월일은 필수입니다.")
         @PastOrPresent(message = "생년월일은 미래일 수 없습니다.")
         LocalDate birthDate,
 
-        @NotNull(message = "성별은 필수입니다.")
         Gender gender
 ) {
 }

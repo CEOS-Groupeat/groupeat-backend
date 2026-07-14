@@ -124,7 +124,7 @@ public class CartConverter {
         }
 
         int originalTotal = unitPrice * item.getQuantity();
-        int discountAmount = (int) (originalTotal * (discountRate / 100.0));
+        int discountAmount = (originalTotal * discountRate) / 100;
 
         return CartListResponse.CartItemDTO.builder()
                 .cartItemId(item.getId())

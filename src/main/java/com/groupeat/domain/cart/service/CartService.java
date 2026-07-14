@@ -11,18 +11,20 @@ import com.groupeat.domain.cart.exception.CartErrorStatus;
 import com.groupeat.domain.cart.repository.CartItemOptionRepository;
 import com.groupeat.domain.cart.repository.CartItemRepository;
 import com.groupeat.domain.cart.repository.CartRepository;
-import com.groupeat.domain.store.entity.Menu;
-import com.groupeat.domain.store.entity.MenuOption;
-import com.groupeat.domain.store.entity.Store;
+import com.groupeat.domain.store.entity.*;
 import com.groupeat.domain.store.exception.StoreErrorStatus;
 import com.groupeat.domain.store.repository.MenuOptionRepository;
 import com.groupeat.domain.store.repository.MenuRepository;
+import com.groupeat.domain.store.repository.StoreOrderScheduleRepository;
 import com.groupeat.domain.store.repository.StoreRepository;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -37,6 +39,7 @@ public class CartService {
     private final StoreRepository storeRepository;
     private final MenuRepository menuRepository;
     private final MenuOptionRepository menuOptionRepository;
+    private final StoreOrderScheduleRepository storeOrderScheduleRepository;
 
     // 장바구니에 메뉴 담기
     @Transactional
@@ -112,6 +115,22 @@ public class CartService {
                 }
             }
 
+            // 해당 가게 + 픽업 일시에 대해 기존 장바구니에 담겨있던 총 수량 계산
+            int existingTotalQty = cartItems.stream()
+                    .filter(item -> item.getStoreId().equals(request.storeId()))
+                    .filter(item -> item.getPickupDate().equals(request.pickupDate()))
+                    .filter(item -> item.getPickupTime().equals(request.pickupTime()))
+                    .mapToInt(CartItem::getQuantity)
+                    .sum();
+
+            // 픽업 일시, Lead Time, 영업시간/브레이크타임, 최소/최대 수량 통합 검증
+            validateScheduleAndQuantity(
+                    request.storeId(),
+                    request.pickupDate(),
+                    request.pickupTime(),
+                    existingTotalQty + request.quantity()
+            );
+
             List<Long> requestedSortedOptionIds = optionIds.stream().sorted().toList();
 
             // 장바구니 병합 로직 -> 기존 장바구니에 동일한 메뉴, 날짜, 시간이 있는지 검색
@@ -143,7 +162,6 @@ public class CartService {
                 }
             }
         }
-
         return getCartList(memberId);
     }
 
@@ -256,6 +274,52 @@ public class CartService {
 
         if (!isSameDateTime) {
             throw new GeneralException(CartErrorStatus.CART_DATETIME_MISMATCH);
+        }
+    }
+
+    private void validateScheduleAndQuantity(Long storeId, LocalDate pickupDate, LocalTime pickupTime, int totalQuantity) {
+        // 과거 일시 담기 방지
+        if (pickupDate.isBefore(LocalDate.now()) ||
+                (pickupDate.isEqual(LocalDate.now()) && pickupTime.isBefore(LocalTime.now()))) {
+            throw new GeneralException(CartErrorStatus.PICKUP_TIME_IN_PAST);
+        }
+
+        // 해당 날짜에 활성화된 가게 스케줄 조회
+        StoreOrderSchedule schedule = storeOrderScheduleRepository
+                .findActiveScheduleByStoreIdAndDate(storeId, pickupDate)
+                .orElseThrow(() -> new GeneralException(CartErrorStatus.STORE_SCHEDULE_NOT_FOUND));
+
+        // 최소 주문 기한 검증
+        long daysBetween = ChronoUnit.DAYS.between(LocalDate.now(), pickupDate);
+        if (daysBetween < schedule.getMinOrderDays()) {
+            throw new GeneralException(CartErrorStatus.PICKUP_DATE_BEFORE_LEAD_TIME);
+        }
+
+        // 요일별 상세 스케줄 조회
+        StoreOrderScheduleDay scheduleDay = schedule.getDays().stream()
+                .filter(day -> day.getDayOfWeek() == pickupDate.getDayOfWeek())
+                .findFirst()
+                .orElseThrow(() -> new GeneralException(CartErrorStatus.STORE_NOT_AVAILABLE_ON_DAY));
+
+        // 해당 요일 영업 여부 검증
+        if (!scheduleDay.isAvailable()) {
+            throw new GeneralException(CartErrorStatus.STORE_NOT_AVAILABLE_ON_DAY);
+        }
+
+        // 픽업 시간 범위 및 휴게시간 검증
+        if (pickupTime.isBefore(scheduleDay.getPickupStartTime()) || pickupTime.isAfter(scheduleDay.getPickupEndTime())) {
+            throw new GeneralException(CartErrorStatus.STORE_NOT_AVAILABLE_ON_DAY);
+        }
+        if (scheduleDay.getBreakStartTime() != null && scheduleDay.getBreakEndTime() != null) {
+            boolean isDuringBreak = !pickupTime.isBefore(scheduleDay.getBreakStartTime()) && !pickupTime.isAfter(scheduleDay.getBreakEndTime());
+            if (isDuringBreak) {
+                throw new GeneralException(CartErrorStatus.STORE_NOT_AVAILABLE_ON_DAY);
+            }
+        }
+
+        // 최대 주문 가능 수량 검증
+        if (scheduleDay.getMaxOrderQuantity() != null && totalQuantity > scheduleDay.getMaxOrderQuantity()) {
+            throw new GeneralException(CartErrorStatus.MAX_ORDER_QUANTITY_EXCEEDED);
         }
     }
 }

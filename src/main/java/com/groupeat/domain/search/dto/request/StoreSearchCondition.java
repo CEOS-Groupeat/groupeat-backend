@@ -55,8 +55,19 @@ public record StoreSearchCondition(
     // 비즈니스 규칙 유효성 검증
     public void validate() {
         // 과거 날짜 검색 방지
-        if (pickupDate != null && pickupDate.isBefore(LocalDate.now())) {
-            throw new GeneralException(SearchErrorStatus.PICKUP_DATE_IN_PAST);
+        if (pickupDate != null) {
+            // 과거 날짜/시간 검색 방지
+            if (pickupDate.isBefore(LocalDate.now())) {
+                throw new GeneralException(SearchErrorStatus.PICKUP_DATE_IN_PAST);
+            }
+
+            // 오늘 날짜를 선택했는데, 과거 시간을 검색하려는 경우 방어
+            if (pickupDate.isEqual(LocalDate.now()) && pickupTimes != null && !pickupTimes.isEmpty()) {
+                boolean hasPastTime = pickupTimes.stream().anyMatch(time -> time.isBefore(LocalTime.now()));
+                if (hasPastTime) {
+                    throw new GeneralException(SearchErrorStatus.PICKUP_TIME_IN_PAST);
+                }
+            }
         }
 
         // 시간 조건만 입력하고 날짜는 입력하지 않은 경우 방지

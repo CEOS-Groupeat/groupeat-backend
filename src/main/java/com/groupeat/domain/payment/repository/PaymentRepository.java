@@ -1,10 +1,16 @@
 package com.groupeat.domain.payment.repository;
 
 import com.groupeat.domain.payment.entity.Payment;
+import com.groupeat.domain.orders.enums.OrderStatus;
+import com.groupeat.domain.payment.enums.PaymentStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
@@ -17,4 +23,21 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findFirstByOrderId(String orderId);
 
     Optional<Payment> findByPaymentKey(String paymentKey);
+
+    @Query("""
+            SELECT DISTINCT p
+            FROM Payment p
+            JOIN FETCH p.order o
+            LEFT JOIN FETCH o.orderItems
+            WHERE p.paymentStatus = :paymentStatus
+              AND o.orderStatus = :orderStatus
+              AND p.approvedAt > :approvedAfter
+              AND p.approvedAt <= :approvedAtOrBefore
+            """)
+    List<Payment> findAllOrderAcceptDeadlineCandidates(
+            @Param("paymentStatus") PaymentStatus paymentStatus,
+            @Param("orderStatus") OrderStatus orderStatus,
+            @Param("approvedAfter") LocalDateTime approvedAfter,
+            @Param("approvedAtOrBefore") LocalDateTime approvedAtOrBefore
+    );
 }

@@ -108,6 +108,34 @@ public class NotificationCommandService {
         return notification;
     }
 
+    // 사업자에게 보여줄 주문 수락 마감 알림 내역을 저장
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Notification createOrderAcceptDeadlineNotification(Long orderId, NotificationType notificationType) {
+        Order order = getOrderWithItems(orderId);
+        validateOrderAcceptDeadlineType(notificationType);
+
+        Notification notification = notificationRepository.save(Notification.create(
+                order.getStore().getOwnerId(),
+                notificationType,
+                orderAcceptDeadlineTitle(notificationType),
+                order.getStore().getStoreName() + " 주문 수락 마감이 " + orderAcceptDeadlineRemainingText(notificationType) + " 남았습니다.",
+                order.getStore().getStoreName(),
+                menuSummary(order.getOrderItems()),
+                order.getPickupDate(),
+                order.getPickupTime(),
+                NotificationReferenceType.ORDER,
+                order.getId()
+        ));
+        log.info(
+                "Order accept deadline notification created. notificationId={}, orderId={}, ownerId={}, type={}",
+                notification.getId(),
+                order.getId(),
+                order.getStore().getOwnerId(),
+                notificationType
+        );
+        return notification;
+    }
+
     private Order getOrderWithItems(Long orderId) {
         return orderRepository.findByIdWithItems(orderId)
                 .orElseThrow(() -> new GeneralException(OrderErrorStatus.ORDER_NOT_FOUND));
@@ -134,6 +162,29 @@ public class NotificationCommandService {
             case ORDER_ACCEPTED -> storeName + "에서 주문을 승인했습니다.";
             case ORDER_REJECTED -> storeName + "에서 주문을 거절했습니다. 결제 금액은 환불 처리됩니다.";
             default -> storeName + " 주문 상태가 변경되었습니다.";
+        };
+    }
+
+    private void validateOrderAcceptDeadlineType(NotificationType notificationType) {
+        if (notificationType != NotificationType.ORDER_ACCEPT_DEADLINE_12H
+                && notificationType != NotificationType.ORDER_ACCEPT_DEADLINE_1H) {
+            throw new IllegalArgumentException("Unsupported order accept deadline notification type: " + notificationType);
+        }
+    }
+
+    private String orderAcceptDeadlineTitle(NotificationType notificationType) {
+        return switch (notificationType) {
+            case ORDER_ACCEPT_DEADLINE_12H -> "수락 마감 12시간 전";
+            case ORDER_ACCEPT_DEADLINE_1H -> "수락 마감 1시간 전";
+            default -> throw new IllegalArgumentException("Unsupported order accept deadline notification type: " + notificationType);
+        };
+    }
+
+    private String orderAcceptDeadlineRemainingText(NotificationType notificationType) {
+        return switch (notificationType) {
+            case ORDER_ACCEPT_DEADLINE_12H -> "12시간";
+            case ORDER_ACCEPT_DEADLINE_1H -> "1시간";
+            default -> throw new IllegalArgumentException("Unsupported order accept deadline notification type: " + notificationType);
         };
     }
 

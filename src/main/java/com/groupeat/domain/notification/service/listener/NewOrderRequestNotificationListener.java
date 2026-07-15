@@ -1,6 +1,7 @@
-package com.groupeat.domain.notification.service;
+package com.groupeat.domain.notification.service.listener;
 
 import com.groupeat.domain.notification.event.NewOrderRequestNotificationEvent;
+import com.groupeat.domain.notification.service.command.NotificationCommandService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

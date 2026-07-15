@@ -1,4 +1,4 @@
-package com.groupeat.domain.notification.service;
+package com.groupeat.domain.notification.service.command;
 
 import com.groupeat.domain.notification.entity.Notification;
 import com.groupeat.domain.notification.enums.NotificationReferenceType;
@@ -11,12 +11,15 @@ import com.groupeat.domain.orders.exception.OrderErrorStatus;
 import com.groupeat.domain.orders.repository.OrderRepository;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -26,12 +29,12 @@ public class NotificationCommandService {
     private final OrderRepository orderRepository;
 
     // 고객에게 보여줄 주문 승인/거절 알림 내역을 저장
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Notification createCustomerOrderStatusNotification(Long orderId, OrderStatus orderStatus) {
         Order order = getOrderWithItems(orderId);
         NotificationType type = toCustomerOrderStatusNotificationType(orderStatus);
 
-        return notificationRepository.save(Notification.create(
+        Notification notification = notificationRepository.save(Notification.create(
                 order.getMemberId(),
                 type,
                 customerTitle(type),
@@ -43,14 +46,22 @@ public class NotificationCommandService {
                 NotificationReferenceType.ORDER,
                 order.getId()
         ));
+        log.info(
+                "Customer order status notification created. notificationId={}, orderId={}, memberId={}, type={}",
+                notification.getId(),
+                order.getId(),
+                order.getMemberId(),
+                type
+        );
+        return notification;
     }
 
     // 사업자에게 보여줄 신규 주문 요청 알림 내역을 저장
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Notification createNewOrderRequestNotification(Long orderId) {
         Order order = getOrderWithItems(orderId);
 
-        return notificationRepository.save(Notification.create(
+        Notification notification = notificationRepository.save(Notification.create(
                 order.getStore().getOwnerId(),
                 NotificationType.NEW_ORDER_REQUEST,
                 "새로운 주문이 접수되었습니다",
@@ -62,6 +73,13 @@ public class NotificationCommandService {
                 NotificationReferenceType.ORDER,
                 order.getId()
         ));
+        log.info(
+                "New order request notification created. notificationId={}, orderId={}, ownerId={}",
+                notification.getId(),
+                order.getId(),
+                order.getStore().getOwnerId()
+        );
+        return notification;
     }
 
     private Order getOrderWithItems(Long orderId) {

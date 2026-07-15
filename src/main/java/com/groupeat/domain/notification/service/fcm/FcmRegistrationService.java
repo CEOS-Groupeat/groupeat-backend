@@ -1,4 +1,4 @@
-package com.groupeat.domain.notification.service;
+package com.groupeat.domain.notification.service.fcm;
 
 import com.groupeat.domain.member.entity.Member;
 import com.groupeat.domain.member.enums.MemberStatus;

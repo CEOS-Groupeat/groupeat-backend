@@ -1,4 +1,4 @@
-package com.groupeat.domain.notification.service;
+package com.groupeat.domain.notification.service.fcm;
 
 import com.google.firebase.messaging.BatchResponse;
 import com.google.firebase.messaging.FirebaseMessaging;

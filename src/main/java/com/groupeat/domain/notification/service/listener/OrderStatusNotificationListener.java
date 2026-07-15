@@ -1,9 +1,11 @@
-package com.groupeat.domain.notification.service;
+package com.groupeat.domain.notification.service.listener;
 
 import com.groupeat.domain.member.entity.Member;
 import com.groupeat.domain.member.repository.MemberRepository;
 import com.groupeat.domain.notification.dto.FcmSendRequest;
 import com.groupeat.domain.notification.event.OrderStatusNotificationEvent;
+import com.groupeat.domain.notification.service.command.NotificationCommandService;
+import com.groupeat.domain.notification.service.fcm.FcmMessageSender;
 import com.groupeat.domain.orders.enums.OrderStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

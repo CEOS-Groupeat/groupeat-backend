@@ -1,12 +1,16 @@
-package com.groupeat.domain.notification.service;
+package com.groupeat.domain.notification.service.listener;
 
 import com.groupeat.domain.member.entity.Member;
 import com.groupeat.domain.member.repository.MemberRepository;
 import com.groupeat.domain.notification.dto.FcmSendRequest;
 import com.groupeat.domain.notification.event.OrderStatusNotificationEvent;
+import com.groupeat.domain.notification.service.command.NotificationCommandService;
+import com.groupeat.domain.notification.service.fcm.FcmMessageSender;
 import com.groupeat.domain.orders.enums.OrderStatus;
+import com.groupeat.global.config.AsyncConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -20,17 +24,21 @@ public class OrderStatusNotificationListener {
 
     private final MemberRepository memberRepository;
     private final FcmMessageSender fcmMessageSender;
+    private final NotificationCommandService notificationCommandService;
 
-    // 주문 상태 변경 트랜잭션 커밋 이후 FCM 알림 발송
+    // 주문 상태 변경 트랜잭션 커밋 이후 알림 내역 저장 및 FCM 알림 발송
+    @Async(AsyncConfig.NOTIFICATION_TASK_EXECUTOR)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendOrderStatusNotification(OrderStatusNotificationEvent event) {
         try {
-            Member member = memberRepository.findById(event.memberId()).orElse(null);
-            if (member == null || !member.isOrderStatusNotificationAgreed()) {
+            if (!isNotificationTargetStatus(event.orderStatus())) {
                 return;
             }
 
-            if (!isNotificationTargetStatus(event.orderStatus())) {
+            notificationCommandService.createCustomerOrderStatusNotification(event.orderId(), event.orderStatus());
+
+            Member member = memberRepository.findById(event.memberId()).orElse(null);
+            if (member == null || !member.isOrderStatusNotificationAgreed()) {
                 return;
             }
 

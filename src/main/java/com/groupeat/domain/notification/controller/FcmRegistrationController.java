@@ -5,7 +5,7 @@ import com.groupeat.domain.notification.dto.request.FcmRegistrationDeactivateReq
 import com.groupeat.domain.notification.dto.request.FcmRegistrationRequest;
 import com.groupeat.domain.notification.dto.response.FcmRegistrationDeactivateResponse;
 import com.groupeat.domain.notification.dto.response.FcmRegistrationResponse;
-import com.groupeat.domain.notification.service.FcmRegistrationService;
+import com.groupeat.domain.notification.service.fcm.FcmRegistrationService;
 import com.groupeat.global.apiPayload.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

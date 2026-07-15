@@ -82,6 +82,32 @@ public class NotificationCommandService {
         return notification;
     }
 
+    // 고객에게 보여줄 픽업 하루 전 알림 내역을 저장
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Notification createPickupReminderDayBeforeNotification(Long orderId) {
+        Order order = getOrderWithItems(orderId);
+
+        Notification notification = notificationRepository.save(Notification.create(
+                order.getMemberId(),
+                NotificationType.PICKUP_REMINDER_DAY_BEFORE,
+                "픽업 하루 전 알림",
+                order.getStore().getStoreName() + " 주문 픽업이 내일 예정되어 있습니다.",
+                order.getStore().getStoreName(),
+                menuSummary(order.getOrderItems()),
+                order.getPickupDate(),
+                order.getPickupTime(),
+                NotificationReferenceType.ORDER,
+                order.getId()
+        ));
+        log.info(
+                "Pickup reminder notification created. notificationId={}, orderId={}, memberId={}",
+                notification.getId(),
+                order.getId(),
+                order.getMemberId()
+        );
+        return notification;
+    }
+
     private Order getOrderWithItems(Long orderId) {
         return orderRepository.findByIdWithItems(orderId)
                 .orElseThrow(() -> new GeneralException(OrderErrorStatus.ORDER_NOT_FOUND));

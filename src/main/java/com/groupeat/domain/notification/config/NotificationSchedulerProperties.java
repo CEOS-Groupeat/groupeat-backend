@@ -10,6 +10,8 @@ public record NotificationSchedulerProperties(
         boolean enabled,
 
         @Min(60000)
-        long fixedDelayMs
+        long deadlineCheckFixedDelayMs,
+
+        String pickupReminderCron
 ) {
 }

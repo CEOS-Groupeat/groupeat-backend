@@ -1,6 +1,7 @@
 package com.groupeat.domain.payment.service;
 
 import com.groupeat.domain.cart.service.CartService;
+import com.groupeat.domain.notification.event.NewOrderRequestNotificationEvent;
 import com.groupeat.domain.payment.converter.PaymentConverter;
 import com.groupeat.domain.payment.dto.PreparedPaymentConfirm;
 import com.groupeat.domain.payment.dto.request.PaymentConfirmRequest;
@@ -12,6 +13,7 @@ import com.groupeat.domain.payment.exception.PaymentErrorStatus;
 import com.groupeat.domain.payment.repository.PaymentRepository;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,7 @@ public class PaymentConfirmTransactionService {
 
     private final PaymentRepository paymentRepository;
     private final CartService cartService;
+    private final ApplicationEventPublisher eventPublisher;
 
     // 결제 승인 전 검증을 수행하고 승인 진행 상태로 저장
     @Transactional
@@ -61,6 +64,7 @@ public class PaymentConfirmTransactionService {
                 tossResponse.card() != null ? tossResponse.card().approveNo() : null
         );
         markOrderPaid(payment);
+        publishNewOrderRequestNotificationEvent(payment); // 주문 요청 이벤트 발행
 
         // 결제가 성공했으므로 해당 유저의 장바구니 비우기
         cartService.clearCartByMemberId(payment.getMemberId());
@@ -113,6 +117,15 @@ public class PaymentConfirmTransactionService {
         }
 
         payment.getOrder().markPaid();
+    }
+
+    // 결제 완료로 신규 주문 요청 알림 이벤트 발행
+    private void publishNewOrderRequestNotificationEvent(Payment payment) {
+        if (payment.getOrder() == null) {
+            return;
+        }
+
+        eventPublisher.publishEvent(new NewOrderRequestNotificationEvent(payment.getOrder().getId()));
     }
 
     // 토스 응답의 OffsetDateTime을 엔티티에서 사용하는 LocalDateTime으로 변환

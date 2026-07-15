@@ -17,6 +17,7 @@ import com.groupeat.global.exception.GeneralException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.context.ApplicationEventPublisher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -42,11 +43,18 @@ class PaymentConfirmTransactionServiceTest {
     @Mock
     private CartService cartService;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private PaymentConfirmTransactionService paymentConfirmTransactionService;
 
     @BeforeEach
     void setUp() {
-        paymentConfirmTransactionService = new PaymentConfirmTransactionService(paymentRepository, cartService);
+        paymentConfirmTransactionService = new PaymentConfirmTransactionService(
+                paymentRepository,
+                cartService,
+                eventPublisher
+        );
     }
 
     // 결제 준비 상태면 승인 진행 상태로 변경한다.

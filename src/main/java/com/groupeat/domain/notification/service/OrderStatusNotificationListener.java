@@ -20,17 +20,20 @@ public class OrderStatusNotificationListener {
 
     private final MemberRepository memberRepository;
     private final FcmMessageSender fcmMessageSender;
+    private final NotificationCommandService notificationCommandService;
 
-    // 주문 상태 변경 트랜잭션 커밋 이후 FCM 알림 발송
+    // 주문 상태 변경 트랜잭션 커밋 이후 알림 내역 저장 및 FCM 알림 발송
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendOrderStatusNotification(OrderStatusNotificationEvent event) {
         try {
-            Member member = memberRepository.findById(event.memberId()).orElse(null);
-            if (member == null || !member.isOrderStatusNotificationAgreed()) {
+            if (!isNotificationTargetStatus(event.orderStatus())) {
                 return;
             }
 
-            if (!isNotificationTargetStatus(event.orderStatus())) {
+            notificationCommandService.createCustomerOrderStatusNotification(event.orderId(), event.orderStatus());
+
+            Member member = memberRepository.findById(event.memberId()).orElse(null);
+            if (member == null || !member.isOrderStatusNotificationAgreed()) {
                 return;
             }
 

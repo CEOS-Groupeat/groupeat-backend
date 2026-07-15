@@ -28,6 +28,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             SELECT DISTINCT p
             FROM Payment p
             JOIN FETCH p.order o
+            JOIN FETCH o.store
             LEFT JOIN FETCH o.orderItems
             WHERE p.paymentStatus = :paymentStatus
               AND o.orderStatus = :orderStatus
@@ -38,6 +39,21 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             @Param("paymentStatus") PaymentStatus paymentStatus,
             @Param("orderStatus") OrderStatus orderStatus,
             @Param("approvedAfter") LocalDateTime approvedAfter,
+            @Param("approvedAtOrBefore") LocalDateTime approvedAtOrBefore
+    );
+
+    @Query("""
+            SELECT p
+            FROM Payment p
+            JOIN FETCH p.order o
+            JOIN FETCH o.store
+            WHERE p.paymentStatus = :paymentStatus
+              AND o.orderStatus = :orderStatus
+              AND p.approvedAt <= :approvedAtOrBefore
+            """)
+    List<Payment> findAllAutoRejectCandidates(
+            @Param("paymentStatus") PaymentStatus paymentStatus,
+            @Param("orderStatus") OrderStatus orderStatus,
             @Param("approvedAtOrBefore") LocalDateTime approvedAtOrBefore
     );
 }

@@ -113,6 +113,10 @@ app:
       enabled: ${NOTIFICATION_SCHEDULER_ENABLED:false}
       pickup-reminder-cron: ${PICKUP_REMINDER_CRON:0 0 9 * * *} # 매일 오전 9시
       deadline-check-fixed-delay-ms: ${ORDER_DEADLINE_CHECK_FIXED_DELAY_MS:600000}
+  order:
+    scheduler:
+      enabled: ${ORDER_SCHEDULER_ENABLED:false}
+      auto-reject-fixed-delay-ms: ${ORDER_AUTO_REJECT_FIXED_DELAY_MS:600000}
   swagger:
     prod-server-url: ${SWAGGER_PROD_SERVER_URL:https://api.groupeat.co.kr}
 

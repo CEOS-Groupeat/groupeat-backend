@@ -4,6 +4,7 @@ import com.groupeat.domain.auth.config.AuthCookieProperties;
 import com.groupeat.domain.auth.config.OAuth2RedirectProperties;
 import com.groupeat.domain.business.config.NtsApiProperties;
 import com.groupeat.domain.notification.config.FirebaseProperties;
+import com.groupeat.domain.notification.config.NotificationSchedulerProperties;
 import com.groupeat.domain.payment.config.TossPaymentProperties;
 import com.groupeat.domain.settlement.config.SettlementProperties;
 import com.groupeat.global.config.CorsProperties;
@@ -23,9 +24,10 @@ import java.util.TimeZone;
 		CorsProperties.class,
 		TossPaymentProperties.class,
 		SettlementProperties.class,
-        NtsApiProperties.class,
+		NtsApiProperties.class,
 		S3Properties.class,
-		FirebaseProperties.class
+		FirebaseProperties.class,
+		NotificationSchedulerProperties.class
 })
 public class GroupeatBackendApplication {
 

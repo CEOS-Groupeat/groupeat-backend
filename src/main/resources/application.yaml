@@ -108,6 +108,10 @@ app:
   settlement:
     # TODO: 정산 수수료 정책 확정 후 운영 설정으로 조정
     platform-fee-rate: ${PLATFORM_FEE_RATE:5}
+  notification:
+    scheduler:
+      enabled: ${NOTIFICATION_SCHEDULER_ENABLED:false}
+      fixed-delay-ms: ${NOTIFICATION_SCHEDULER_FIXED_DELAY_MS:600000}
   swagger:
     prod-server-url: ${SWAGGER_PROD_SERVER_URL:https://api.groupeat.co.kr}
 

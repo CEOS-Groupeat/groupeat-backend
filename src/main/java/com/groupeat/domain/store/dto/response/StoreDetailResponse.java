@@ -51,6 +51,12 @@ public record StoreDetailResponse(
         Integer discountRate,
 
         @Schema(description = "주문 프로세스", example = "1. 예약 주문 2. 픽업 대기 3. 픽업 완료")
-        String orderProcess
+        String orderProcess,
+
+        @Schema(description = "주문 가능 최소 수량 (전체 요일 중 최솟값)", example = "10")
+        Integer minOrderQuantity,
+
+        @Schema(description = "주문 가능 최대 수량 (전체 요일 중 최댓값)", example = "200")
+        Integer maxOrderQuantity
 ) {
 }

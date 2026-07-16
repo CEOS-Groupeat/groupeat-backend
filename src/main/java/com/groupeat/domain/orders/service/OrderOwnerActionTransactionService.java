@@ -83,6 +83,22 @@ public class OrderOwnerActionTransactionService {
         return OrderConverter.toOrderStatusChangeResponse(order, rejectedAt);
     }
 
+    // 24시간 내 미처리된 주문을 시스템 자동 거절로 반영
+    @Transactional
+    public void rejectExpiredOrder(Long orderId, int refundAmount, PaymentCancelResult paymentCancelResult) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new GeneralException(OrderErrorStatus.ORDER_NOT_FOUND));
+
+        validateRejectable(order);
+
+        LocalDateTime rejectedAt = LocalDateTime.now();
+        order.reject(rejectedAt);
+        publishOrderStatusNotificationEvent(order);
+
+        paymentRepository.findByOrderId(order.getOrderId())
+                .ifPresent(payment -> applyPaymentCancel(payment, refundAmount, paymentCancelResult));
+    }
+
     @Transactional
     public OrderStatusChangeResponse completePickup(Long ownerId, Long orderId) {
         Order order = orderRepository.findByIdAndStoreOwnerId(orderId, ownerId)

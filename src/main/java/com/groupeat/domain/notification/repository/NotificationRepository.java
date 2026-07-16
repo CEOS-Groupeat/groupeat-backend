@@ -1,6 +1,8 @@
 package com.groupeat.domain.notification.repository;
 
 import com.groupeat.domain.notification.entity.Notification;
+import com.groupeat.domain.notification.enums.NotificationReferenceType;
+import com.groupeat.domain.notification.enums.NotificationType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -16,6 +18,13 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     long countByReceiverMemberIdAndDeletedAtIsNull(Long receiverMemberId);
 
     long countByReceiverMemberIdAndReadAtIsNullAndDeletedAtIsNull(Long receiverMemberId);
+
+    boolean existsByReceiverMemberIdAndNotificationTypeAndReferenceTypeAndReferenceIdAndDeletedAtIsNull(
+            Long receiverMemberId,
+            NotificationType notificationType,
+            NotificationReferenceType referenceType,
+            Long referenceId
+    );
 
     Optional<Notification> findByIdAndDeletedAtIsNull(Long notificationId);
 

@@ -4,6 +4,7 @@ import com.groupeat.domain.payment.entity.Payment;
 import com.groupeat.domain.orders.enums.OrderStatus;
 import com.groupeat.domain.payment.enums.PaymentStatus;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -46,14 +47,15 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             SELECT p
             FROM Payment p
             JOIN FETCH p.order o
-            JOIN FETCH o.store
             WHERE p.paymentStatus = :paymentStatus
               AND o.orderStatus = :orderStatus
               AND p.approvedAt <= :approvedAtOrBefore
+            ORDER BY p.approvedAt ASC, p.id ASC
             """)
     List<Payment> findAllAutoRejectCandidates(
             @Param("paymentStatus") PaymentStatus paymentStatus,
             @Param("orderStatus") OrderStatus orderStatus,
-            @Param("approvedAtOrBefore") LocalDateTime approvedAtOrBefore
+            @Param("approvedAtOrBefore") LocalDateTime approvedAtOrBefore,
+            Pageable pageable
     );
 }

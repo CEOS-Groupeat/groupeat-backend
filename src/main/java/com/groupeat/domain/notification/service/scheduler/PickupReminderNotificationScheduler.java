@@ -19,6 +19,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +27,8 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class PickupReminderNotificationScheduler {
+
+    private static final ZoneId KOREA_ZONE_ID = ZoneId.of("Asia/Seoul");
 
     private final NotificationSchedulerProperties schedulerProperties;
     private final OrderRepository orderRepository;
@@ -41,7 +44,7 @@ public class PickupReminderNotificationScheduler {
             return;
         }
 
-        LocalDate pickupDate = LocalDate.now().plusDays(1);
+        LocalDate pickupDate = LocalDate.now(KOREA_ZONE_ID).plusDays(1);
         List<Order> orders = orderRepository.findAllByOrderStatusAndPickupDateWithItems(
                 OrderStatus.ACCEPTED,
                 pickupDate

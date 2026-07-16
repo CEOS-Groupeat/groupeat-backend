@@ -11,6 +11,7 @@ import com.groupeat.domain.payment.repository.PaymentRepository;
 import com.groupeat.domain.payment.service.PaymentCancelService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +25,7 @@ public class OrderAutoRejectScheduler {
 
     private static final String AUTO_REJECT_CANCEL_REASON = "주문 수락 기한 초과로 자동 거절";
     private static final long ORDER_ACCEPT_DEADLINE_HOURS = 24;
+    private static final int AUTO_REJECT_BATCH_SIZE = 100;
 
     private final OrderSchedulerProperties schedulerProperties;
     private final PaymentRepository paymentRepository;
@@ -41,7 +43,8 @@ public class OrderAutoRejectScheduler {
         List<Payment> payments = paymentRepository.findAllAutoRejectCandidates(
                 PaymentStatus.DONE,
                 OrderStatus.PAID,
-                approvedAtOrBefore
+                approvedAtOrBefore,
+                PageRequest.of(0, AUTO_REJECT_BATCH_SIZE)
         );
 
         for (Payment payment : payments) {

@@ -31,6 +31,8 @@ public class StoreConverter {
                 .discountConditionQuantity(store.getDiscountConditionQuantity())
                 .discountRate(store.getDiscountRate())
                 .orderProcess(store.getOrderProcess())
+                .minOrderQuantity(toMinOrderQuantity(schedule))
+                .maxOrderQuantity(toMaxOrderQuantity(schedule))
                 .build();
     }
 
@@ -106,6 +108,30 @@ public class StoreConverter {
                 .map(StoreOrderScheduleDay::getPickupEndTime)
                 .filter(Objects::nonNull)
                 .max(LocalTime::compareTo)
+                .orElse(null);
+    }
+
+    private static Integer toMinOrderQuantity(StoreOrderSchedule schedule) {
+        if (schedule == null) {
+            return null;
+        }
+        return schedule.getDays().stream()
+                .filter(StoreOrderScheduleDay::isAvailable) // 영업하는 요일만 대상
+                .map(StoreOrderScheduleDay::getMinOrderQuantity)
+                .filter(Objects::nonNull)
+                .min(Integer::compareTo)
+                .orElse(null);
+    }
+    
+    private static Integer toMaxOrderQuantity(StoreOrderSchedule schedule) {
+        if (schedule == null) {
+            return null;
+        }
+        return schedule.getDays().stream()
+                .filter(StoreOrderScheduleDay::isAvailable) // 영업하는 요일만 대상
+                .map(StoreOrderScheduleDay::getMaxOrderQuantity)
+                .filter(Objects::nonNull)
+                .max(Integer::compareTo)
                 .orElse(null);
     }
 }

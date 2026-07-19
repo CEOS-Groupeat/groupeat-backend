@@ -3,6 +3,7 @@ package com.groupeat.domain.store.dto.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Builder
@@ -57,6 +58,12 @@ public record StoreDetailResponse(
         Integer minOrderQuantity,
 
         @Schema(description = "주문 가능 최대 수량 (전체 요일 중 최댓값)", example = "200")
-        Integer maxOrderQuantity
+        Integer maxOrderQuantity,
+
+        @Schema(description = "운영 일정 시작일", example = "2026-05-20")
+        LocalDate scheduleStartDate,
+
+        @Schema(description = "운영 일정 종료일", example = "2027-05-20")
+        LocalDate scheduleEndDate
 ) {
 }

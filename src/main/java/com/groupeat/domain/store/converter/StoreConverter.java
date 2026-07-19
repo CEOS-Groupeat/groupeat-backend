@@ -33,6 +33,8 @@ public class StoreConverter {
                 .orderProcess(store.getOrderProcess())
                 .minOrderQuantity(toMinOrderQuantity(schedule))
                 .maxOrderQuantity(toMaxOrderQuantity(schedule))
+                .scheduleStartDate(schedule != null ? schedule.getStartDate() : null)
+                .scheduleEndDate(schedule != null ? schedule.getEndDate() : null)
                 .build();
     }
 

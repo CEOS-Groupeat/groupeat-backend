@@ -12,6 +12,9 @@ public record PickupTimeResponse(
         @Schema(description = "요청 날짜", example = "2026-04-23")
         LocalDate date,
 
+        @Schema(description = "최소 주문 가능 수량", example = "10")
+        Integer dailyMinOrderQuantity,
+
         @Schema(description = "총 주문 가능 수량", example = "100")
         Integer dailyAvailableQuantity,
 

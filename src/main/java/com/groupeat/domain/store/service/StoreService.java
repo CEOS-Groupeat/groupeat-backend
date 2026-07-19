@@ -59,6 +59,7 @@ public class StoreService {
 
         return PickupTimeResponse.builder()
                 .date(date)
+                .dailyMinOrderQuantity(daySchedule.getMinOrderQuantity())
                 .dailyAvailableQuantity(daySchedule.getMaxOrderQuantity())
                 .intervalMinutes(daySchedule.getIntervalMinutes())
                 .pickupTimeRanges(toPickupTimeRangeResponses(daySchedule))
@@ -81,6 +82,7 @@ public class StoreService {
     private PickupTimeResponse unavailablePickupTimeResponse(LocalDate date) {
         return PickupTimeResponse.builder()
                 .date(date)
+                .dailyMinOrderQuantity(0)
                 .dailyAvailableQuantity(0)
                 .pickupTimeRanges(List.of())
                 .breakTimeRanges(List.of())

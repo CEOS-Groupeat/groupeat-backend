@@ -18,6 +18,12 @@ public record PickupTimeResponse(
         @Schema(description = "총 주문 가능 수량", example = "100")
         Integer dailyAvailableQuantity,
 
+        @Schema(description = "해당 날짜에 이미 승인된 주문 수량", example = "80")
+        Integer dailyAcceptedQuantity,
+
+        @Schema(description = "해당 날짜의 잔여 주문 가능 수량", example = "20")
+        Integer dailyRemainingQuantity,
+
         @Schema(description = "시간 간격(분)", example = "30")
         Integer intervalMinutes,
 

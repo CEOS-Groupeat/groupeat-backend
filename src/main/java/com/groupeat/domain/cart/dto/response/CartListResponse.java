@@ -9,6 +9,9 @@ import java.util.List;
 
 @Builder
 public record CartListResponse(
+        @Schema(description = "장바구니에 담긴 메뉴 종류(항목) 개수", example = "3")
+        Integer totalItemCount,
+
         @Schema(description = "장바구니 픽업 날짜", example = "2026-07-02")
         LocalDate pickupDate,
 

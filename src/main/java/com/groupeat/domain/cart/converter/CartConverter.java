@@ -27,6 +27,8 @@ public class CartConverter {
             return CartListResponse.builder().storeCarts(List.of()).build();
         }
 
+        int totalItemCount = cartItems.size();
+
         LocalDate cartPickupDate = cartItems.get(0).getPickupDate();
         LocalTime cartPickupTime = cartItems.get(0).getPickupTime();
 
@@ -79,6 +81,7 @@ public class CartConverter {
         }).toList();
 
         return CartListResponse.builder()
+                .totalItemCount(totalItemCount)
                 .pickupDate(cartPickupDate)
                 .pickupTime(cartPickupTime)
                 .storeCarts(storeCarts)

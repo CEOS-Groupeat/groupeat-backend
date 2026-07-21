@@ -214,27 +214,6 @@ public class CartService {
         cartItemRepository.delete(cartItem);
     }
 
-    // 결제 성공 시 장바구니 비우기
-    @Transactional
-    public void clearCartByMemberId(Long memberId) {
-        Cart cart = cartRepository.findByMemberId(memberId).orElse(null);
-        if (cart == null) return;
-
-        List<CartItem> cartItems = cartItemRepository.findAllByCartId(cart.getId());
-        if (cartItems.isEmpty()) return;
-
-        List<Long> cartItemIds = cartItems.stream().map(CartItem::getId).toList();
-
-        // 장바구니 옵션 일괄 삭제
-        List<CartItemOption> options = cartItemOptionRepository.findAllByCartItemIdIn(cartItemIds);
-        if (!options.isEmpty()) {
-            cartItemOptionRepository.deleteAllInBatch(options);
-        }
-
-        // 장바구니 아이템 일괄 삭제
-        cartItemRepository.deleteAllByIdInBatch(cartItemIds);
-    }
-
     @Transactional
     public void clearCart(Long memberId) {
         //  장바구니 조회

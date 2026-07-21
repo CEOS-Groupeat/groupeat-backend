@@ -67,7 +67,7 @@ public class PaymentConfirmTransactionService {
         publishNewOrderRequestNotificationEvent(payment); // 주문 요청 이벤트 발행
 
         // 결제가 성공했으므로 해당 유저의 장바구니 비우기
-        cartService.clearCartByMemberId(payment.getMemberId());
+        cartService.clearCart(payment.getMemberId());
 
         return PaymentConverter.toConfirmResponse(payment);
     }

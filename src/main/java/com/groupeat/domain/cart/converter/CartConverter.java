@@ -14,6 +14,7 @@ import java.time.LocalTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class CartConverter {
@@ -117,7 +118,9 @@ public class CartConverter {
 
         if (!options.isEmpty()) {
             List<MenuOption> resolvedOptions = options.stream()
-                    .map(opt -> menuOptionMap.get(opt.getMenuOptionId())).toList();
+                    .map(opt -> menuOptionMap.get(opt.getMenuOptionId()))
+                    .filter(Objects::nonNull)
+                    .toList();
 
             unitPrice += resolvedOptions.stream().mapToInt(MenuOption::getAdditionalPrice).sum();
             optionNames = resolvedOptions.stream().map(MenuOption::getName).toList();

@@ -44,9 +44,6 @@ public class Store extends BaseEntity {
     @Column(name = "category", length = 50)
     private StoreCategory category;
 
-    @Column(length = 20)
-    private String dong;
-
     @Column(name = "phone_number", nullable = false, length = 20)
     private String phoneNumber;
 

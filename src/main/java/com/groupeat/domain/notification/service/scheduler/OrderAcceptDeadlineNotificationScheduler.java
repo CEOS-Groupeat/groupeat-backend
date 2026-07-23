@@ -43,13 +43,13 @@ public class OrderAcceptDeadlineNotificationScheduler {
         LocalDateTime now = LocalDateTime.now();
         sendDeadlineNotifications(
                 NotificationType.ORDER_ACCEPT_DEADLINE_12H,
-                now.minusHours(23),
-                now.minusHours(12)
+                now.minusHours(schedulerProperties.orderAcceptDeadlineWarningStartHours()),
+                now.minusHours(schedulerProperties.orderAcceptDeadlineWarningMiddleHours())
         );
         sendDeadlineNotifications(
                 NotificationType.ORDER_ACCEPT_DEADLINE_1H,
-                now.minusHours(24),
-                now.minusHours(23)
+                now.minusHours(schedulerProperties.orderAcceptDeadlineWarningEndHours()),
+                now.minusHours(schedulerProperties.orderAcceptDeadlineWarningStartHours())
         );
     }
 

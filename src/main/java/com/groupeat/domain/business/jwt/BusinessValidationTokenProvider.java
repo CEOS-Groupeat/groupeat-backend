@@ -1,5 +1,6 @@
 package com.groupeat.domain.business.jwt;
 
+import com.groupeat.domain.business.config.BusinessValidationTokenProperties;
 import com.groupeat.domain.business.exception.BusinessErrorStatus;
 import com.groupeat.global.exception.GeneralException;
 import io.jsonwebtoken.*;
@@ -10,27 +11,29 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Date;
 
 @Component
 public class BusinessValidationTokenProvider {
 
-    // 토큰의 유효기간 설정: 30분
-    private static final long VALIDATION_TOKEN_VALID_TIME = 1000L * 60 * 30;
-
     private final SecretKey secretKey;
+    private final BusinessValidationTokenProperties tokenProperties;
 
     public BusinessValidationTokenProvider(
-            @Value("${jwt.business-secret}") String secret
+            @Value("${jwt.business-secret}") String secret,
+            BusinessValidationTokenProperties tokenProperties
     ) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.tokenProperties = tokenProperties;
     }
 
 
     // JWT 포장
     public String createValidationToken(String businessRegistrationNumber) {
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + VALIDATION_TOKEN_VALID_TIME);
+        Duration validTime = tokenProperties.expiration();
+        Date expiry = new Date(now.getTime() + validTime.toMillis());
 
         return Jwts.builder()
                 .subject("business_validation")

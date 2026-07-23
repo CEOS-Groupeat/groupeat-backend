@@ -12,6 +12,15 @@ public record NotificationSchedulerProperties(
         @Min(60000)
         long deadlineCheckFixedDelayMs,
 
-        String pickupReminderCron
+        String pickupReminderCron,
+
+        @Min(1)
+        long orderAcceptDeadlineWarningStartHours,
+
+        @Min(1)
+        long orderAcceptDeadlineWarningMiddleHours,
+
+        @Min(1)
+        long orderAcceptDeadlineWarningEndHours
 ) {
 }

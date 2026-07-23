@@ -10,6 +10,12 @@ public record OrderSchedulerProperties(
         boolean enabled,
 
         @Min(60000)
-        long autoRejectFixedDelayMs
+        long autoRejectFixedDelayMs,
+
+        @Min(1)
+        long acceptDeadlineHours,
+
+        @Min(1)
+        int autoRejectBatchSize
 ) {
 }

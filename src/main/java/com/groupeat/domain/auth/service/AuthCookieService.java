@@ -28,7 +28,7 @@ public class AuthCookieService {
         response.addHeader(HttpHeaders.SET_COOKIE, createCookie(
                 ACCESS_TOKEN_COOKIE,
                 accessToken,
-                AuthTokenProvider.ACCESS_TOKEN_VALID_TIME.toSeconds()
+                authTokenProvider.accessTokenExpiration().toSeconds()
         ));
     }
 
@@ -37,7 +37,7 @@ public class AuthCookieService {
         response.addHeader(HttpHeaders.SET_COOKIE, createCookie(
                 REFRESH_TOKEN_COOKIE,
                 refreshToken,
-                AuthTokenProvider.REFRESH_TOKEN_VALID_TIME.toSeconds()
+                authTokenProvider.refreshTokenExpiration().toSeconds()
         ));
     }
 

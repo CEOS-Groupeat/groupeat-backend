@@ -6,10 +6,7 @@ import com.groupeat.domain.member.entity.Member;
 import com.groupeat.domain.terms.entity.MemberTermsAgreement;
 import com.groupeat.domain.terms.entity.Terms;
 import com.groupeat.domain.terms.enums.TermsTargetType;
-import com.groupeat.domain.terms.enums.TermsType;
-import com.groupeat.domain.terms.exception.TermsErrorStatus;
-import com.groupeat.domain.terms.repository.MemberTermsAgreementRepository;
-import com.groupeat.domain.terms.repository.TermsRepository;
+import com.groupeat.domain.terms.service.MarketingTermsAgreementService;
 import com.groupeat.global.apiPayload.code.status.GlobalErrorStatus;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
@@ -27,13 +24,13 @@ public class CustomerNotificationSettingsService {
             Set.of(TermsTargetType.COMMON, TermsTargetType.CUSTOMER);
 
     private final CustomerMyPageService customerMyPageService;
-    private final TermsRepository termsRepository;
-    private final MemberTermsAgreementRepository agreementRepository;
+    private final MarketingTermsAgreementService marketingTermsAgreementService;
 
     public CustomerNotificationSettingsResponse getSettings(Long memberId) {
         Member member = customerMyPageService.getActiveCustomer(memberId);
-        Terms marketingTerms = getMarketingTerms();
-        MemberTermsAgreement marketingAgreement = getMarketingAgreement(memberId, marketingTerms.getId());
+        Terms marketingTerms = marketingTermsAgreementService.getMarketingTerms(CUSTOMER_TARGET_TYPES);
+        MemberTermsAgreement marketingAgreement =
+                marketingTermsAgreementService.getLatestAgreement(memberId, marketingTerms.getId());
 
         return CustomerNotificationSettingsResponse.of(member, marketingTerms, marketingAgreement);
     }
@@ -48,11 +45,12 @@ public class CustomerNotificationSettingsService {
         }
 
         Member member = customerMyPageService.getActiveCustomer(memberId);
-        Terms marketingTerms = getMarketingTerms();
-        MemberTermsAgreement marketingAgreement = getMarketingAgreement(memberId, marketingTerms.getId());
+        Terms marketingTerms = marketingTermsAgreementService.getMarketingTerms(CUSTOMER_TARGET_TYPES);
+        MemberTermsAgreement marketingAgreement =
+                marketingTermsAgreementService.getLatestAgreement(memberId, marketingTerms.getId());
 
         if (request.marketingAgreed() != null) {
-            marketingAgreement = updateMarketingAgreement(
+            marketingAgreement = marketingTermsAgreementService.updateAgreement(
                     memberId,
                     marketingTerms.getId(),
                     marketingAgreement,
@@ -64,31 +62,5 @@ public class CustomerNotificationSettingsService {
         }
 
         return CustomerNotificationSettingsResponse.of(member, marketingTerms, marketingAgreement);
-    }
-
-    private MemberTermsAgreement updateMarketingAgreement(
-            Long memberId,
-            Long termsId,
-            MemberTermsAgreement agreement,
-            boolean agreed
-    ) {
-        if (agreement == null || agreement.isAgreed() != agreed) {
-            return agreementRepository.save(MemberTermsAgreement.create(memberId, termsId, agreed));
-        }
-        return agreement;
-    }
-
-    private MemberTermsAgreement getMarketingAgreement(Long memberId, Long termsId) {
-        return agreementRepository
-                .findFirstByMemberIdAndTermsIdOrderByIdDesc(memberId, termsId)
-                .orElse(null);
-    }
-
-    private Terms getMarketingTerms() {
-        return termsRepository.findFirstByTargetTypeInAndActiveTrueAndRequiredFalseAndType(
-                        CUSTOMER_TARGET_TYPES,
-                        TermsType.MARKETING
-                )
-                .orElseThrow(() -> new GeneralException(TermsErrorStatus.MARKETING_TERMS_NOT_CONFIGURED));
     }
 }

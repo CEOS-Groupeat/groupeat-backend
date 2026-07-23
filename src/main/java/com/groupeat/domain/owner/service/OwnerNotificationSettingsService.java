@@ -6,10 +6,7 @@ import com.groupeat.domain.owner.dto.response.OwnerNotificationSettingsResponse;
 import com.groupeat.domain.terms.entity.MemberTermsAgreement;
 import com.groupeat.domain.terms.entity.Terms;
 import com.groupeat.domain.terms.enums.TermsTargetType;
-import com.groupeat.domain.terms.enums.TermsType;
-import com.groupeat.domain.terms.exception.TermsErrorStatus;
-import com.groupeat.domain.terms.repository.MemberTermsAgreementRepository;
-import com.groupeat.domain.terms.repository.TermsRepository;
+import com.groupeat.domain.terms.service.MarketingTermsAgreementService;
 import com.groupeat.global.apiPayload.code.status.GlobalErrorStatus;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
@@ -27,14 +24,14 @@ public class OwnerNotificationSettingsService {
             Set.of(TermsTargetType.COMMON, TermsTargetType.BUSINESS);
 
     private final OwnerMyPageService ownerMyPageService;
-    private final TermsRepository termsRepository;
-    private final MemberTermsAgreementRepository agreementRepository;
+    private final MarketingTermsAgreementService marketingTermsAgreementService;
 
     // 사업자 알림설정 조회
     public OwnerNotificationSettingsResponse getSettings(Long memberId) {
         Member member = ownerMyPageService.getActiveBusinessOwner(memberId);
-        Terms marketingTerms = getMarketingTerms();
-        MemberTermsAgreement marketingAgreement = getMarketingAgreement(memberId, marketingTerms.getId());
+        Terms marketingTerms = marketingTermsAgreementService.getMarketingTerms(OWNER_TARGET_TYPES);
+        MemberTermsAgreement marketingAgreement =
+                marketingTermsAgreementService.getLatestAgreement(memberId, marketingTerms.getId());
 
         return OwnerNotificationSettingsResponse.of(member, marketingTerms, marketingAgreement);
     }
@@ -50,11 +47,12 @@ public class OwnerNotificationSettingsService {
         }
 
         Member member = ownerMyPageService.getActiveBusinessOwner(memberId);
-        Terms marketingTerms = getMarketingTerms();
-        MemberTermsAgreement marketingAgreement = getMarketingAgreement(memberId, marketingTerms.getId());
+        Terms marketingTerms = marketingTermsAgreementService.getMarketingTerms(OWNER_TARGET_TYPES);
+        MemberTermsAgreement marketingAgreement =
+                marketingTermsAgreementService.getLatestAgreement(memberId, marketingTerms.getId());
 
         if (request.marketingAgreed() != null) {
-            marketingAgreement = updateMarketingAgreement(
+            marketingAgreement = marketingTermsAgreementService.updateAgreement(
                     memberId,
                     marketingTerms.getId(),
                     marketingAgreement,
@@ -66,31 +64,5 @@ public class OwnerNotificationSettingsService {
         }
 
         return OwnerNotificationSettingsResponse.of(member, marketingTerms, marketingAgreement);
-    }
-
-    private MemberTermsAgreement updateMarketingAgreement(
-            Long memberId,
-            Long termsId,
-            MemberTermsAgreement agreement,
-            boolean agreed
-    ) {
-        if (agreement == null || agreement.isAgreed() != agreed) {
-            return agreementRepository.save(MemberTermsAgreement.create(memberId, termsId, agreed));
-        }
-        return agreement;
-    }
-
-    private MemberTermsAgreement getMarketingAgreement(Long memberId, Long termsId) {
-        return agreementRepository
-                .findFirstByMemberIdAndTermsIdOrderByIdDesc(memberId, termsId)
-                .orElse(null);
-    }
-
-    private Terms getMarketingTerms() {
-        return termsRepository.findFirstByTargetTypeInAndActiveTrueAndRequiredFalseAndType(
-                        OWNER_TARGET_TYPES,
-                        TermsType.MARKETING
-                )
-                .orElseThrow(() -> new GeneralException(TermsErrorStatus.MARKETING_TERMS_NOT_CONFIGURED));
     }
 }

@@ -1,8 +1,6 @@
 package com.groupeat.domain.store.service;
 
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
-import com.groupeat.domain.member.enums.MemberStatus;
-import com.groupeat.domain.member.enums.MemberType;
 import com.groupeat.domain.store.converter.MenuConverter;
 import com.groupeat.domain.store.dto.request.OwnerMenuRequest;
 import com.groupeat.domain.store.dto.response.MenuListResponse;
@@ -28,6 +26,7 @@ public class OwnerMenuService {
 
     private final StoreRepository storeRepository;
     private final MenuRepository menuRepository;
+    private final StoreBusinessMemberValidator storeBusinessMemberValidator;
 
     public MenuListResponse getMyStoreMenus(AuthenticatedMember member) {
         Store store = findMyStore(member);
@@ -93,7 +92,7 @@ public class OwnerMenuService {
     }
 
     private Store findMyStore(AuthenticatedMember member) {
-        validateActiveBusinessMember(member);
+        storeBusinessMemberValidator.validateActiveBusinessMember(member);
 
         return storeRepository.findActiveStoreByBusinessMemberId(member.memberId())
                 .orElseThrow(() -> new GeneralException(StoreErrorStatus.OWNER_STORE_NOT_FOUND));
@@ -153,15 +152,5 @@ public class OwnerMenuService {
         }
 
         store.updateMenuPriceRange(minPrice, maxPrice);
-    }
-
-    private void validateActiveBusinessMember(AuthenticatedMember member) {
-        if (member.memberType() != MemberType.BUSINESS) {
-            throw new GeneralException(StoreErrorStatus.BUSINESS_MEMBER_REQUIRED);
-        }
-
-        if (member.memberStatus() != MemberStatus.ACTIVE) {
-            throw new GeneralException(StoreErrorStatus.ACTIVE_BUSINESS_MEMBER_REQUIRED);
-        }
     }
 }

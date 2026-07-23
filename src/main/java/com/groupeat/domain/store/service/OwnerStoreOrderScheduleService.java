@@ -1,8 +1,6 @@
 package com.groupeat.domain.store.service;
 
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
-import com.groupeat.domain.member.enums.MemberStatus;
-import com.groupeat.domain.member.enums.MemberType;
 import com.groupeat.domain.store.converter.StoreOrderScheduleConverter;
 import com.groupeat.domain.store.dto.request.OwnerStoreOrderScheduleRequest;
 import com.groupeat.domain.store.dto.response.OwnerStoreOrderScheduleResponse;
@@ -31,6 +29,7 @@ public class OwnerStoreOrderScheduleService {
 
     private final StoreRepository storeRepository;
     private final StoreOrderScheduleRepository scheduleRepository;
+    private final StoreBusinessMemberValidator storeBusinessMemberValidator;
 
     public OwnerStoreOrderScheduleResponse getMyOrderSchedule(AuthenticatedMember member) {
         Store store = findMyStore(member);
@@ -76,20 +75,10 @@ public class OwnerStoreOrderScheduleService {
     }
 
     private Store findMyStore(AuthenticatedMember member) {
-        validateActiveBusinessMember(member);
+        storeBusinessMemberValidator.validateActiveBusinessMember(member);
 
         return storeRepository.findActiveStoreByBusinessMemberId(member.memberId())
                 .orElseThrow(() -> new GeneralException(StoreErrorStatus.OWNER_STORE_NOT_FOUND));
-    }
-
-    private void validateActiveBusinessMember(AuthenticatedMember member) {
-        if (member.memberType() != MemberType.BUSINESS) {
-            throw new GeneralException(StoreErrorStatus.BUSINESS_MEMBER_REQUIRED);
-        }
-
-        if (member.memberStatus() != MemberStatus.ACTIVE) {
-            throw new GeneralException(StoreErrorStatus.ACTIVE_BUSINESS_MEMBER_REQUIRED);
-        }
     }
 
     private void validateRequest(OwnerStoreOrderScheduleRequest request) {

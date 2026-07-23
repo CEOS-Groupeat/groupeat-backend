@@ -90,6 +90,7 @@ firebase:
   project-id: ${FIREBASE_PROJECT_ID:}
 
 app:
+  time-zone: ${APP_TIME_ZONE:Asia/Seoul}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
   auth:
@@ -97,6 +98,10 @@ app:
       secure: ${AUTH_COOKIE_SECURE:false}
       same-site: ${AUTH_COOKIE_SAME_SITE:Lax}
       domain: ${AUTH_COOKIE_DOMAIN:}
+    token:
+      access-token-expiration-minutes: ${ACCESS_TOKEN_EXPIRATION_MINUTES:60}
+      refresh-token-expiration-days: ${REFRESH_TOKEN_EXPIRATION_DAYS:14}
+      signup-token-expiration-minutes: ${SIGNUP_TOKEN_EXPIRATION_MINUTES:10}
   frontend:
     oauth-redirect:
       base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
@@ -113,10 +118,18 @@ app:
       enabled: ${NOTIFICATION_SCHEDULER_ENABLED:false}
       pickup-reminder-cron: ${PICKUP_REMINDER_CRON:0 0 9 * * *} # 매일 오전 9시
       deadline-check-fixed-delay-ms: ${ORDER_DEADLINE_CHECK_FIXED_DELAY_MS:600000}
+      order-accept-deadline-warning-start-hours: ${ORDER_ACCEPT_DEADLINE_WARNING_START_HOURS:23}
+      order-accept-deadline-warning-middle-hours: ${ORDER_ACCEPT_DEADLINE_WARNING_MIDDLE_HOURS:12}
+      order-accept-deadline-warning-end-hours: ${ORDER_ACCEPT_DEADLINE_WARNING_END_HOURS:24}
   order:
     scheduler:
       enabled: ${ORDER_SCHEDULER_ENABLED:false}
       auto-reject-fixed-delay-ms: ${ORDER_AUTO_REJECT_FIXED_DELAY_MS:600000}
+      accept-deadline-hours: ${ORDER_ACCEPT_DEADLINE_HOURS:24}
+      auto-reject-batch-size: ${ORDER_AUTO_REJECT_BATCH_SIZE:100}
+  business:
+    validation-token:
+      expiration-minutes: ${BUSINESS_VALIDATION_TOKEN_EXPIRATION_MINUTES:30}
   swagger:
     prod-server-url: ${SWAGGER_PROD_SERVER_URL:https://api.groupeat.co.kr}
 

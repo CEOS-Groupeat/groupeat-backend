@@ -1,5 +1,6 @@
 package com.groupeat.domain.auth.jwt;
 
+import com.groupeat.domain.auth.config.AuthTokenProperties;
 import com.groupeat.domain.auth.exception.AuthErrorStatus;
 import com.groupeat.domain.member.entity.Member;
 import com.groupeat.domain.member.enums.MemberStatus;
@@ -21,26 +22,34 @@ import java.util.Date;
 @Component
 public class AuthTokenProvider {
 
-    public static final Duration ACCESS_TOKEN_VALID_TIME = Duration.ofMinutes(60);
-    public static final Duration REFRESH_TOKEN_VALID_TIME = Duration.ofDays(14);
-
     private final SecretKey accessSecretKey;
     private final SecretKey refreshSecretKey;
+    private final AuthTokenProperties authTokenProperties;
 
     public AuthTokenProvider(
             @Value("${jwt.access-secret}") String accessSecret,
-            @Value("${jwt.refresh-secret}") String refreshSecret
+            @Value("${jwt.refresh-secret}") String refreshSecret,
+            AuthTokenProperties authTokenProperties
     ) {
         this.accessSecretKey = Keys.hmacShaKeyFor(accessSecret.getBytes(StandardCharsets.UTF_8));
         this.refreshSecretKey = Keys.hmacShaKeyFor(refreshSecret.getBytes(StandardCharsets.UTF_8));
+        this.authTokenProperties = authTokenProperties;
     }
 
     public String createAccessToken(Member member) {
-        return createToken(member, "access", ACCESS_TOKEN_VALID_TIME, accessSecretKey);
+        return createToken(member, "access", authTokenProperties.accessTokenExpiration(), accessSecretKey);
     }
 
     public String createRefreshToken(Member member) {
-        return createToken(member, "refresh", REFRESH_TOKEN_VALID_TIME, refreshSecretKey);
+        return createToken(member, "refresh", authTokenProperties.refreshTokenExpiration(), refreshSecretKey);
+    }
+
+    public Duration accessTokenExpiration() {
+        return authTokenProperties.accessTokenExpiration();
+    }
+
+    public Duration refreshTokenExpiration() {
+        return authTokenProperties.refreshTokenExpiration();
     }
 
     public AuthenticatedMember parseAccessToken(String token) {

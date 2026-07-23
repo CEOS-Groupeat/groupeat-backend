@@ -1,6 +1,8 @@
 package com.groupeat;
 
 import com.groupeat.domain.auth.config.AuthCookieProperties;
+import com.groupeat.domain.auth.config.AuthTokenProperties;
+import com.groupeat.domain.business.config.BusinessValidationTokenProperties;
 import com.groupeat.domain.auth.config.OAuth2RedirectProperties;
 import com.groupeat.domain.business.config.NtsApiProperties;
 import com.groupeat.domain.notification.config.FirebaseProperties;
@@ -8,6 +10,7 @@ import com.groupeat.domain.notification.config.NotificationSchedulerProperties;
 import com.groupeat.domain.orders.config.OrderSchedulerProperties;
 import com.groupeat.domain.payment.config.TossPaymentProperties;
 import com.groupeat.domain.settlement.config.SettlementProperties;
+import com.groupeat.global.config.AppTimeZoneProperties;
 import com.groupeat.global.config.CorsProperties;
 import com.groupeat.global.upload.config.S3Properties;
 import org.springframework.boot.SpringApplication;
@@ -22,6 +25,9 @@ import java.util.TimeZone;
 @EnableConfigurationProperties({
 		OAuth2RedirectProperties.class,
 		AuthCookieProperties.class,
+		AuthTokenProperties.class,
+		BusinessValidationTokenProperties.class,
+		AppTimeZoneProperties.class,
 		CorsProperties.class,
 		TossPaymentProperties.class,
 		SettlementProperties.class,
@@ -34,8 +40,12 @@ import java.util.TimeZone;
 public class GroupeatBackendApplication {
 
 	public static void main(String[] args) {
-		TimeZone.setDefault(TimeZone.getTimeZone("Asia/Seoul"));
-		SpringApplication.run(GroupeatBackendApplication.class, args);
+		SpringApplication application = new SpringApplication(GroupeatBackendApplication.class);
+		application.addInitializers(context -> {
+			String timeZone = context.getEnvironment().getProperty("app.time-zone", "Asia/Seoul");
+			TimeZone.setDefault(TimeZone.getTimeZone(timeZone));
+		});
+		application.run(args);
 	}
 
 }

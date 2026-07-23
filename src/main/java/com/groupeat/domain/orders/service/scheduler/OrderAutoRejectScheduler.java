@@ -24,9 +24,6 @@ import java.util.List;
 public class OrderAutoRejectScheduler {
 
     private static final String AUTO_REJECT_CANCEL_REASON = "주문 수락 기한 초과로 자동 거절";
-    private static final long ORDER_ACCEPT_DEADLINE_HOURS = 24;
-    private static final int AUTO_REJECT_BATCH_SIZE = 100;
-
     private final OrderSchedulerProperties schedulerProperties;
     private final PaymentRepository paymentRepository;
     private final PaymentCancelService paymentCancelService;
@@ -39,12 +36,12 @@ public class OrderAutoRejectScheduler {
             return;
         }
 
-        LocalDateTime approvedAtOrBefore = LocalDateTime.now().minusHours(ORDER_ACCEPT_DEADLINE_HOURS);
+        LocalDateTime approvedAtOrBefore = LocalDateTime.now().minusHours(schedulerProperties.acceptDeadlineHours());
         List<Payment> payments = paymentRepository.findAllAutoRejectCandidates(
                 PaymentStatus.DONE,
                 OrderStatus.PAID,
                 approvedAtOrBefore,
-                PageRequest.of(0, AUTO_REJECT_BATCH_SIZE)
+                PageRequest.of(0, schedulerProperties.autoRejectBatchSize())
         );
 
         for (Payment payment : payments) {

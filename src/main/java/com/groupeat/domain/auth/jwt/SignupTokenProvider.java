@@ -1,5 +1,6 @@
 package com.groupeat.domain.auth.jwt;
 
+import com.groupeat.domain.auth.config.AuthTokenProperties;
 import com.groupeat.domain.auth.oauth.dto.OAuth2LoginUserInfo;
 import com.groupeat.domain.member.enums.OAuthProvider;
 import io.jsonwebtoken.Claims;
@@ -10,24 +11,27 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Date;
 
 @Component
 public class SignupTokenProvider {
 
-    private static final long SIGNUP_TOKEN_VALID_TIME = 1000L * 60 * 10; // 10분
-
     private final SecretKey secretKey;
+    private final AuthTokenProperties authTokenProperties;
 
     public SignupTokenProvider(
-            @Value( "${jwt.signup-secret}") String secret
+            @Value( "${jwt.signup-secret}") String secret,
+            AuthTokenProperties authTokenProperties
     ) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.authTokenProperties = authTokenProperties;
     }
 
     public String createSignupToken(OAuth2LoginUserInfo userInfo) {
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + SIGNUP_TOKEN_VALID_TIME);
+        Duration validTime = authTokenProperties.signupTokenExpiration();
+        Date expiry = new Date(now.getTime() + validTime.toMillis());
 
         return Jwts.builder()
                 .subject("signup")

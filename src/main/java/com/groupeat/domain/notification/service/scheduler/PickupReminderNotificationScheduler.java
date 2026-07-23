@@ -13,13 +13,13 @@ import com.groupeat.domain.notification.service.fcm.FcmMessageSender;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.enums.OrderStatus;
 import com.groupeat.domain.orders.repository.OrderRepository;
+import com.groupeat.global.config.AppTimeZoneProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
@@ -28,9 +28,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PickupReminderNotificationScheduler {
 
-    private static final ZoneId KOREA_ZONE_ID = ZoneId.of("Asia/Seoul");
-
     private final NotificationSchedulerProperties schedulerProperties;
+    private final AppTimeZoneProperties appTimeZoneProperties;
     private final OrderRepository orderRepository;
     private final NotificationRepository notificationRepository;
     private final NotificationCommandService notificationCommandService;
@@ -38,13 +37,13 @@ public class PickupReminderNotificationScheduler {
     private final FcmMessageSender fcmMessageSender;
 
     // 내일 픽업 예정인 확정 주문에 대해 고객 픽업 하루 전 알림을 생성하고 발송
-    @Scheduled(cron = "${app.notification.scheduler.pickup-reminder-cron}", zone = "Asia/Seoul")
+    @Scheduled(cron = "${app.notification.scheduler.pickup-reminder-cron}", zone = "${app.time-zone}")
     public void sendPickupReminderDayBefore() {
         if (!schedulerProperties.enabled()) {
             return;
         }
 
-        LocalDate pickupDate = LocalDate.now(KOREA_ZONE_ID).plusDays(1);
+        LocalDate pickupDate = LocalDate.now(appTimeZoneProperties.zoneId()).plusDays(1);
         List<Order> orders = orderRepository.findAllByOrderStatusAndPickupDateWithItems(
                 OrderStatus.ACCEPTED,
                 pickupDate

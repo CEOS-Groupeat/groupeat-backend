@@ -10,6 +10,7 @@ import com.groupeat.domain.store.entity.StoreOrderScheduleDay;
 import com.groupeat.domain.store.exception.StoreErrorStatus;
 import com.groupeat.domain.store.repository.StoreOrderScheduleRepository;
 import com.groupeat.domain.store.repository.StoreRepository;
+import com.groupeat.domain.store.validator.StoreBusinessMemberValidator;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

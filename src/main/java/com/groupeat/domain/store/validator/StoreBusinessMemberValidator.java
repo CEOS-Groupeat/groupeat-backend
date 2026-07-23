@@ -1,4 +1,4 @@
-package com.groupeat.domain.store.service;
+package com.groupeat.domain.store.validator;
 
 import com.groupeat.domain.auth.jwt.AuthenticatedMember;
 import com.groupeat.domain.member.enums.MemberStatus;

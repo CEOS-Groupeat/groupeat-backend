@@ -9,6 +9,7 @@ import com.groupeat.domain.member.enums.MemberStatus;
 import com.groupeat.domain.member.exceptoin.MemberErrorStatus;
 import com.groupeat.domain.member.repository.MemberRepository;
 import com.groupeat.domain.member.repository.SocialAccountRepository;
+import com.groupeat.domain.orders.enums.OrderStatus;
 import com.groupeat.domain.orders.repository.OrderRepository;
 import com.groupeat.domain.review.repository.ReviewRepository;
 import com.groupeat.global.exception.GeneralException;
@@ -17,10 +18,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CustomerMyPageService {
+
+    private static final List<OrderStatus> MY_PAGE_ORDER_COUNT_STATUSES = List.of(
+            OrderStatus.PAID,
+            OrderStatus.ACCEPTED,
+            OrderStatus.COMPLETED,
+            OrderStatus.REJECTED,
+            OrderStatus.CANCELLED
+    );
 
     private final MemberRepository memberRepository;
     private final SocialAccountRepository socialAccountRepository;
@@ -29,7 +40,7 @@ public class CustomerMyPageService {
 
     public CustomerMyPageResponse getMyPage(Long memberId) {
         getActiveCustomer(memberId);
-        long orderCount = orderRepository.countByMemberId(memberId);
+        long orderCount = orderRepository.countByMemberIdAndOrderStatusIn(memberId, MY_PAGE_ORDER_COUNT_STATUSES);
         long reviewCount = reviewRepository.countByMemberId(memberId);
         return CustomerMyPageResponse.of(orderCount, reviewCount);
     }

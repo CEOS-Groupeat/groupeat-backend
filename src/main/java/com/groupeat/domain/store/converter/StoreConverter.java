@@ -19,6 +19,7 @@ public class StoreConverter {
                 .storeId(store.getId())
                 .imageUrl(store.getImageUrl())
                 .storeName(store.getStoreName())
+                .category(store.getCategory() != null ? store.getCategory().getDescription() : null)
                 .address(store.getAddress())
                 .reviewRating(store.getReviewRating())
                 .reviewCount(store.getReviewCount())

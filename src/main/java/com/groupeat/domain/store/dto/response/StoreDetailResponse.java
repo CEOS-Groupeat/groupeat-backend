@@ -18,6 +18,9 @@ public record StoreDetailResponse(
         @Schema(description = "가게명", example = "데이브런치")
         String storeName,
 
+        @Schema(description = "가게 카테고리", example = "샌드위치&김밥")
+        String category,
+
         @Schema(description = "가게 주소", example = "마포구 00로 00길")
         String address,
 

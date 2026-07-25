@@ -2,6 +2,7 @@ package com.groupeat;
 
 import com.groupeat.domain.auth.config.AuthCookieProperties;
 import com.groupeat.domain.auth.config.AuthTokenProperties;
+import com.groupeat.domain.business.config.BusinessValidationProperties;
 import com.groupeat.domain.business.config.BusinessValidationTokenProperties;
 import com.groupeat.domain.auth.config.OAuth2RedirectProperties;
 import com.groupeat.domain.business.config.NtsApiProperties;
@@ -26,6 +27,7 @@ import java.util.TimeZone;
 		OAuth2RedirectProperties.class,
 		AuthCookieProperties.class,
 		AuthTokenProperties.class,
+		BusinessValidationProperties.class,
 		BusinessValidationTokenProperties.class,
 		AppTimeZoneProperties.class,
 		CorsProperties.class,

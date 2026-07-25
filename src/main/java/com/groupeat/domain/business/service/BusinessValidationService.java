@@ -1,6 +1,7 @@
 package com.groupeat.domain.business.service;
 
 import com.groupeat.domain.business.client.NtsApiClient;
+import com.groupeat.domain.business.config.BusinessValidationProperties;
 import com.groupeat.domain.business.dto.nts.NtsValidateRequest;
 import com.groupeat.domain.business.dto.nts.NtsValidateResponse;
 import com.groupeat.domain.business.dto.response.BusinessValidateResponse;
@@ -19,6 +20,7 @@ public class BusinessValidationService {
 
     private final NtsApiClient ntsApiClient;
     private final BusinessValidationTokenProvider validationTokenProvider;
+    private final BusinessValidationProperties validationProperties;
 
     // 프론트엔드로부터 사업자번호를 받아 유효성을 검증하고, 성공 시 토큰을 반환
     public BusinessValidateResponse validateBusinessNumber(String rawBusinessNumber) {
@@ -29,6 +31,12 @@ public class BusinessValidationService {
         // 숫자 10자리인지 1차로 검증
         if (!bno.matches("^\\d{10}$")) {
             throw new GeneralException(BusinessErrorStatus.INVALID_BUSINESS_NUMBER);
+        }
+
+        if (validationProperties.ntsBypassEnabled()) {
+            log.warn("[사업자 검증 우회] 국세청 API 호출 없이 검증 토큰을 발급합니다. 번호: {}", bno);
+            String token = validationTokenProvider.createValidationToken(bno);
+            return new BusinessValidateResponse(token);
         }
 
         // 국세청 API 호출

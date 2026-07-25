@@ -113,6 +113,9 @@ app:
   settlement:
     # TODO: 정산 수수료 정책 확정 후 운영 설정으로 조정
     platform-fee-rate: ${PLATFORM_FEE_RATE:5}
+  business:
+    validation:
+      nts-bypass-enabled: ${BUSINESS_VALIDATION_NTS_BYPASS_ENABLED:false}
   notification:
     scheduler:
       enabled: ${NOTIFICATION_SCHEDULER_ENABLED:false}

@@ -116,6 +116,8 @@ app:
   business:
     validation:
       nts-bypass-enabled: ${BUSINESS_VALIDATION_NTS_BYPASS_ENABLED:false}
+    validation-token:
+      expiration-minutes: ${BUSINESS_VALIDATION_TOKEN_EXPIRATION_MINUTES:30}
   notification:
     scheduler:
       enabled: ${NOTIFICATION_SCHEDULER_ENABLED:false}
@@ -130,9 +132,6 @@ app:
       auto-reject-fixed-delay-ms: ${ORDER_AUTO_REJECT_FIXED_DELAY_MS:600000}
       accept-deadline-hours: ${ORDER_ACCEPT_DEADLINE_HOURS:24}
       auto-reject-batch-size: ${ORDER_AUTO_REJECT_BATCH_SIZE:100}
-  business:
-    validation-token:
-      expiration-minutes: ${BUSINESS_VALIDATION_TOKEN_EXPIRATION_MINUTES:30}
   swagger:
     prod-server-url: ${SWAGGER_PROD_SERVER_URL:https://api.groupeat.co.kr}
 

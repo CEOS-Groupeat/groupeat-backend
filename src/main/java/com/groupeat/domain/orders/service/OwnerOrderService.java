@@ -19,7 +19,9 @@ import com.groupeat.domain.payment.repository.PaymentRepository;
 import com.groupeat.domain.owner.validator.ActiveBusinessOwnerValidator;
 import com.groupeat.domain.store.entity.Menu;
 import com.groupeat.domain.store.repository.MenuRepository;
+import com.groupeat.global.dto.CursorResponse;
 import com.groupeat.global.exception.GeneralException;
+import com.groupeat.global.util.CursorUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,13 +50,12 @@ public class OwnerOrderService {
     ) {
         activeBusinessOwnerValidator.validate(ownerId);
 
-        // OrderTab에서 탭에 맞는 상태 리스트와 날짜 조건 추출
         List<OrderStatus> statuses = tab.getStatuses();
-
         LocalDate pickupDate = filterDate;
 
-        // 레포지토리 호출 시 tab 객체를 넘김 (정렬 분기를 위함)
-        int fetchSize = tab.isConfirmedTab() ? 300 : size;
+        // 확정 탭은 한 번에 300개, 일반 탭은 페이징을 위해 size + 1개 조회
+        int fetchSize = tab.isConfirmedTab() ? 300 : size + 1;
+        int targetSize = tab.isConfirmedTab() ? 300 : size; // CursorUtils에 넘길 기준 사이즈
 
         List<Order> orders = orderQueryRepository.findOwnerOrdersByCursorAndTab(
                 ownerId, statuses, pickupDate, lastOrderId, fetchSize, tab
@@ -64,29 +65,19 @@ public class OwnerOrderService {
                 ownerId, statuses, pickupDate
         );
 
-        // 커서 및 다음 페이지 로직 변경
-        boolean hasNext = false;
-        Long nextCursor = null;
+        CursorResponse<Order> cursorResponse =
+                CursorUtils.getCursorResponse(orders, targetSize, Order::getId);
 
-        if (tab.isConfirmedTab()) {
-            hasNext = false;
-            nextCursor = null;
-        } else {
-            // 대기 중, 지난 주문 탭은 기존 무한 스크롤 방식 유지
-            if (orders.size() > size) {
-                hasNext = true;
-                orders = orders.subList(0, size);
-            }
-            nextCursor = orders.isEmpty() ? null : orders.get(orders.size() - 1).getId();
+        if (cursorResponse.content().isEmpty()) {
+            return OwnerOrderListConverter.toEmptyResponse(totalElements);
         }
 
-        List<Long> orderIds = orders.stream().map(Order::getId).toList();
+        List<Long> orderIds = cursorResponse.content().stream().map(Order::getId).toList();
         List<OrderItem> allItems = orderItemRepository.findByOrderIdIn(orderIds);
         Map<Long, List<OrderItem>> itemsByOrderId = allItems.stream()
                 .collect(Collectors.groupingBy(item -> item.getOrder().getId()));
 
-        // 재주문 여부 확인을 위한 MemberId 일괄 조회
-        List<Long> memberIds = orders.stream()
+        List<Long> memberIds = cursorResponse.content().stream()
                 .map(Order::getMemberId)
                 .distinct()
                 .toList();
@@ -94,7 +85,7 @@ public class OwnerOrderService {
         Set<Long> reorderMemberIds = orderQueryRepository.findReorderMemberIds(ownerId, memberIds, orderIds);
 
         return OwnerOrderListConverter.toOwnerOrderListDTO(
-                orders, totalElements, hasNext, nextCursor, itemsByOrderId, reorderMemberIds, tab
+                cursorResponse, totalElements, itemsByOrderId, reorderMemberIds, tab
         );
     }
 

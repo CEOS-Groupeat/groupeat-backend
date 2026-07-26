@@ -4,6 +4,7 @@ import com.groupeat.domain.orders.dto.response.OrderListResponse;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.entity.OrderItem;
 import com.groupeat.domain.orders.enums.OrderStatus;
+import com.groupeat.global.dto.CursorResponse;
 
 import java.util.List;
 import java.util.Map;
@@ -12,27 +13,22 @@ import java.util.Set;
 public class OrderListConverter {
 
     public static OrderListResponse toOrderListResponse(
-            List<Order> orders,
+            com.groupeat.global.dto.CursorResponse<Order> cursorResponse,
             long totalElements,
-            boolean hasNext,
             Map<Long, List<OrderItem>> itemsByOrderId,
             Set<Long> reviewedOrderIds
     ) {
-        List<OrderListResponse.OrderCardDTO> cards = orders.stream()
-                .map(order -> {
+        CursorResponse<OrderListResponse.OrderCardDTO> dtoCursorResponse =
+                cursorResponse.map(order -> {
                     List<OrderItem> items = itemsByOrderId.getOrDefault(order.getId(), List.of());
                     return toOrderCardDTO(order, items, reviewedOrderIds);
-                })
-                .toList();
-
-        // 무한 스크롤을 위한 nextCursor 계산
-        Long nextCursor = cards.isEmpty() ? null : cards.get(cards.size() - 1).orderId();
+                });
 
         return OrderListResponse.builder()
                 .totalElements(totalElements)
-                .orderList(cards)
-                .hasNext(hasNext)
-                .nextCursor(nextCursor)
+                .orderList(dtoCursorResponse.content())
+                .hasNext(dtoCursorResponse.hasNext())
+                .nextCursor(dtoCursorResponse.nextCursor())
                 .build();
     }
 

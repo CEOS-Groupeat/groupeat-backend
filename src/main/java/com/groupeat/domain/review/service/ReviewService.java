@@ -23,7 +23,9 @@ import com.groupeat.domain.signup.exception.SignupErrorStatus;
 import com.groupeat.domain.store.entity.Store;
 import com.groupeat.domain.store.exception.StoreErrorStatus;
 import com.groupeat.domain.store.repository.StoreRepository;
+import com.groupeat.global.dto.CursorResponse;
 import com.groupeat.global.exception.GeneralException;
+import com.groupeat.global.util.CursorUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -141,21 +143,19 @@ public class ReviewService {
 
     // 커서 페이징 계산 및 데이터 조립
     private ReviewListResponse createPaginatedResponse(String storeName, List<Review> reviews, int size) {
-        boolean hasNext = false;
-        Long nextCursor = null;
+        CursorResponse<Review> cursorResponse =
+                CursorUtils.getCursorResponse(reviews, size, Review::getId);
 
-        if (reviews.size() > size) {
-            hasNext = true;
-            reviews.remove(size);
-        }
+        // 자식 데이터 한 방에 가져와서 메모리에서 매핑
+        List<ReviewListResponse.ReviewDetailDTO> dtoList = assembleReviews(cursorResponse.content());
 
-        if (!reviews.isEmpty()) {
-            nextCursor = reviews.getLast().getId();
-        }
-
-        List<ReviewListResponse.ReviewDetailDTO> dtoList = assembleReviews(reviews);
-
-        return reviewConverter.toReviewListResponse(storeName, dtoList, hasNext, nextCursor);
+        // 컨버터 호출 시 CursorResponse에서 계산된 값들 전달
+        return reviewConverter.toReviewListResponse(
+                storeName,
+                dtoList,
+                cursorResponse.hasNext(),
+                cursorResponse.nextCursor()
+        );
     }
 
     private List<ReviewListResponse.ReviewDetailDTO> assembleReviews(List<Review> reviews) {

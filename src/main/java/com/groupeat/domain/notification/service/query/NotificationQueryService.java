@@ -3,6 +3,8 @@ package com.groupeat.domain.notification.service.query;
 import com.groupeat.domain.notification.dto.response.NotificationListResponse;
 import com.groupeat.domain.notification.entity.Notification;
 import com.groupeat.domain.notification.repository.NotificationRepository;
+import com.groupeat.global.dto.CursorResponse;
+import com.groupeat.global.util.CursorUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -19,34 +21,21 @@ public class NotificationQueryService {
 
     // 로그인 회원의 알림 목록을 최신순 커서 방식으로 조회
     public NotificationListResponse getNotificationList(Long memberId, Long lastNotificationId, int size) {
-        int fetchSize = size + 1;
-        PageRequest pageRequest = PageRequest.of(0, fetchSize);
+        PageRequest pageRequest = PageRequest.of(0, size + 1);
+
         List<Notification> notifications = lastNotificationId == null
                 ? notificationRepository.findByReceiverMemberIdAndDeletedAtIsNullOrderByIdDesc(memberId, pageRequest)
-                : notificationRepository.findByReceiverMemberIdAndIdLessThanAndDeletedAtIsNullOrderByIdDesc(
-                        memberId,
-                        lastNotificationId,
-                        pageRequest
-                );
+                : notificationRepository.findByReceiverMemberIdAndIdLessThanAndDeletedAtIsNullOrderByIdDesc(memberId, lastNotificationId, pageRequest);
 
-        boolean hasNext = notifications.size() > size;
-        if (hasNext) {
-            notifications = notifications.subList(0, size);
-        }
-
-        List<NotificationListResponse.NotificationDTO> notificationList = notifications.stream()
-                .map(NotificationListResponse.NotificationDTO::from)
-                .toList();
-
-        Long nextCursor = notificationList.isEmpty()
-                ? null
-                : notificationList.get(notificationList.size() - 1).notificationId();
+        CursorResponse<NotificationListResponse.NotificationDTO> cursorResponse =
+                CursorUtils.getCursorResponse(notifications, size, Notification::getId)
+                        .map(NotificationListResponse.NotificationDTO::from);
 
         return NotificationListResponse.builder()
                 .totalElements(notificationRepository.countByReceiverMemberIdAndDeletedAtIsNull(memberId))
-                .notificationList(notificationList)
-                .hasNext(hasNext)
-                .nextCursor(nextCursor)
+                .notificationList(cursorResponse.content())
+                .hasNext(cursorResponse.hasNext())
+                .nextCursor(cursorResponse.nextCursor())
                 .build();
     }
 }

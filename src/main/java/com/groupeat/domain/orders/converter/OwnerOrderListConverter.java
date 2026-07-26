@@ -4,6 +4,7 @@ import com.groupeat.domain.orders.dto.response.OwnerOrderListResponse;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.entity.OrderItem;
 import com.groupeat.domain.orders.enums.OrderTab;
+import com.groupeat.global.dto.CursorResponse;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -15,28 +16,33 @@ import java.util.stream.Collectors;
 public class OwnerOrderListConverter {
 
     public static OwnerOrderListResponse.OwnerOrderListDTO toOwnerOrderListDTO(
-            List<Order> orders,
+            com.groupeat.global.dto.CursorResponse<Order> cursorResponse,
             long totalElements,
-            boolean hasNext,
-            Long nextCursor,
             Map<Long, List<OrderItem>> itemsByOrderId,
             Set<Long> reorderMemberIds,
             OrderTab tab
     ) {
-        List<OwnerOrderListResponse.OrderCardDTO> cardDTOs = orders.stream()
-                .map(order -> {
+        CursorResponse<OwnerOrderListResponse.OrderCardDTO> dtoCursorResponse =
+                cursorResponse.map(order -> {
                     List<OrderItem> orderItems = itemsByOrderId.getOrDefault(order.getId(), List.of());
                     boolean isReorder = reorderMemberIds.contains(order.getMemberId());
-
                     return toOrderCardDTO(order, orderItems, isReorder, tab);
-                })
-                .collect(Collectors.toList());
+                });
 
         return OwnerOrderListResponse.OwnerOrderListDTO.builder()
                 .totalElements(totalElements)
-                .orderList(cardDTOs)
-                .hasNext(hasNext)
-                .nextCursor(nextCursor)
+                .orderList(dtoCursorResponse.content())
+                .hasNext(dtoCursorResponse.hasNext())
+                .nextCursor(dtoCursorResponse.nextCursor())
+                .build();
+    }
+
+    public static OwnerOrderListResponse.OwnerOrderListDTO toEmptyResponse(long totalElements) {
+        return OwnerOrderListResponse.OwnerOrderListDTO.builder()
+                .totalElements(totalElements)
+                .orderList(List.of())
+                .hasNext(false)
+                .nextCursor(null)
                 .build();
     }
 

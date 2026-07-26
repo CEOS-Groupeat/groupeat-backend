@@ -43,7 +43,9 @@ import com.groupeat.domain.store.exception.StoreErrorStatus;
 import com.groupeat.domain.store.repository.MenuOptionRepository;
 import com.groupeat.domain.store.repository.MenuRepository;
 import com.groupeat.domain.store.repository.StoreRepository;
+import com.groupeat.global.dto.CursorResponse;
 import com.groupeat.global.exception.GeneralException;
+import com.groupeat.global.util.CursorUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -181,21 +183,17 @@ public class OrderService {
         // 전체 카운트 조회
         long totalElements = orderQueryRepository.countOrders(memberId, statuses);
 
-        // 커서 기반 주문 목록 조회 (요청 size + 1개 가져옴)
-        List<Order> orders = orderQueryRepository.findOrdersByCursor(memberId, statuses, lastOrderId, size);
+        // size + 1개 조회
+        List<Order> orders = orderQueryRepository.findOrdersByCursor(memberId, statuses, lastOrderId, size + 1);
 
-        // 다음 페이지 여부 확인 및 데이터 슬라이싱
-        boolean hasNext = false;
-        if (orders.size() > size) {
-            hasNext = true;
-            orders = orders.subList(0, size); // +1 확인용으로 가져온 마지막 데이터 제외
-        }
+        CursorResponse<Order> cursorResponse =
+                CursorUtils.getCursorResponse(orders, size, Order::getId);
 
-        if (orders.isEmpty()) {
+        if (cursorResponse.content().isEmpty()) {
             return OrderListResponse.builder().orderList(List.of()).totalElements(totalElements).hasNext(false).build();
         }
 
-        List<Long> orderIds = orders.stream().map(Order::getId).toList();
+        List<Long> orderIds = cursorResponse.content().stream().map(Order::getId).toList();
         List<OrderItem> allItems = orderItemRepository.findByOrderIdIn(orderIds);
         Map<Long, List<OrderItem>> itemsByOrderId = allItems.stream()
                 .collect(Collectors.groupingBy(item -> item.getOrder().getId()));
@@ -203,7 +201,7 @@ public class OrderService {
         // 리뷰 존재 여부 조회
         Set<Long> reviewedOrderIds = reviewRepository.findReviewedOrderIds(orderIds);
 
-        return OrderListConverter.toOrderListResponse(orders, totalElements, hasNext, itemsByOrderId, reviewedOrderIds);
+        return OrderListConverter.toOrderListResponse(cursorResponse, totalElements, itemsByOrderId, reviewedOrderIds);
     }
 
     @Transactional(readOnly = true)

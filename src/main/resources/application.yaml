@@ -26,6 +26,9 @@ spring:
         jdbc:
           time_zone: Asia/Seoul
 
+  flyway:
+    enabled: false
+
   security:
     oauth2:
       client:

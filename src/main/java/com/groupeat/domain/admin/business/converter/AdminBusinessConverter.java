@@ -5,6 +5,7 @@ import com.groupeat.domain.admin.business.dto.response.AdminVerificationListResp
 import com.groupeat.domain.admin.business.dto.response.AdminVerificationProcessResponse;
 import com.groupeat.domain.business.entity.BusinessProfile;
 import com.groupeat.domain.member.entity.Member;
+import com.groupeat.global.dto.CursorResponse;
 
 import java.util.List;
 
@@ -20,20 +21,17 @@ public class AdminBusinessConverter {
     }
 
     public static AdminVerificationListResponse.VerificationListDTO toVerificationListDTO(
-            List<BusinessProfile> profiles,
-            long totalElements,
-            boolean hasNext,
-            Long nextCursor
+            CursorResponse<BusinessProfile> cursorResponse,
+            long totalElements
     ) {
-        List<AdminVerificationListResponse.VerificationCardDTO> cardDTOs = profiles.stream()
-                .map(AdminBusinessConverter::toVerificationCardDTO)
-                .toList();
+        CursorResponse<AdminVerificationListResponse.VerificationCardDTO> dtoCursorResponse =
+                cursorResponse.map(AdminBusinessConverter::toVerificationCardDTO);
 
         return AdminVerificationListResponse.VerificationListDTO.builder()
                 .totalElements(totalElements)
-                .verificationList(cardDTOs)
-                .hasNext(hasNext)
-                .nextCursor(nextCursor)
+                .verificationList(dtoCursorResponse.content())
+                .hasNext(dtoCursorResponse.hasNext())
+                .nextCursor(dtoCursorResponse.nextCursor())
                 .build();
     }
 

@@ -13,7 +13,9 @@ import com.groupeat.domain.business.enums.BusinessVerificationStatus;
 import com.groupeat.domain.business.repository.BusinessProfileRepository;
 import com.groupeat.domain.member.entity.Member;
 import com.groupeat.domain.member.repository.MemberRepository;
+import com.groupeat.global.dto.CursorResponse;
 import com.groupeat.global.exception.GeneralException;
+import com.groupeat.global.util.CursorUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,17 +39,13 @@ public class AdminBusinessVerificationService {
                 (filter == null || filter == AdminVerificationFilterType.ALL) ? null : filter.getMappedStatuses();
 
         long totalElements = adminQueryRepository.countVerifications(statusList);
+
         List<BusinessProfile> profiles = adminQueryRepository.findVerificationsByCursor(statusList, lastProfileId, size);
 
-        boolean hasNext = false;
-        if (profiles.size() > size) {
-            hasNext = true;
-            profiles = profiles.subList(0, size);
-        }
+        CursorResponse<BusinessProfile> cursorResponse =
+                CursorUtils.getCursorResponse(profiles, size, BusinessProfile::getId);
 
-        Long nextCursor = profiles.isEmpty() ? null : profiles.get(profiles.size() - 1).getId();
-
-        return AdminBusinessConverter.toVerificationListDTO(profiles, totalElements, hasNext, nextCursor);
+        return AdminBusinessConverter.toVerificationListDTO(cursorResponse, totalElements);
     }
 
     @Transactional(readOnly = true)

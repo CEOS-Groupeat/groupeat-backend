@@ -20,6 +20,7 @@ out/
 .factorypath
 
 # --- Backup & Logs ---
+/logs
 *.log
 *.swp
 *~

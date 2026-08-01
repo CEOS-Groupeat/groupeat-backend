@@ -2,6 +2,7 @@ package com.groupeat.domain.payment.service;
 
 import com.groupeat.domain.cart.service.CartService;
 import com.groupeat.domain.notification.event.NewOrderRequestNotificationEvent;
+import com.groupeat.domain.orders.service.OrderStoreBlockService;
 import com.groupeat.domain.payment.converter.PaymentConverter;
 import com.groupeat.domain.payment.dto.PreparedPaymentConfirm;
 import com.groupeat.domain.payment.dto.request.PaymentConfirmRequest;
@@ -28,6 +29,7 @@ public class PaymentConfirmTransactionService {
     private final PaymentRepository paymentRepository;
     private final CartService cartService;
     private final ApplicationEventPublisher eventPublisher;
+    private final OrderStoreBlockService orderStoreBlockService;
 
     // 결제 승인 전 검증을 수행하고 승인 진행 상태로 저장
     @Transactional
@@ -37,6 +39,7 @@ public class PaymentConfirmTransactionService {
 
         validateOwner(payment, memberId);
         validateAmount(payment, request.amount());
+        validateOrderableStore(payment);
 
         if (payment.getPaymentStatus() == PaymentStatus.DONE) {
             validateAlreadyConfirmedPayment(payment, request.paymentKey());
@@ -109,6 +112,14 @@ public class PaymentConfirmTransactionService {
         }
 
         throw new GeneralException(PaymentErrorStatus.PAYMENT_INVALID_STATUS);
+    }
+
+    private void validateOrderableStore(Payment payment) {
+        if (payment.getOrder() == null || payment.getOrder().getStore() == null) {
+            return;
+        }
+
+        orderStoreBlockService.validateOrderableStore(payment.getOrder().getStore().getId());
     }
 
     private void markOrderPaid(Payment payment) {

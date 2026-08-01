@@ -82,6 +82,7 @@ public class OrderService {
     private final OrderCancelTransactionService orderCancelTransactionService;
     private final OrderOwnerActionTransactionService orderOwnerActionTransactionService;
     private final OrderScheduleValidationService orderScheduleValidationService;
+    private final OrderStoreBlockService orderStoreBlockService;
 
     @Transactional
     public OrderCreateResponse createOrder(Long memberId, OrderCreateRequest request) {
@@ -105,6 +106,8 @@ public class OrderService {
         LocalTime pickupTime = cartItems.get(0).getPickupTime();
 
         Long storeId = cartItems.get(0).getStoreId();
+        orderStoreBlockService.validateOrderableStore(storeId);
+
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new GeneralException(StoreErrorStatus.STORE_NOT_FOUND));
         int totalQuantity = cartItems.stream()

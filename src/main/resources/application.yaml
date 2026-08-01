@@ -127,6 +127,7 @@ app:
       order-accept-deadline-warning-middle-hours: ${ORDER_ACCEPT_DEADLINE_WARNING_MIDDLE_HOURS:12}
       order-accept-deadline-warning-end-hours: ${ORDER_ACCEPT_DEADLINE_WARNING_END_HOURS:24}
   order:
+    blocked-store-ids: ${ORDER_BLOCKED_STORE_IDS:3}
     scheduler:
       enabled: ${ORDER_SCHEDULER_ENABLED:false}
       auto-reject-fixed-delay-ms: ${ORDER_AUTO_REJECT_FIXED_DELAY_MS:600000}

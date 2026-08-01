@@ -8,6 +8,7 @@ import com.groupeat.domain.auth.config.OAuth2RedirectProperties;
 import com.groupeat.domain.business.config.NtsApiProperties;
 import com.groupeat.domain.notification.config.FirebaseProperties;
 import com.groupeat.domain.notification.config.NotificationSchedulerProperties;
+import com.groupeat.domain.orders.config.OrderProperties;
 import com.groupeat.domain.orders.config.OrderSchedulerProperties;
 import com.groupeat.domain.payment.config.TossPaymentProperties;
 import com.groupeat.domain.settlement.config.SettlementProperties;
@@ -37,6 +38,7 @@ import java.util.TimeZone;
 		S3Properties.class,
 		FirebaseProperties.class,
 		NotificationSchedulerProperties.class,
+		OrderProperties.class,
 		OrderSchedulerProperties.class
 })
 public class GroupeatBackendApplication {

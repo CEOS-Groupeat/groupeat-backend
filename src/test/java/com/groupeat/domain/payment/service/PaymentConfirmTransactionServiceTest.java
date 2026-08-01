@@ -3,6 +3,7 @@ package com.groupeat.domain.payment.service;
 import com.groupeat.domain.cart.service.CartService;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.enums.OrderStatus;
+import com.groupeat.domain.orders.service.OrderStoreBlockService;
 import com.groupeat.domain.payment.dto.PreparedPaymentConfirm;
 import com.groupeat.domain.payment.dto.request.PaymentConfirmRequest;
 import com.groupeat.domain.payment.dto.response.PaymentConfirmResponse;
@@ -46,6 +47,9 @@ class PaymentConfirmTransactionServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private OrderStoreBlockService orderStoreBlockService;
+
     private PaymentConfirmTransactionService paymentConfirmTransactionService;
 
     @BeforeEach
@@ -53,7 +57,8 @@ class PaymentConfirmTransactionServiceTest {
         paymentConfirmTransactionService = new PaymentConfirmTransactionService(
                 paymentRepository,
                 cartService,
-                eventPublisher
+                eventPublisher,
+                orderStoreBlockService
         );
     }
 

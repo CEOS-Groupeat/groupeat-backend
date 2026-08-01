@@ -21,6 +21,7 @@ public enum OrderErrorStatus implements BaseErrorCode {
     ORDER_QUANTITY_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "ORDER4008", "주문 가능한 수량을 초과했습니다."),
     ORDER_QUANTITY_SHORTAGE(HttpStatus.BAD_REQUEST, "ORDER4009", "장바구니 수량이 최소 주문 가능한 수량보다 작습니다."),
     ORDER_PICKUP_COMPLETE_TOO_EARLY(HttpStatus.BAD_REQUEST, "ORDER4010", "픽업 시간 1시간 전부터 픽업 완료 처리할 수 있습니다."),
+    ORDER_STORE_BLOCKED(HttpStatus.BAD_REQUEST, "ORDER4011", "현재 해당 가게는 주문할 수 없습니다."),
     BUSINESS_MEMBER_REQUIRED(HttpStatus.FORBIDDEN, "ORDER4030", "사업자 회원만 처리할 수 있는 주문 요청입니다.");
 
     private final HttpStatus httpStatus;

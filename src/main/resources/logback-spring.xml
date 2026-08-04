@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration>
+    <!-- 스프링 부트 기본 로그 속성 불러오기 -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- 콘솔 출력 (개발할 때 터미널에서 보기 편한 사람이 읽는 텍스트 형태) -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>UTF8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 도커/운영용 콘솔 JSON 출력 -->
+    <appender name="CONSOLE-JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <timestampPattern>yyyy-MM-dd'T'HH:mm:ss.SSSZ</timestampPattern>
+        </encoder>
+    </appender>
+
+    <!-- 파일 출력 (Alloy 수집기가 읽어갈 컴퓨터가 읽는 JSON 형태) -->
+    <appender name="FILE-JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 로그 파일이 저장될 위치와 이름 -->
+        <file>logs/application-json.log</file>
+
+        <!-- JSON 형태로 변환해서 출력 -->
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <!-- 타임스탬프 형식 지정 -->
+            <timestampPattern>yyyy-MM-dd'T'HH:mm:ss.SSSZ</timestampPattern>
+        </encoder>
+
+        <!-- 파일 롤링 정책: 하루 단위로 파일을 자르고 최대 10일치(또는 3GB) 보관 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/application-json-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>10</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 로컬 환경과 개발/운영 환경에 따른 분기 처리 -->
+    <!-- 로컬 환경: 내 컴퓨터 터미널에서 보기 편하게 일반 텍스트(CONSOLE)로 출력 -->
+    <springProfile name="local, default">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE" />
+        </root>
+    </springProfile>
+
+    <!-- 운영/도커 환경: Alloy 수집기가 줄바꿈 없이 완벽하게 읽도록 JSON(CONSOLE-JSON)으로 출력 -->
+    <springProfile name="prod, dev">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE-JSON" />
+            <appender-ref ref="FILE-JSON" />
+        </root>
+    </springProfile>
+</configuration>

@@ -1,0 +1,46 @@
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "groupeat" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/?(.*)"
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "default" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.groupeat.output
+  forward_to = [loki.process.parse_json.receiver]
+}
+
+loki.process "parse_json" {
+  forward_to = [loki.write.local.receiver]
+
+  stage.match {
+    selector = "{container=\"groupeat-server\"}"
+
+    stage.json {
+      expressions = {
+        level  = "level",
+        logger = "logger_name",
+      }
+    }
+
+    stage.labels {
+      values = {
+        level = "level",
+      }
+    }
+  }
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

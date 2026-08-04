@@ -47,6 +47,15 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Copy Infrastructure files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.yml,monitoring/"
+          target: "~/groupeat"
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -63,5 +72,5 @@ jobs:
             chmod 600 .env
             
             docker compose pull
-            docker compose up -d --no-deps --remove-orphans app
+            docker compose up -d --remove-orphans
             docker image prune -f

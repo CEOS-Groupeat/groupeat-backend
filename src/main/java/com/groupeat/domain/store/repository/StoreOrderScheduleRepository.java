@@ -1,0 +1,50 @@
+package com.groupeat.domain.store.repository;
+
+import com.groupeat.domain.store.entity.StoreOrderSchedule;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+public interface StoreOrderScheduleRepository extends JpaRepository<StoreOrderSchedule, Long> {
+
+    @EntityGraph(attributePaths = "days")
+    @Query("""
+            SELECT s
+            FROM StoreOrderSchedule s
+            WHERE s.store.id = :storeId
+              AND s.startDate <= :date
+              AND s.endDate >= :date
+              AND s.deletedAt IS NULL
+            """)
+    Optional<StoreOrderSchedule> findActiveScheduleByStoreIdAndDate(
+            @Param("storeId") Long storeId,
+            @Param("date") LocalDate date
+    );
+
+    @EntityGraph(attributePaths = "days")
+    Optional<StoreOrderSchedule> findFirstByStore_OwnerIdAndDeletedAtIsNullOrderByStartDateDesc(Long businessMemberId);
+
+    @EntityGraph(attributePaths = "days")
+    Optional<StoreOrderSchedule> findFirstByStore_IdAndDeletedAtIsNullOrderByStartDateDesc(Long storeId);
+
+    @EntityGraph(attributePaths = "days")
+    @Query("""
+            SELECT s
+            FROM StoreOrderSchedule s
+            WHERE s.store.id IN :storeIds
+              AND s.deletedAt IS NULL
+            ORDER BY s.startDate DESC
+            """)
+    List<StoreOrderSchedule> findActiveSchedulesByStoreIds(@Param("storeIds") List<Long> storeIds);
+
+    boolean existsByStore_IdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            Long storeId,
+            LocalDate endDate,
+            LocalDate startDate
+    );
+}

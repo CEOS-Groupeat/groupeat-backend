@@ -1,0 +1,304 @@
+package com.groupeat.domain.cart.service;
+
+import com.groupeat.domain.cart.converter.CartConverter;
+import com.groupeat.domain.cart.dto.request.CartItemAddRequest;
+import com.groupeat.domain.cart.dto.request.CartItemBulkAddRequest;
+import com.groupeat.domain.cart.dto.response.CartListResponse;
+import com.groupeat.domain.cart.entity.Cart;
+import com.groupeat.domain.cart.entity.CartItem;
+import com.groupeat.domain.cart.entity.CartItemOption;
+import com.groupeat.domain.cart.exception.CartErrorStatus;
+import com.groupeat.domain.cart.repository.CartItemOptionRepository;
+import com.groupeat.domain.cart.repository.CartItemRepository;
+import com.groupeat.domain.cart.repository.CartRepository;
+import com.groupeat.domain.store.entity.*;
+import com.groupeat.domain.store.exception.StoreErrorStatus;
+import com.groupeat.domain.store.repository.MenuOptionRepository;
+import com.groupeat.domain.store.repository.MenuRepository;
+import com.groupeat.domain.store.repository.StoreOrderScheduleRepository;
+import com.groupeat.domain.store.repository.StoreRepository;
+import com.groupeat.global.exception.GeneralException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class CartService {
+
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
+    private final CartItemOptionRepository cartItemOptionRepository;
+    private final StoreRepository storeRepository;
+    private final MenuRepository menuRepository;
+    private final MenuOptionRepository menuOptionRepository;
+    private final StoreOrderScheduleRepository storeOrderScheduleRepository;
+
+    // 장바구니에 메뉴 담기
+    @Transactional
+    public CartListResponse addCartItems(Long memberId, CartItemBulkAddRequest bulkRequest) {
+        if (bulkRequest.cartItems() == null || bulkRequest.cartItems().isEmpty()) {
+            throw new GeneralException(CartErrorStatus.EMPTY_CART_SELECTION);
+        }
+
+        Cart cart = getOrCreateCart(memberId);
+        List<CartItem> cartItems = new ArrayList<>(cartItemRepository.findAllByCartId(cart.getId()));
+
+        List<Long> cartItemIds = cartItems.stream().map(CartItem::getId).toList();
+        Map<Long, List<Long>> cartItemOptionMap = new HashMap<>();
+
+        if (!cartItemIds.isEmpty()) {
+            List<CartItemOption> allOptions = cartItemOptionRepository.findAllByCartItemIdIn(cartItemIds);
+            Map<Long, List<Long>> groupedOptions = allOptions.stream()
+                    .collect(Collectors.groupingBy(
+                            option -> option.getCartItem().getId(),
+                            Collectors.mapping(CartItemOption::getMenuOptionId, Collectors.toList())
+                    ));
+
+            cartItemOptionMap.putAll(groupedOptions);
+            cartItemOptionMap.values().forEach(Collections::sort);
+        }
+
+        List<Long> requestMenuIds = bulkRequest.cartItems().stream()
+                .map(CartItemAddRequest::menuId).distinct().toList();
+
+        List<Long> requestOptionIds = bulkRequest.cartItems().stream()
+                .filter(req -> req.optionIds() != null)
+                .flatMap(req -> req.optionIds().stream())
+                .distinct().toList();
+
+        // 메뉴 가져오기
+        Map<Long, Menu> menuMap = menuRepository.findAllById(requestMenuIds).stream()
+                .collect(Collectors.toMap(Menu::getId, m -> m));
+
+        // 옵션 가져오기
+        Map<Long, MenuOption> optionMap = menuOptionRepository.findAllById(requestOptionIds).stream()
+                .collect(Collectors.toMap(MenuOption::getId, o -> o));
+
+        // 항목 검사
+        for (CartItemAddRequest request : bulkRequest.cartItems()) {
+            validateCartItemDateTime(cartItems, request);
+
+            Menu menu = menuMap.get(request.menuId());
+            if (menu == null) {
+                throw new GeneralException(StoreErrorStatus.MENU_NOT_FOUND);
+            }
+
+            if (!menu.getStore().getId().equals(request.storeId())) {
+                throw new GeneralException(StoreErrorStatus.MENU_NOT_MATCH_STORE);
+            }
+
+            List<Long> optionIds = request.optionIds() == null ? List.of() : request.optionIds();
+            if (!optionIds.isEmpty()) {
+                if (optionIds.size() != optionIds.stream().distinct().count()) {
+                    throw new GeneralException(StoreErrorStatus.INVALID_MENU_OPTION);
+                }
+
+                boolean allOptionsExist = optionIds.stream().allMatch(optionMap::containsKey);
+                if (!allOptionsExist) {
+                    throw new GeneralException(StoreErrorStatus.INVALID_MENU_OPTION);
+                }
+
+                // 해당 옵션이 특정 메뉴의 옵션인지 검증
+                boolean isValidMapping = optionIds.stream()
+                        .map(optionMap::get)
+                        .allMatch(opt -> opt.getOptionGroup().getMenu().getId().equals(menu.getId()));
+                if (!isValidMapping) {
+                    throw new GeneralException(StoreErrorStatus.INVALID_MENU_OPTION_MAPPING);
+                }
+            }
+
+            // 해당 가게 + 픽업 일시에 대해 기존 장바구니에 담겨있던 총 수량 계산
+            int existingTotalQty = cartItems.stream()
+                    .filter(item -> item.getStoreId().equals(request.storeId()))
+                    .filter(item -> item.getPickupDate().equals(request.pickupDate()))
+                    .filter(item -> item.getPickupTime().equals(request.pickupTime()))
+                    .mapToInt(CartItem::getQuantity)
+                    .sum();
+
+            // 픽업 일시, Lead Time, 영업시간/브레이크타임, 최소/최대 수량 통합 검증
+            validateScheduleAndQuantity(
+                    request.storeId(),
+                    request.pickupDate(),
+                    request.pickupTime(),
+                    existingTotalQty + request.quantity()
+            );
+
+            List<Long> requestedSortedOptionIds = optionIds.stream().sorted().toList();
+
+            // 장바구니 병합 로직 -> 기존 장바구니에 동일한 메뉴, 날짜, 시간이 있는지 검색
+            CartItem matchedItem = cartItems.stream()
+                    .filter(item -> item.getMenuId().equals(request.menuId()))
+                    .filter(item -> item.getPickupDate().equals(request.pickupDate()))
+                    .filter(item -> item.getPickupTime().equals(request.pickupTime()))
+                    .filter(item -> {
+                        List<Long> existingOptionIds = cartItemOptionMap.getOrDefault(item.getId(), List.of());
+                        return existingOptionIds.equals(requestedSortedOptionIds);
+                    })
+                    .findFirst()
+                    .orElse(null);
+
+            // 완전히 동일한 아이템이 이미 있다면 수량만 증가
+            if (matchedItem != null) {
+                matchedItem.updateQuantity(matchedItem.getQuantity() + request.quantity());
+            } else {
+                // 동일한 아이템이 없다면 새로 생성
+                CartItem cartItem = CartConverter.toCartItem(cart, request);
+                CartItem savedCartItem = cartItemRepository.save(cartItem);
+
+                cartItems.add(savedCartItem);
+                cartItemOptionMap.put(savedCartItem.getId(), requestedSortedOptionIds);
+
+                List<CartItemOption> options = CartConverter.toCartItemOptions(savedCartItem, optionIds);
+                if (!options.isEmpty()) {
+                    cartItemOptionRepository.saveAll(options);
+                }
+            }
+        }
+        return getCartList(memberId);
+    }
+
+    // 장바구니 목록 조회
+    @Transactional(readOnly = true)
+    public CartListResponse getCartList(Long memberId) {
+        Cart cart = cartRepository.findByMemberId(memberId).orElse(null);
+        if (cart == null) return CartListResponse.builder().storeCarts(List.of()).build();
+
+        List<CartItem> cartItems = cartItemRepository.findAllByCartId(cart.getId());
+        if (cartItems.isEmpty()) return CartListResponse.builder().storeCarts(List.of()).build();
+
+        List<Long> storeIds = cartItems.stream().map(CartItem::getStoreId).distinct().toList();
+        List<Long> menuIds = cartItems.stream().map(CartItem::getMenuId).distinct().toList();
+        List<Long> cartItemIds = cartItems.stream().map(CartItem::getId).toList();
+
+        Map<Long, Store> storeMap = storeRepository.findAllById(storeIds).stream()
+                .collect(Collectors.toMap(Store::getId, store -> store));
+
+        Map<Long, Menu> menuMap = menuRepository.findAllById(menuIds).stream()
+                .collect(Collectors.toMap(Menu::getId, menu -> menu));
+
+        // 해당 장바구니 항목들에 속한 모든 옵션 엔티티 조회
+        List<CartItemOption> allOptions = cartItemOptionRepository.findAllByCartItemIdIn(cartItemIds);
+        Map<Long, List<CartItemOption>> cartItemOptionsMap = allOptions.stream()
+                .collect(Collectors.groupingBy(opt -> opt.getCartItem().getId()));
+
+        // 옵션 엔티티들이 가리키는 실제 MenuOption 진짜 데이터 조회
+        List<Long> menuOptionIds = allOptions.stream().map(CartItemOption::getMenuOptionId).distinct().toList();
+        Map<Long, MenuOption> menuOptionMap = menuOptionRepository.findAllById(menuOptionIds).stream()
+                .collect(Collectors.toMap(MenuOption::getId, option -> option));
+
+        // 컨버터에 위임하여 최종 조립
+        return CartConverter.toCartListResponse(
+                cartItems, storeMap, menuMap, cartItemOptionsMap, menuOptionMap
+        );
+    }
+
+    // 장바구니 메뉴 삭제
+    public void deleteCartItem(Long memberId, Long cartItemId) {
+        CartItem cartItem = cartItemRepository.findById(cartItemId)
+                .orElseThrow(() -> new GeneralException(CartErrorStatus.CART_ITEM_NOT_FOUND));
+
+        if (!cartItem.getCart().getMemberId().equals(memberId)) {
+            throw new GeneralException(CartErrorStatus.CART_ITEM_NOT_FOUND);
+        }
+
+        cartItemOptionRepository.deleteAllByCartItemId(cartItemId);
+
+        cartItemRepository.delete(cartItem);
+    }
+
+    @Transactional
+    public void clearCart(Long memberId) {
+        //  장바구니 조회
+        Cart cart = cartRepository.findByMemberId(memberId).orElse(null);
+        if (cart == null) return;
+
+        // 장바구니에 속한 모든 아이템 조회
+        List<CartItem> cartItems = cartItemRepository.findAllByCartId(cart.getId());
+        if (cartItems.isEmpty()) return;
+
+        List<Long> cartItemIds = cartItems.stream().map(CartItem::getId).toList();
+
+        // 장바구니 옵션 먼저 일괄 삭제
+        List<CartItemOption> options = cartItemOptionRepository.findAllByCartItemIdIn(cartItemIds);
+        if (!options.isEmpty()) {
+            cartItemOptionRepository.deleteAllInBatch(options);
+        }
+
+        // 장바구니 아이템 일괄 삭제
+        cartItemRepository.deleteAllByIdInBatch(cartItemIds);
+    }
+
+    // 장바구니가 없으면 새로 생성
+    private Cart getOrCreateCart(Long memberId) {
+        return cartRepository.findByMemberIdWithPessimisticLock(memberId)
+                .orElseGet(() -> cartRepository.save(Cart.builder().memberId(memberId).build()));
+    }
+
+    private void validateCartItemDateTime(List<CartItem> cartItems, CartItemAddRequest request) {
+        if (cartItems.isEmpty()) {
+            return;
+        }
+
+        boolean isSameDateTime = cartItems.stream()
+                .allMatch(item -> item.getPickupDate().equals(request.pickupDate())
+                        && item.getPickupTime().equals(request.pickupTime()));
+
+        if (!isSameDateTime) {
+            throw new GeneralException(CartErrorStatus.CART_DATETIME_MISMATCH);
+        }
+    }
+
+    private void validateScheduleAndQuantity(Long storeId, LocalDate pickupDate, LocalTime pickupTime, int totalQuantity) {
+        // 과거 일시 담기 방지
+        if (pickupDate.isBefore(LocalDate.now()) ||
+                (pickupDate.isEqual(LocalDate.now()) && pickupTime.isBefore(LocalTime.now()))) {
+            throw new GeneralException(CartErrorStatus.PICKUP_TIME_IN_PAST);
+        }
+
+        // 해당 날짜에 활성화된 가게 스케줄 조회
+        StoreOrderSchedule schedule = storeOrderScheduleRepository
+                .findActiveScheduleByStoreIdAndDate(storeId, pickupDate)
+                .orElseThrow(() -> new GeneralException(CartErrorStatus.STORE_SCHEDULE_NOT_FOUND));
+
+        // 최소 주문 기한 검증
+        long daysBetween = ChronoUnit.DAYS.between(LocalDate.now(), pickupDate);
+        if (daysBetween < schedule.getMinOrderDays()) {
+            throw new GeneralException(CartErrorStatus.PICKUP_DATE_BEFORE_LEAD_TIME);
+        }
+
+        // 요일별 상세 스케줄 조회
+        StoreOrderScheduleDay scheduleDay = schedule.getDays().stream()
+                .filter(day -> day.getDayOfWeek() == pickupDate.getDayOfWeek())
+                .findFirst()
+                .orElseThrow(() -> new GeneralException(CartErrorStatus.STORE_NOT_AVAILABLE_ON_DAY));
+
+        // 해당 요일 영업 여부 검증
+        if (!scheduleDay.isAvailable()) {
+            throw new GeneralException(CartErrorStatus.STORE_NOT_AVAILABLE_ON_DAY);
+        }
+
+        // 픽업 시간 범위 및 휴게시간 검증
+        if (pickupTime.isBefore(scheduleDay.getPickupStartTime()) || pickupTime.isAfter(scheduleDay.getPickupEndTime())) {
+            throw new GeneralException(CartErrorStatus.STORE_NOT_AVAILABLE_ON_DAY);
+        }
+        if (scheduleDay.getBreakStartTime() != null && scheduleDay.getBreakEndTime() != null) {
+            boolean isDuringBreak = !pickupTime.isBefore(scheduleDay.getBreakStartTime()) && !pickupTime.isAfter(scheduleDay.getBreakEndTime());
+            if (isDuringBreak) {
+                throw new GeneralException(CartErrorStatus.STORE_NOT_AVAILABLE_ON_DAY);
+            }
+        }
+
+        // 최대 주문 가능 수량 검증
+        if (scheduleDay.getMaxOrderQuantity() != null && totalQuantity > scheduleDay.getMaxOrderQuantity()) {
+            throw new GeneralException(CartErrorStatus.MAX_ORDER_QUANTITY_EXCEEDED);
+        }
+    }
+}

@@ -1,0 +1,48 @@
+package com.groupeat.domain.owner.service;
+
+import com.groupeat.domain.orders.enums.OrderStatus;
+import com.groupeat.domain.owner.dto.response.OwnerDashboardSummaryResponse;
+import com.groupeat.domain.owner.exception.OwnerErrorStatus;
+import com.groupeat.domain.owner.repository.OwnerOrderQueryRepository;
+import com.groupeat.domain.owner.validator.ActiveBusinessOwnerValidator;
+import com.groupeat.domain.store.entity.Store;
+import com.groupeat.domain.store.exception.StoreErrorStatus;
+import com.groupeat.domain.store.repository.StoreRepository;
+import com.groupeat.global.exception.GeneralException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class OwnerDashboardService {
+
+    private final OwnerOrderQueryRepository ownerOrderQueryRepository;
+    private final StoreRepository storeRepository;
+    private final ActiveBusinessOwnerValidator activeBusinessOwnerValidator;
+
+    public OwnerDashboardSummaryResponse getDashboardSummary(Long ownerId) {
+        activeBusinessOwnerValidator.validate(ownerId);
+
+        Store store = storeRepository.findActiveStoreByBusinessMemberId(ownerId)
+                .orElseThrow(() -> new GeneralException(StoreErrorStatus.OWNER_STORE_NOT_FOUND));
+
+        List<OrderStatus> targetStatuses = List.of(OrderStatus.PAID, OrderStatus.ACCEPTED, OrderStatus.COMPLETED);
+        Map<OrderStatus, Long> counts = ownerOrderQueryRepository.countOrdersByStatuses(ownerId, targetStatuses);
+
+        if (counts == null) {
+            throw new GeneralException(OwnerErrorStatus.DASHBOARD_DATA_NOT_AVAILABLE);
+        }
+
+        return OwnerDashboardSummaryResponse.builder()
+                .storeName(store.getStoreName())
+                .waitingCount(counts.getOrDefault(OrderStatus.PAID, 0L))
+                .confirmedCount(counts.getOrDefault(OrderStatus.ACCEPTED, 0L))
+                .completedCount(counts.getOrDefault(OrderStatus.COMPLETED, 0L))
+                .build();
+    }
+}

@@ -8,6 +8,15 @@ services:
       - .env
     volumes:
       - ./secrets/firebase-service-account.json:/app/secrets/firebase-service-account.json:ro
+    depends_on:
+      - redis
+    restart: always
+
+  redis:
+    image: redis:alpine
+    container_name: groupeat-redis
+    ports:
+      - "6379:6379"
     restart: always
 
   # 로그 저장소 (Loki)

@@ -18,10 +18,11 @@ import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Aspect
@@ -30,20 +31,12 @@ public class ControllerLoggingAspect {
 
     private static final String UNKNOWN_USER = "anonymous";
     private static final String NO_EXCEPTION = "none";
-    private static final List<String> MDC_KEYS = List.of(
-            "httpMethod",
-            "requestUri",
-            "memberId",
-            "controller",
-            "controllerMethod",
-            "elapsedMs",
-            "success",
-            "exceptionType"
-    );
+    private static final String UNKNOWN_REQUEST_VALUE = "UNKNOWN";
 
     @Around("@within(org.springframework.web.bind.annotation.RestController) || @within(org.springframework.stereotype.Controller)")
     public Object logControllerRequest(ProceedingJoinPoint joinPoint) throws Throwable {
         long startTime = System.nanoTime();
+        Map<String, String> previousMdc = MDC.getCopyOfContextMap();
 
         try {
             Object result = joinPoint.proceed();
@@ -55,7 +48,7 @@ public class ControllerLoggingAspect {
             logFailure(throwable);
             throw throwable;
         } finally {
-            clearMdc();
+            restoreMdc(previousMdc);
         }
     }
 
@@ -67,8 +60,9 @@ public class ControllerLoggingAspect {
     ) {
         HttpServletRequest request = currentRequest();
 
-        MDC.put("httpMethod", request == null ? "UNKNOWN" : request.getMethod());
-        MDC.put("requestUri", request == null ? "UNKNOWN" : request.getRequestURI());
+        MDC.put("httpMethod", request == null ? UNKNOWN_REQUEST_VALUE : request.getMethod());
+        MDC.put("requestUri", request == null ? UNKNOWN_REQUEST_VALUE : request.getRequestURI());
+        MDC.put("uriPattern", uriPattern(request));
         MDC.put("memberId", currentMemberId());
         MDC.put("controller", joinPoint.getSignature().getDeclaringType().getSimpleName());
         MDC.put("controllerMethod", joinPoint.getSignature().getName());
@@ -82,6 +76,19 @@ public class ControllerLoggingAspect {
             return attributes.getRequest();
         }
         return null;
+    }
+
+    private String uriPattern(HttpServletRequest request) {
+        if (request == null) {
+            return UNKNOWN_REQUEST_VALUE;
+        }
+
+        Object pattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+        if (pattern != null) {
+            return pattern.toString();
+        }
+
+        return request.getRequestURI();
     }
 
     private String currentMemberId() {
@@ -138,7 +145,12 @@ public class ControllerLoggingAspect {
         return false;
     }
 
-    private void clearMdc() {
-        MDC_KEYS.forEach(MDC::remove);
+    private void restoreMdc(Map<String, String> previousMdc) {
+        if (previousMdc == null) {
+            MDC.clear();
+            return;
+        }
+
+        MDC.setContextMap(previousMdc);
     }
 }

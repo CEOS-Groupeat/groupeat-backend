@@ -12,6 +12,14 @@
         </encoder>
     </appender>
 
+    <!-- 로컬 AOP 요청 로그 전용 출력 -->
+    <appender name="REQUEST-CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] %logger{36} : %msg method=%X{httpMethod} uri=%X{requestUri} pattern=%X{uriPattern} elapsedMs=%X{elapsedMs} success=%X{success} exception=%X{exceptionType}%n</pattern>
+            <charset>UTF8</charset>
+        </encoder>
+    </appender>
+
     <!-- 도커/운영용 콘솔 JSON 출력 -->
     <appender name="CONSOLE-JSON" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
@@ -41,6 +49,10 @@
     <!-- 로컬 환경과 개발/운영 환경에 따른 분기 처리 -->
     <!-- 로컬 환경: 내 컴퓨터 터미널에서 보기 편하게 일반 텍스트(CONSOLE)로 출력 -->
     <springProfile name="local, default">
+        <logger name="com.groupeat.global.logging.ControllerLoggingAspect" level="INFO" additivity="false">
+            <appender-ref ref="REQUEST-CONSOLE" />
+        </logger>
+
         <root level="INFO">
             <appender-ref ref="CONSOLE" />
         </root>

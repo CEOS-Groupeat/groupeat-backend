@@ -26,6 +26,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class PaymentConfirmTransactionService {
 
+    private static final int MAX_IDEMPOTENCY_KEY_LENGTH = 300;
+
     private final PaymentRepository paymentRepository;
     private final CartService cartService;
     private final ApplicationEventPublisher eventPublisher;
@@ -33,7 +35,9 @@ public class PaymentConfirmTransactionService {
 
     // 결제 승인 전 검증을 수행하고 승인 진행 상태로 저장
     @Transactional
-    public PreparedPaymentConfirm prepareConfirm(Long memberId, PaymentConfirmRequest request) {
+    public PreparedPaymentConfirm prepareConfirm(Long memberId, String idempotencyKey, PaymentConfirmRequest request) {
+        validateIdempotencyKey(idempotencyKey);
+
         Payment payment = paymentRepository.findByOrderId(request.orderId())
                 .orElseThrow(() -> new GeneralException(PaymentErrorStatus.PAYMENT_NOT_FOUND));
 
@@ -46,8 +50,8 @@ public class PaymentConfirmTransactionService {
             return PreparedPaymentConfirm.alreadyConfirmed(PaymentConverter.toConfirmResponse(payment));
         }
 
-        validateConfirmableStatus(payment);
-        payment.markInProgress(request.paymentKey());
+        validateConfirmableStatus(payment, request.paymentKey(), idempotencyKey);
+        payment.markInProgress(request.paymentKey(), idempotencyKey);
         return PreparedPaymentConfirm.ready(payment.getId(), payment.getOrderId(), payment.getPaidAmount());
     }
 
@@ -106,12 +110,28 @@ public class PaymentConfirmTransactionService {
     }
 
     // 승인 요청은 아직 처리되지 않은 READY 상태에서만 허용
-    private void validateConfirmableStatus(Payment payment) {
+    private void validateConfirmableStatus(Payment payment, String requestPaymentKey, String idempotencyKey) {
         if (payment.getPaymentStatus() == PaymentStatus.READY) {
             return;
         }
 
+        if (payment.getPaymentStatus() == PaymentStatus.IN_PROGRESS
+                && Objects.equals(payment.getPaymentKey(), requestPaymentKey)
+                && Objects.equals(payment.getConfirmIdempotencyKey(), idempotencyKey)) {
+            throw new GeneralException(PaymentErrorStatus.PAYMENT_CONFIRM_IN_PROGRESS);
+        }
+
         throw new GeneralException(PaymentErrorStatus.PAYMENT_INVALID_STATUS);
+    }
+
+    private void validateIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new GeneralException(PaymentErrorStatus.PAYMENT_IDEMPOTENCY_KEY_REQUIRED);
+        }
+
+        if (idempotencyKey.length() > MAX_IDEMPOTENCY_KEY_LENGTH) {
+            throw new GeneralException(PaymentErrorStatus.PAYMENT_IDEMPOTENCY_KEY_INVALID);
+        }
     }
 
     private void validateOrderableStore(Payment payment) {

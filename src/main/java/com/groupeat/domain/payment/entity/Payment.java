@@ -36,6 +36,9 @@ public class Payment extends BaseEntity {
     @Column(name = "payment_key", unique = true)
     private String paymentKey;
 
+    @Column(name = "confirm_idempotency_key", length = 300)
+    private String confirmIdempotencyKey;
+
     // 선결제 또는 현장결제 정책 구분
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_type", nullable = false)
@@ -124,8 +127,9 @@ public class Payment extends BaseEntity {
     }
 
     // 결제 승인 진행 중
-    public void markInProgress(String paymentKey) {
+    public void markInProgress(String paymentKey, String confirmIdempotencyKey) {
         this.paymentKey = paymentKey;
+        this.confirmIdempotencyKey = confirmIdempotencyKey;
         this.paymentStatus = PaymentStatus.IN_PROGRESS;
     }
 

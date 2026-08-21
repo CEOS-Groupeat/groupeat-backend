@@ -28,12 +28,13 @@ public class TossPaymentClient {
     private final ObjectMapper objectMapper;
 
     // 토스페이먼츠 결제 승인 요청
-    public TossPaymentConfirmResponse confirmPayment(TossPaymentConfirmRequest request) {
+    public TossPaymentConfirmResponse confirmPayment(TossPaymentConfirmRequest request, String idempotencyKey) {
         try {
             return restClientBuilder.build()
                     .post()
                     .uri(properties.confirmUrl())
                     .header(HttpHeaders.AUTHORIZATION, createAuthorizationHeader())
+                    .header("Idempotency-Key", idempotencyKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request)
                     .retrieve()

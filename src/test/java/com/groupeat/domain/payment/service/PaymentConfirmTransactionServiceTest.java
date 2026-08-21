@@ -36,6 +36,7 @@ class PaymentConfirmTransactionServiceTest {
     private static final Long PAYMENT_ID = 1L;
     private static final String ORDER_ID = "ORDER_TEST_001";
     private static final String PAYMENT_KEY = "tgen_20260528033827CH4N9";
+    private static final String IDEMPOTENCY_KEY = "8b7f0f4e-7c3a-4c85-9f36-111111111111";
     private static final int AMOUNT = 15000;
 
     @Mock
@@ -70,6 +71,7 @@ class PaymentConfirmTransactionServiceTest {
 
         PreparedPaymentConfirm preparedPayment = paymentConfirmTransactionService.prepareConfirm(
                 MEMBER_ID,
+                IDEMPOTENCY_KEY,
                 confirmRequest(AMOUNT)
         );
 
@@ -79,6 +81,7 @@ class PaymentConfirmTransactionServiceTest {
         assertThat(preparedPayment.alreadyConfirmedResponse()).isNull();
         assertThat(payment.getPaymentStatus()).isEqualTo(PaymentStatus.IN_PROGRESS);
         assertThat(payment.getPaymentKey()).isEqualTo(PAYMENT_KEY);
+        assertThat(payment.getConfirmIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY);
     }
 
     // 결제 소유자가 아니면 접근을 차단한다.
@@ -87,7 +90,7 @@ class PaymentConfirmTransactionServiceTest {
         Payment payment = readyPayment();
         when(paymentRepository.findByOrderId(ORDER_ID)).thenReturn(Optional.of(payment));
 
-        assertThatThrownBy(() -> paymentConfirmTransactionService.prepareConfirm(999L, confirmRequest(AMOUNT)))
+        assertThatThrownBy(() -> paymentConfirmTransactionService.prepareConfirm(999L, IDEMPOTENCY_KEY, confirmRequest(AMOUNT)))
                 .isInstanceOfSatisfying(GeneralException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(PaymentErrorStatus.PAYMENT_FORBIDDEN)
                 );
@@ -99,7 +102,7 @@ class PaymentConfirmTransactionServiceTest {
         Payment payment = readyPayment();
         when(paymentRepository.findByOrderId(ORDER_ID)).thenReturn(Optional.of(payment));
 
-        assertThatThrownBy(() -> paymentConfirmTransactionService.prepareConfirm(MEMBER_ID, confirmRequest(1000)))
+        assertThatThrownBy(() -> paymentConfirmTransactionService.prepareConfirm(MEMBER_ID, IDEMPOTENCY_KEY, confirmRequest(1000)))
                 .isInstanceOfSatisfying(GeneralException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(PaymentErrorStatus.PAYMENT_AMOUNT_MISMATCH)
                 );
@@ -113,6 +116,7 @@ class PaymentConfirmTransactionServiceTest {
 
         PreparedPaymentConfirm preparedPayment = paymentConfirmTransactionService.prepareConfirm(
                 MEMBER_ID,
+                IDEMPOTENCY_KEY,
                 confirmRequest(AMOUNT)
         );
 
@@ -122,15 +126,40 @@ class PaymentConfirmTransactionServiceTest {
         assertThat(response.status()).isEqualTo(PaymentStatus.DONE);
     }
 
-    // 이미 승인 진행 중인 결제는 중복 승인 요청을 차단한다.
+    // 이미 승인 진행 중인 동일 멱등 요청은 처리 중 응답으로 차단한다.
     @Test
-    void prepareConfirm_inProgressPayment_throwsInvalidStatus() {
+    void prepareConfirm_inProgressPaymentWithSameIdempotencyKey_throwsInProgress() {
         Payment payment = inProgressPayment();
         when(paymentRepository.findByOrderId(ORDER_ID)).thenReturn(Optional.of(payment));
 
-        assertThatThrownBy(() -> paymentConfirmTransactionService.prepareConfirm(MEMBER_ID, confirmRequest(AMOUNT)))
+        assertThatThrownBy(() -> paymentConfirmTransactionService.prepareConfirm(MEMBER_ID, IDEMPOTENCY_KEY, confirmRequest(AMOUNT)))
+                .isInstanceOfSatisfying(GeneralException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(PaymentErrorStatus.PAYMENT_CONFIRM_IN_PROGRESS)
+                );
+    }
+
+    // 이미 승인 진행 중인 결제에 다른 멱등키로 재요청되면 승인할 수 없다.
+    @Test
+    void prepareConfirm_inProgressPaymentWithDifferentIdempotencyKey_throwsInvalidStatus() {
+        Payment payment = inProgressPayment();
+        when(paymentRepository.findByOrderId(ORDER_ID)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentConfirmTransactionService.prepareConfirm(
+                MEMBER_ID,
+                "f54ac5fa-8b41-48ec-a6c4-222222222222",
+                confirmRequest(AMOUNT)
+        ))
                 .isInstanceOfSatisfying(GeneralException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(PaymentErrorStatus.PAYMENT_INVALID_STATUS)
+                );
+    }
+
+    // 멱등키가 없으면 승인 요청을 차단한다.
+    @Test
+    void prepareConfirm_blankIdempotencyKey_throwsRequired() {
+        assertThatThrownBy(() -> paymentConfirmTransactionService.prepareConfirm(MEMBER_ID, " ", confirmRequest(AMOUNT)))
+                .isInstanceOfSatisfying(GeneralException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(PaymentErrorStatus.PAYMENT_IDEMPOTENCY_KEY_REQUIRED)
                 );
     }
 
@@ -197,7 +226,7 @@ class PaymentConfirmTransactionServiceTest {
 
     private Payment inProgressPayment() {
         Payment payment = readyPayment();
-        payment.markInProgress(PAYMENT_KEY);
+        payment.markInProgress(PAYMENT_KEY, IDEMPOTENCY_KEY);
         return payment;
     }
 
@@ -214,7 +243,7 @@ class PaymentConfirmTransactionServiceTest {
                 .remainingAmount(0)
                 .paymentStatus(PaymentStatus.READY)
                 .build();
-        payment.markInProgress(PAYMENT_KEY);
+        payment.markInProgress(PAYMENT_KEY, IDEMPOTENCY_KEY);
         return payment;
     }
 

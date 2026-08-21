@@ -17,23 +17,29 @@ import org.springframework.stereotype.Service;
 public class PaymentConfirmService {
 
     private static final String TOSS_DONE_STATUS = "DONE";
+    private static final String TOSS_IDEMPOTENT_REQUEST_PROCESSING = "IDEMPOTENT_REQUEST_PROCESSING";
 
     private final TossPaymentClient tossPaymentClient;
     private final PaymentConfirmTransactionService paymentConfirmTransactionService;
 
-    public PaymentConfirmResponse confirm(Long memberId, PaymentConfirmRequest request) {
-        PreparedPaymentConfirm preparedPayment = paymentConfirmTransactionService.prepareConfirm(memberId, request);
+    public PaymentConfirmResponse confirm(Long memberId, String idempotencyKey, PaymentConfirmRequest request) {
+        PreparedPaymentConfirm preparedPayment = paymentConfirmTransactionService.prepareConfirm(memberId, idempotencyKey, request);
         if (preparedPayment.alreadyConfirmedResponse() != null) {
             return preparedPayment.alreadyConfirmedResponse();
         }
 
         try {
             TossPaymentConfirmResponse tossResponse = tossPaymentClient.confirmPayment(
-                    TossPaymentConfirmRequest.from(request)
+                    TossPaymentConfirmRequest.from(request),
+                    idempotencyKey
             );
             validateTossConfirmResponse(tossResponse, preparedPayment);
             return paymentConfirmTransactionService.approvePayment(preparedPayment.paymentId(), tossResponse);
         } catch (TossPaymentException e) {
+            if (TOSS_IDEMPOTENT_REQUEST_PROCESSING.equals(e.getTossErrorCode())) {
+                throw new GeneralException(PaymentErrorStatus.PAYMENT_CONFIRM_IN_PROGRESS);
+            }
+
             // TODO: 결제 실패 보상 PR에서 승인 실패/타임아웃/재조회 정책을 구체화
             paymentConfirmTransactionService.failPayment(preparedPayment.paymentId(), e.getTossErrorCode(), e.getTossErrorMessage());
             throw new GeneralException(PaymentErrorStatus.TOSS_CONFIRM_FAILED);

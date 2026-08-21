@@ -32,6 +32,7 @@ class PaymentConfirmServiceTest {
     private static final Long PAYMENT_ID = 1L;
     private static final String ORDER_ID = "ORDER_TEST_001";
     private static final String PAYMENT_KEY = "tgen_20260528033827CH4N9";
+    private static final String IDEMPOTENCY_KEY = "8b7f0f4e-7c3a-4c85-9f36-111111111111";
     private static final int AMOUNT = 15000;
 
     @Mock
@@ -54,14 +55,15 @@ class PaymentConfirmServiceTest {
         TossPaymentConfirmResponse tossResponse = tossDoneResponse(ORDER_ID, AMOUNT);
         PaymentConfirmResponse approvedResponse = doneResponse();
 
-        when(paymentConfirmTransactionService.prepareConfirm(MEMBER_ID, request))
+        when(paymentConfirmTransactionService.prepareConfirm(MEMBER_ID, IDEMPOTENCY_KEY, request))
                 .thenReturn(PreparedPaymentConfirm.ready(PAYMENT_ID, ORDER_ID, AMOUNT));
-        when(tossPaymentClient.confirmPayment(any())).thenReturn(tossResponse);
+        when(tossPaymentClient.confirmPayment(any(), eq(IDEMPOTENCY_KEY))).thenReturn(tossResponse);
         when(paymentConfirmTransactionService.approvePayment(PAYMENT_ID, tossResponse)).thenReturn(approvedResponse);
 
-        PaymentConfirmResponse response = paymentConfirmService.confirm(MEMBER_ID, request);
+        PaymentConfirmResponse response = paymentConfirmService.confirm(MEMBER_ID, IDEMPOTENCY_KEY, request);
 
         assertThat(response).isEqualTo(approvedResponse);
+        verify(tossPaymentClient).confirmPayment(any(), eq(IDEMPOTENCY_KEY));
         verify(paymentConfirmTransactionService).approvePayment(PAYMENT_ID, tossResponse);
         verify(paymentConfirmTransactionService, never()).failPayment(any(), any(), any());
     }
@@ -72,10 +74,10 @@ class PaymentConfirmServiceTest {
         PaymentConfirmRequest request = confirmRequest();
         PaymentConfirmResponse alreadyConfirmedResponse = doneResponse();
 
-        when(paymentConfirmTransactionService.prepareConfirm(MEMBER_ID, request))
+        when(paymentConfirmTransactionService.prepareConfirm(MEMBER_ID, IDEMPOTENCY_KEY, request))
                 .thenReturn(PreparedPaymentConfirm.alreadyConfirmed(alreadyConfirmedResponse));
 
-        PaymentConfirmResponse response = paymentConfirmService.confirm(MEMBER_ID, request);
+        PaymentConfirmResponse response = paymentConfirmService.confirm(MEMBER_ID, IDEMPOTENCY_KEY, request);
 
         assertThat(response).isEqualTo(alreadyConfirmedResponse);
         verifyNoInteractions(tossPaymentClient);
@@ -87,12 +89,12 @@ class PaymentConfirmServiceTest {
     void confirm_tossFailure_marksPaymentFailed() {
         PaymentConfirmRequest request = confirmRequest();
 
-        when(paymentConfirmTransactionService.prepareConfirm(MEMBER_ID, request))
+        when(paymentConfirmTransactionService.prepareConfirm(MEMBER_ID, IDEMPOTENCY_KEY, request))
                 .thenReturn(PreparedPaymentConfirm.ready(PAYMENT_ID, ORDER_ID, AMOUNT));
-        when(tossPaymentClient.confirmPayment(any()))
+        when(tossPaymentClient.confirmPayment(any(), eq(IDEMPOTENCY_KEY)))
                 .thenThrow(new TossPaymentException(HttpStatus.BAD_REQUEST, "NOT_FOUND_PAYMENT_SESSION", "결제 시간이 만료되었습니다."));
 
-        assertThatThrownBy(() -> paymentConfirmService.confirm(MEMBER_ID, request))
+        assertThatThrownBy(() -> paymentConfirmService.confirm(MEMBER_ID, IDEMPOTENCY_KEY, request))
                 .isInstanceOfSatisfying(GeneralException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(PaymentErrorStatus.TOSS_CONFIRM_FAILED)
                 );
@@ -100,16 +102,34 @@ class PaymentConfirmServiceTest {
         verify(paymentConfirmTransactionService).failPayment(PAYMENT_ID, "NOT_FOUND_PAYMENT_SESSION", "결제 시간이 만료되었습니다.");
     }
 
+    // 토스에서 동일 멱등 요청 처리 중 응답이 오면 실패로 저장하지 않는다.
+    @Test
+    void confirm_tossIdempotentRequestProcessing_doesNotMarkPaymentFailed() {
+        PaymentConfirmRequest request = confirmRequest();
+
+        when(paymentConfirmTransactionService.prepareConfirm(MEMBER_ID, IDEMPOTENCY_KEY, request))
+                .thenReturn(PreparedPaymentConfirm.ready(PAYMENT_ID, ORDER_ID, AMOUNT));
+        when(tossPaymentClient.confirmPayment(any(), eq(IDEMPOTENCY_KEY)))
+                .thenThrow(new TossPaymentException(HttpStatus.CONFLICT, "IDEMPOTENT_REQUEST_PROCESSING", "이전 멱등 요청이 처리중입니다."));
+
+        assertThatThrownBy(() -> paymentConfirmService.confirm(MEMBER_ID, IDEMPOTENCY_KEY, request))
+                .isInstanceOfSatisfying(GeneralException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(PaymentErrorStatus.PAYMENT_CONFIRM_IN_PROGRESS)
+                );
+
+        verify(paymentConfirmTransactionService, never()).failPayment(any(), any(), any());
+    }
+
     // 토스 승인 응답이 요청 정보와 다르면 실패 상태로 저장한다.
     @Test
     void confirm_invalidTossResponse_marksPaymentFailed() {
         PaymentConfirmRequest request = confirmRequest();
 
-        when(paymentConfirmTransactionService.prepareConfirm(MEMBER_ID, request))
+        when(paymentConfirmTransactionService.prepareConfirm(MEMBER_ID, IDEMPOTENCY_KEY, request))
                 .thenReturn(PreparedPaymentConfirm.ready(PAYMENT_ID, ORDER_ID, AMOUNT));
-        when(tossPaymentClient.confirmPayment(any())).thenReturn(tossDoneResponse(ORDER_ID, 1000));
+        when(tossPaymentClient.confirmPayment(any(), eq(IDEMPOTENCY_KEY))).thenReturn(tossDoneResponse(ORDER_ID, 1000));
 
-        assertThatThrownBy(() -> paymentConfirmService.confirm(MEMBER_ID, request))
+        assertThatThrownBy(() -> paymentConfirmService.confirm(MEMBER_ID, IDEMPOTENCY_KEY, request))
                 .isInstanceOfSatisfying(GeneralException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(PaymentErrorStatus.TOSS_CONFIRM_FAILED)
                 );

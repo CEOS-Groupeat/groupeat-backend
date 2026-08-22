@@ -38,6 +38,10 @@ dependencies {
     implementation platform('software.amazon.awssdk:bom:2.31.78')
     implementation 'software.amazon.awssdk:s3'
 
+    // Redis
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+
     // Firebase
     implementation 'com.google.firebase:firebase-admin:9.5.0'
 

@@ -11,6 +11,7 @@ import com.groupeat.domain.store.repository.StoreRepository;
 import com.groupeat.domain.store.validator.StoreBusinessMemberValidator;
 import com.groupeat.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ public class OwnerStoreService {
 
     // 로그인한 사업자 회원의 가게 정보를 생성 또는 수정
     @Transactional
+    @CacheEvict(cacheNames = "highDiscountStores", allEntries = true)
     public OwnerStoreUpsertResult upsertMyStore(AuthenticatedMember member, OwnerStoreUpdateRequest request) {
         storeBusinessMemberValidator.validateActiveBusinessMember(member);
 

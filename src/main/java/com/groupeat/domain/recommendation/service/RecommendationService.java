@@ -19,7 +19,7 @@ public class RecommendationService {
     private final RecommendationRepository recommendationRepository;
     private static final int RECOMMENDATION_LIMIT = 2;
 
-    @Cacheable(cacheNames = "topRatedStores")
+    @Cacheable(cacheNames = "highRatingStores")
     public RecommendationListResponse getTopRatedStores() {
         List<Store> stores = recommendationRepository.findTopRatedStores(RECOMMENDATION_LIMIT);
         return RecommendationConverter.toRecommendationListResponse(stores);

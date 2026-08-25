@@ -3,13 +3,13 @@ package com.groupeat.domain.notification.service.scheduler;
 import com.groupeat.domain.member.entity.Member;
 import com.groupeat.domain.member.repository.MemberRepository;
 import com.groupeat.domain.notification.config.NotificationSchedulerProperties;
-import com.groupeat.domain.notification.dto.FcmSendRequest;
+import com.groupeat.domain.notification.dto.NotificationFcmMessage;
 import com.groupeat.domain.notification.entity.Notification;
 import com.groupeat.domain.notification.enums.NotificationReferenceType;
 import com.groupeat.domain.notification.enums.NotificationType;
 import com.groupeat.domain.notification.repository.NotificationRepository;
 import com.groupeat.domain.notification.service.command.NotificationCommandService;
-import com.groupeat.domain.notification.service.fcm.FcmMessageSender;
+import com.groupeat.domain.notification.service.rabbit.NotificationMessagePublisher;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.enums.OrderStatus;
 import com.groupeat.domain.orders.repository.OrderRepository;
@@ -34,9 +34,9 @@ public class PickupReminderNotificationScheduler {
     private final NotificationRepository notificationRepository;
     private final NotificationCommandService notificationCommandService;
     private final MemberRepository memberRepository;
-    private final FcmMessageSender fcmMessageSender;
+    private final NotificationMessagePublisher notificationMessagePublisher;
 
-    // 내일 픽업 예정인 확정 주문에 대해 고객 픽업 하루 전 알림을 생성하고 발송
+    // 내일 픽업 예정인 확정 주문에 대해 고객 픽업 하루 전 알림을 생성하고 FCM 발송 작업을 큐에 등록
     @Scheduled(cron = "${app.notification.scheduler.pickup-reminder-cron}", zone = "${app.time-zone}")
     public void sendPickupReminderDayBefore() {
         if (!schedulerProperties.enabled()) {
@@ -78,12 +78,7 @@ public class PickupReminderNotificationScheduler {
             return;
         }
 
-        fcmMessageSender.sendToMember(new FcmSendRequest(
-                memberId,
-                notification.getTitle(),
-                notification.getBody(),
-                data(notification)
-        ));
+        notificationMessagePublisher.publishFcmMessage(NotificationFcmMessage.from(notification, data(notification)));
     }
 
     private Map<String, String> data(Notification notification) {

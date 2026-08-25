@@ -4,6 +4,7 @@ import com.groupeat.domain.notification.config.NotificationRabbitProperties;
 import com.groupeat.domain.notification.dto.FcmSendResult;
 import com.groupeat.domain.notification.dto.NotificationFcmMessage;
 import com.groupeat.domain.notification.service.fcm.FcmMessageSender;
+import com.groupeat.domain.notification.service.fcm.NotificationFcmIdempotencyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
@@ -27,6 +28,7 @@ public class FcmNotificationMessageConsumer {
     private static final String REJECTED = "rejected";
 
     private final FcmMessageSender fcmMessageSender;
+    private final NotificationFcmIdempotencyService notificationFcmIdempotencyService;
     private final NotificationMessagePublisher notificationMessagePublisher;
     private final NotificationRabbitProperties properties;
 
@@ -34,10 +36,21 @@ public class FcmNotificationMessageConsumer {
     @RabbitListener(queues = "${app.notification.rabbitmq.queue}")
     public void consume(NotificationFcmMessage fcmMessage, Message rawMessage) {
         try {
+            if (notificationFcmIdempotencyService.alreadySent(fcmMessage.notificationId())) {
+                log.info(
+                        "FCM notification message skipped because already sent. messageId={}, notificationId={}, memberId={}",
+                        fcmMessage.messageId(),
+                        fcmMessage.notificationId(),
+                        fcmMessage.memberId()
+                );
+                return;
+            }
+
             FcmSendResult result = fcmMessageSender.sendToMember(fcmMessage.toFcmSendRequest());
             if (result.failureCount() > 0) {
                 throw new IllegalStateException("FCM send failed. failureCount=" + result.failureCount());
             }
+            notificationFcmIdempotencyService.recordSent(fcmMessage);
 
             log.info(
                     "FCM notification message consumed. messageId={}, notificationId={}, memberId={}, targetCount={}, successCount={}",

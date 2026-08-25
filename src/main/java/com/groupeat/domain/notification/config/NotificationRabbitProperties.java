@@ -40,6 +40,10 @@ public record NotificationRabbitProperties(
         @Positive
         int maxRetryAttempts,
 
+        // FCM 발송 성공 여부를 Redis에 보관할 시간
+        @Positive
+        long sentKeyTtlSeconds,
+
         // 최대 재시도 초과 메시지를 최종 DLQ로 보내는 exchange
         @NotBlank
         String deadLetterExchange,

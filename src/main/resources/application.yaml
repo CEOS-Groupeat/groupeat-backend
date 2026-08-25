@@ -142,6 +142,7 @@ app:
       retry-queue: ${NOTIFICATION_RETRY_QUEUE:notification.fcm.retry.queue}
       retry-ttl-ms: ${NOTIFICATION_RETRY_TTL_MS:10000}
       max-retry-attempts: ${NOTIFICATION_MAX_RETRY_ATTEMPTS:3}
+      sent-key-ttl-seconds: ${NOTIFICATION_SENT_KEY_TTL_SECONDS:604800} # 7일
       dead-letter-exchange: ${NOTIFICATION_DLX:notification.dlx}
       dead-letter-routing-key: ${NOTIFICATION_DLQ_ROUTING_KEY:notification.fcm.dlq}
       dead-letter-queue: ${NOTIFICATION_DLQ:notification.fcm.dlq}

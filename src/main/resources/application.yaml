@@ -7,6 +7,12 @@ spring:
       host: localhost
       port: 6379
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:groupeat}
+    password: ${RABBITMQ_PASSWORD:groupeat}
+
   jackson:
     time-zone: Asia/Seoul
 
@@ -127,6 +133,19 @@ app:
     validation-token:
       expiration-minutes: ${BUSINESS_VALIDATION_TOKEN_EXPIRATION_MINUTES:30}
   notification:
+    rabbitmq:
+      exchange: ${NOTIFICATION_EXCHANGE:notification.exchange}
+      routing-key: ${NOTIFICATION_ROUTING_KEY:notification.fcm}
+      queue: ${NOTIFICATION_QUEUE:notification.fcm.queue}
+      retry-exchange: ${NOTIFICATION_RETRY_EXCHANGE:notification.retry.exchange}
+      retry-routing-key: ${NOTIFICATION_RETRY_ROUTING_KEY:notification.fcm.retry}
+      retry-queue: ${NOTIFICATION_RETRY_QUEUE:notification.fcm.retry.queue}
+      retry-ttl-ms: ${NOTIFICATION_RETRY_TTL_MS:10000}
+      max-retry-attempts: ${NOTIFICATION_MAX_RETRY_ATTEMPTS:3}
+      sent-key-ttl-seconds: ${NOTIFICATION_SENT_KEY_TTL_SECONDS:604800} # 7일
+      dead-letter-exchange: ${NOTIFICATION_DLX:notification.dlx}
+      dead-letter-routing-key: ${NOTIFICATION_DLQ_ROUTING_KEY:notification.fcm.dlq}
+      dead-letter-queue: ${NOTIFICATION_DLQ:notification.fcm.dlq}
     scheduler:
       enabled: ${NOTIFICATION_SCHEDULER_ENABLED:false}
       pickup-reminder-cron: ${PICKUP_REMINDER_CRON:0 0 9 * * *} # 매일 오전 9시

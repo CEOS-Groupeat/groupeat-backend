@@ -1,13 +1,13 @@
 package com.groupeat.domain.notification.service.scheduler;
 
 import com.groupeat.domain.notification.config.NotificationSchedulerProperties;
-import com.groupeat.domain.notification.dto.FcmSendRequest;
+import com.groupeat.domain.notification.dto.NotificationFcmMessage;
 import com.groupeat.domain.notification.entity.Notification;
 import com.groupeat.domain.notification.enums.NotificationReferenceType;
 import com.groupeat.domain.notification.enums.NotificationType;
 import com.groupeat.domain.notification.repository.NotificationRepository;
 import com.groupeat.domain.notification.service.command.NotificationCommandService;
-import com.groupeat.domain.notification.service.fcm.FcmMessageSender;
+import com.groupeat.domain.notification.service.rabbit.NotificationMessagePublisher;
 import com.groupeat.domain.orders.entity.Order;
 import com.groupeat.domain.orders.enums.OrderStatus;
 import com.groupeat.domain.payment.entity.Payment;
@@ -31,9 +31,9 @@ public class OrderAcceptDeadlineNotificationScheduler {
     private final PaymentRepository paymentRepository;
     private final NotificationRepository notificationRepository;
     private final NotificationCommandService notificationCommandService;
-    private final FcmMessageSender fcmMessageSender;
+    private final NotificationMessagePublisher notificationMessagePublisher;
 
-    // 결제 완료 후 미승인 상태인 주문에 대해 사업자 주문 수락 마감 알림을 생성하고 발송
+    // 결제 완료 후 미승인 상태인 주문에 대해 사업자 주문 수락 마감 알림을 생성하고 FCM 발송 작업을 큐에 등록
     @Scheduled(fixedDelayString = "${app.notification.scheduler.deadline-check-fixed-delay-ms}")
     public void sendOrderAcceptDeadlineNotifications() {
         if (!schedulerProperties.enabled()) {
@@ -76,7 +76,7 @@ public class OrderAcceptDeadlineNotificationScheduler {
                         order.getId(),
                         notificationType
                 );
-                sendFcm(order.getStore().getOwnerId(), notification);
+                publishFcmMessage(notification);
             } catch (RuntimeException e) {
                 log.warn(
                         "Order accept deadline notification failed. orderId={}, notificationType={}",
@@ -97,13 +97,8 @@ public class OrderAcceptDeadlineNotificationScheduler {
         );
     }
 
-    private void sendFcm(Long ownerId, Notification notification) {
-        fcmMessageSender.sendToMember(new FcmSendRequest(
-                ownerId,
-                notification.getTitle(),
-                notification.getBody(),
-                data(notification)
-        ));
+    private void publishFcmMessage(Notification notification) {
+        notificationMessagePublisher.publishFcmMessage(NotificationFcmMessage.from(notification, data(notification)));
     }
 
     private Map<String, String> data(Notification notification) {

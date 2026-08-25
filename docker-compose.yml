@@ -10,6 +10,7 @@ services:
       - ./secrets/firebase-service-account.json:/app/secrets/firebase-service-account.json:ro
     depends_on:
       - redis
+      - rabbitmq
     restart: always
 
   redis:
@@ -17,6 +18,17 @@ services:
     container_name: groupeat-redis
     ports:
       - "6379:6379"
+    restart: always
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: groupeat-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME:-groupeat}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-groupeat}
     restart: always
 
   # 로그 저장소 (Loki)

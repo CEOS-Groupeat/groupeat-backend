@@ -37,4 +37,28 @@ public class NotificationMessagePublisher {
             );
         }
     }
+
+    public boolean publishFcmDeadLetterMessage(NotificationFcmMessage message) {
+        try {
+            rabbitTemplate.convertAndSend(properties.deadLetterExchange(), properties.deadLetterRoutingKey(), message);
+            log.warn(
+                    "FCM notification message moved to DLQ. messageId={}, notificationId={}, memberId={}, type={}",
+                    message.messageId(),
+                    message.notificationId(),
+                    message.memberId(),
+                    message.notificationType()
+            );
+            return true;
+        } catch (AmqpException e) {
+            log.warn(
+                    "FCM notification message DLQ publish failed. messageId={}, notificationId={}, memberId={}, type={}",
+                    message.messageId(),
+                    message.notificationId(),
+                    message.memberId(),
+                    message.notificationType(),
+                    e
+            );
+            return false;
+        }
+    }
 }

@@ -17,25 +17,14 @@ public class NotificationMessagePublisher {
     private final NotificationRabbitProperties properties;
 
     public void publishFcmMessage(NotificationFcmMessage message) {
-        try {
-            rabbitTemplate.convertAndSend(properties.exchange(), properties.routingKey(), message);
-            log.info(
-                    "FCM notification message published. messageId={}, notificationId={}, memberId={}, type={}",
-                    message.messageId(),
-                    message.notificationId(),
-                    message.memberId(),
-                    message.notificationType()
-            );
-        } catch (AmqpException e) {
-            log.warn(
-                    "FCM notification message publish failed. messageId={}, notificationId={}, memberId={}, type={}",
-                    message.messageId(),
-                    message.notificationId(),
-                    message.memberId(),
-                    message.notificationType(),
-                    e
-            );
-        }
+        rabbitTemplate.convertAndSend(properties.exchange(), properties.routingKey(), message);
+        log.info(
+                "FCM notification message published. messageId={}, notificationId={}, memberId={}, type={}",
+                message.messageId(),
+                message.notificationId(),
+                message.memberId(),
+                message.notificationType()
+        );
     }
 
     public boolean publishFcmDeadLetterMessage(NotificationFcmMessage message) {

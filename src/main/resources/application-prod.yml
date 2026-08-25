@@ -4,6 +4,12 @@ spring:
       host: redis
       port: 6379
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST:rabbitmq}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}

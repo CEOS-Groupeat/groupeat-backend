@@ -7,6 +7,12 @@ spring:
       host: localhost
       port: 6379
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:groupeat}
+    password: ${RABBITMQ_PASSWORD:groupeat}
+
   jackson:
     time-zone: Asia/Seoul
 

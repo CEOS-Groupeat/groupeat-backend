@@ -141,7 +141,7 @@ com.groupeat
 <br />
 
 
-## 참여자
+## BE 개발 참여자
 
 <div align="center">
 <table>

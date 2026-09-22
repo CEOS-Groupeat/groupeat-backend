@@ -1,10 +1,14 @@
 package com.groupeat.domain.search.repository;
 
 import com.groupeat.domain.search.dto.request.StoreSearchCondition;
+import com.groupeat.domain.search.cursor.StoreSearchCursor;
 import com.groupeat.domain.search.enums.StoreSortType;
 import com.groupeat.domain.store.entity.Store;
 import com.groupeat.domain.store.enums.StoreCategory;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.Ops;
+import com.querydsl.core.types.dsl.ComparableExpressionBase;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -28,14 +32,16 @@ public class SearchRepository {
     private final JPAQueryFactory queryFactory;
 
     // 조건에 맞는 가게 목록 조회
-    public List<Store> searchStores(StoreSearchCondition condition) {
+    public List<Store> searchStores(StoreSearchCondition condition, StoreSearchCursor cursor) {
         JPAQuery<Store> query = queryFactory.selectFrom(store);
 
         // 공통 검색 조건 및 스케줄 조인 적용
         applySearchFilters(query, condition);
 
-        return query.orderBy(getSortOrder(condition.sortType()))
+        return query.where(cursorCondition(cursor))
+                .orderBy(getSortOrders(condition.sortType()))
                 .distinct()
+                .limit(condition.pageSize() + 1L)
                 .fetch();
     }
 
@@ -158,18 +164,41 @@ public class SearchRepository {
                 .or(storeOrderScheduleDay.breakEndTime.loe(time));
     }
 
-    private OrderSpecifier<?> getSortOrder(StoreSortType sortType) {
-        if (sortType == null) {
-            return store.storeName.asc(); // 기본 가나다순
-        }
-
+    private ComparableExpressionBase<?> sortPath(StoreSortType sortType) {
         return switch (sortType) {
-            case NONE -> store.storeName.asc();               // 전체 (가나다 순)
-            case DISCOUNT_DESC -> store.discountRate.desc();  // 할인율 높은 순
-            case PRICE_ASC -> store.minPrice.asc();           // 가격 낮은 순
-            case PRICE_DESC -> store.maxPrice.desc();         // 가격 높은 순
-            case RATING_DESC -> store.reviewRating.desc();    // 별점 높은 순
-            case ORDER_DESC -> store.id.desc();               // 주문 많은 순 (임시 최신순 대체)
+            case NONE -> store.storeName;
+            case DISCOUNT_DESC -> store.discountRate;
+            case PRICE_ASC -> store.minPrice;
+            case PRICE_DESC -> store.maxPrice;
+            case RATING_DESC -> store.reviewRating;
+            case ORDER_DESC -> store.id;
         };
+    }
+
+    private boolean ascending(StoreSortType sortType) {
+        return sortType == StoreSortType.NONE || sortType == StoreSortType.PRICE_ASC;
+    }
+
+    private BooleanExpression cursorCondition(StoreSearchCursor cursor) {
+        if (cursor == null) return null;
+        if (cursor.sortType() == StoreSortType.ORDER_DESC) return store.id.lt(cursor.storeId());
+
+        ComparableExpressionBase<?> path = sortPath(cursor.sortType());
+        if (cursor.value() == null) {
+            BooleanExpression remainingNulls = path.isNull().and(store.id.lt(cursor.storeId()));
+            return ascending(cursor.sortType()) ? remainingNulls : remainingNulls.or(path.isNotNull());
+        }
+        var value = Expressions.constant(cursor.sortValue());
+        BooleanExpression remainingValues = Expressions.booleanOperation(ascending(cursor.sortType()) ? Ops.GT : Ops.LT, path, value)
+                .or(Expressions.booleanOperation(Ops.EQ, path, value).and(store.id.lt(cursor.storeId())));
+        return ascending(cursor.sortType()) ? remainingValues.or(path.isNull()) : remainingValues;
+    }
+
+    private OrderSpecifier<?>[] getSortOrders(StoreSortType sortType) {
+        if (sortType == StoreSortType.ORDER_DESC) return new OrderSpecifier<?>[]{store.id.desc()};
+        ComparableExpressionBase<?> path = sortPath(sortType);
+        // PostgreSQL의 기존 기본 NULL 배치를 명시적으로 유지한다.
+        OrderSpecifier<?> primary = ascending(sortType) ? path.asc().nullsLast() : path.desc().nullsFirst();
+        return new OrderSpecifier<?>[]{primary, store.id.desc()};
     }
 }

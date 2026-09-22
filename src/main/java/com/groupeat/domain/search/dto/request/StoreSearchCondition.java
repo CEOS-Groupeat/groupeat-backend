@@ -39,8 +39,18 @@ public record StoreSearchCondition(
         StoreCategory category,
 
         @Schema(description = "정렬 기준(기본값: NONE - 가나다 순)", example = "NONE")
-        StoreSortType sortType
+        StoreSortType sortType,
+
+        @Schema(description = "페이지 크기 (기본 20, 최대 100)", example = "20")
+        Integer size,
+
+        @Schema(description = "직전 응답의 nextCursor. 첫 요청은 생략")
+        String cursor
 ) {
+    public int pageSize() {
+        return size == null ? 20 : size;
+    }
+
     public StoreSortType sortType() {
         return this.sortType == null ? StoreSortType.NONE : this.sortType;
     }
@@ -48,12 +58,15 @@ public record StoreSearchCondition(
     // 조건이 아예 넘어오지 않았을 경우(null)를 대비한 안전한 기본 객체 생성
     public static StoreSearchCondition defaultIfNull(StoreSearchCondition condition) {
         return condition == null
-                ? new StoreSearchCondition(null, null, null, null, null, null, null, null)
+                ? new StoreSearchCondition(null, null, null, null, null, null, null, null, null, null)
                 : condition;
     }
 
     // 비즈니스 규칙 유효성 검증
     public void validate() {
+        if (pageSize() < 1 || pageSize() > 100) {
+            throw new GeneralException(SearchErrorStatus.INVALID_PAGE_SIZE);
+        }
         // 과거 날짜 검색 방지
         if (pickupDate != null) {
             // 과거 날짜/시간 검색 방지

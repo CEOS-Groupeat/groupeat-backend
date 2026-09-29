@@ -38,9 +38,13 @@ public class SearchRepository {
         // 공통 검색 조건 및 스케줄 조인 적용
         applySearchFilters(query, condition);
 
-        return query.where(cursorCondition(cursor))
+        if (hasScheduleCondition(condition)) {
+            query.distinct();
+        }
+
+        return query
+                .where(cursorCondition(cursor))
                 .orderBy(getSortOrders(condition.sortType()))
-                .distinct()
                 .limit(condition.pageSize() + 1L)
                 .fetch();
     }

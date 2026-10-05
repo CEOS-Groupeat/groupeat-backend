@@ -16,6 +16,8 @@ public enum SearchErrorStatus implements BaseErrorCode {
     INVALID_QUANTITY(HttpStatus.BAD_REQUEST, "SEARCH4003", "주문 수량은 1개 이상이어야 합니다."),
     INVALID_BUDGET(HttpStatus.BAD_REQUEST, "SEARCH4004", "예산은 0원 이상이어야 합니다."),
     PICKUP_TIME_IN_PAST(HttpStatus.BAD_REQUEST, "SEARCH4005", "오늘 날짜인 경우, 픽업 시간은 현재 시간 이후여야 합니다."),
+    INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "SEARCH4006", "페이지 크기는 1 이상 100 이하여야 합니다."),
+    INVALID_CURSOR(HttpStatus.BAD_REQUEST, "SEARCH4007", "유효하지 않거나 검색 조건과 일치하지 않는 커서입니다."),
     SEARCH_RESULT_NOT_FOUND(HttpStatus.NOT_FOUND, "SEARCH4040", "조건에 맞는 가게를 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;

@@ -29,6 +29,7 @@ public class SearchService {
 
         // 가게 목록 및 카운트 조회
         var cursor = cursorCodec.decode(safeCondition);
+        searchRepository.forceCustomPlanForCurrentTransaction();
         List<Store> fetched = searchRepository.searchStores(safeCondition, cursor);
         boolean hasNext = fetched.size() > safeCondition.pageSize();
         List<Store> stores = hasNext ? fetched.subList(0, safeCondition.pageSize()) : fetched;

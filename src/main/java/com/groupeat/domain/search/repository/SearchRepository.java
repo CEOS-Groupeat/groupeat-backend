@@ -13,6 +13,9 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
+import jakarta.persistence.EntityManager;
+import org.hibernate.Session;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
 
@@ -30,6 +33,22 @@ import static com.groupeat.domain.store.entity.QStoreOrderScheduleDay.storeOrder
 public class SearchRepository {
 
     private final JPAQueryFactory queryFactory;
+    private final EntityManager entityManager;
+
+    public void forceCustomPlanForCurrentTransaction() {
+        boolean transactionActive = TransactionSynchronizationManager.isActualTransactionActive();
+        Session session = transactionActive ? (Session) entityManager.getDelegate() : null;
+        boolean joinedToTransaction = session != null && session.isJoinedToTransaction();
+        if (!transactionActive || !joinedToTransaction) {
+            throw new IllegalStateException("검색 계획 설정에는 활성 JPA 트랜잭션이 필요합니다. "
+                    + "transactionActive=" + transactionActive + ", joinedToTransaction=" + joinedToTransaction);
+        }
+        session.doWork(connection -> {
+            try (var statement = connection.createStatement()) {
+                statement.execute("SET LOCAL plan_cache_mode = force_custom_plan");
+            }
+        });
+    }
 
     // 조건에 맞는 가게 목록 조회
     public List<Store> searchStores(StoreSearchCondition condition, StoreSearchCursor cursor) {

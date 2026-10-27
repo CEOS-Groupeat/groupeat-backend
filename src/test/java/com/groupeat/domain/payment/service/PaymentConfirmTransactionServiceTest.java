@@ -14,6 +14,7 @@ import com.groupeat.domain.payment.enums.PaymentStatus;
 import com.groupeat.domain.payment.enums.PaymentType;
 import com.groupeat.domain.payment.exception.PaymentErrorStatus;
 import com.groupeat.domain.payment.repository.PaymentRepository;
+import com.groupeat.domain.store.entity.Store;
 import com.groupeat.global.exception.GeneralException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentConfirmTransactionServiceTest {
@@ -82,6 +84,30 @@ class PaymentConfirmTransactionServiceTest {
         assertThat(payment.getPaymentStatus()).isEqualTo(PaymentStatus.IN_PROGRESS);
         assertThat(payment.getPaymentKey()).isEqualTo(PAYMENT_KEY);
         assertThat(payment.getConfirmIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY);
+    }
+
+    @Test
+    void prepareConfirm_missingOrder_throwsOrderRelationInvalid() {
+        assertInvalidOrderRelation(readyPayment(null));
+    }
+
+    @Test
+    void prepareConfirm_missingStore_throwsOrderRelationInvalid() {
+        assertInvalidOrderRelation(readyPayment(Order.builder().orderId(ORDER_ID).build()));
+    }
+
+    private void assertInvalidOrderRelation(Payment payment) {
+        when(paymentRepository.findByOrderId(ORDER_ID)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentConfirmTransactionService.prepareConfirm(
+                MEMBER_ID, IDEMPOTENCY_KEY, confirmRequest(AMOUNT)))
+                .isInstanceOfSatisfying(GeneralException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(PaymentErrorStatus.PAYMENT_ORDER_RELATION_INVALID));
+
+        assertThat(payment.getPaymentStatus()).isEqualTo(PaymentStatus.READY);
+        assertThat(payment.getPaymentKey()).isNull();
+        assertThat(payment.getConfirmIdempotencyKey()).isNull();
+        verifyNoInteractions(orderStoreBlockService);
     }
 
     // 결제 소유자가 아니면 접근을 차단한다.
@@ -211,8 +237,13 @@ class PaymentConfirmTransactionServiceTest {
     }
 
     private Payment readyPayment() {
+        return readyPayment(pendingOrder());
+    }
+
+    private Payment readyPayment(Order order) {
         return Payment.builder()
                 .id(PAYMENT_ID)
+                .order(order)
                 .orderId(ORDER_ID)
                 .memberId(MEMBER_ID)
                 .paymentType(PaymentType.PREPAID)
@@ -255,6 +286,7 @@ class PaymentConfirmTransactionServiceTest {
 
     private Order pendingOrder() {
         return Order.builder()
+                .store(Store.builder().id(3L).build())
                 .orderId(ORDER_ID)
                 .memberId(MEMBER_ID)
                 .orderStatus(OrderStatus.PENDING)

@@ -193,7 +193,7 @@ public class PaymentConfirmTransactionService {
 
     private void validateOrderableStore(Payment payment) {
         if (payment.getOrder() == null || payment.getOrder().getStore() == null) {
-            return;
+            throw new GeneralException(PaymentErrorStatus.PAYMENT_ORDER_RELATION_INVALID);
         }
 
         orderStoreBlockService.validateOrderableStore(payment.getOrder().getStore().getId());

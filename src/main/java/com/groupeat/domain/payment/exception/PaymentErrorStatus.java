@@ -20,6 +20,7 @@ public enum PaymentErrorStatus implements BaseErrorCode {
     PAYMENT_CONFIRM_IN_PROGRESS(HttpStatus.CONFLICT, "PAYMENT4090", "동일한 결제 승인 요청이 처리 중입니다."),
     PAYMENT_RECONCILIATION_REQUIRED(HttpStatus.CONFLICT, "PAYMENT4091", "결제 결과 확인이 필요합니다. 다시 결제하지 말고 문의해 주세요."),
     PAYMENT_CANCELED_AFTER_CONFIRM_FAILURE(HttpStatus.CONFLICT, "PAYMENT4092", "주문 처리에 실패하여 결제가 전액 취소되었습니다."),
+    PAYMENT_ORDER_RELATION_INVALID(HttpStatus.INTERNAL_SERVER_ERROR, "PAYMENT5000", "결제에 연결된 주문 또는 매장 정보가 누락되었습니다."),
     TOSS_CONFIRM_FAILED(HttpStatus.BAD_GATEWAY, "PAYMENT5020", "토스페이먼츠 결제 승인에 실패했습니다."),
     TOSS_CANCEL_FAILED(HttpStatus.BAD_GATEWAY, "PAYMENT5021", "토스페이먼츠 결제 취소에 실패했습니다.");
 

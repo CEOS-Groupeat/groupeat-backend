@@ -11,6 +11,9 @@ import com.groupeat.domain.payment.exception.TossPaymentException;
 import com.groupeat.global.exception.GeneralException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.web.client.RestClientException;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -41,11 +44,14 @@ class PaymentConfirmServiceTest {
     @Mock
     private PaymentConfirmTransactionService paymentConfirmTransactionService;
 
+    @Mock
+    private PaymentReconciliationService paymentReconciliationService;
+
     private PaymentConfirmService paymentConfirmService;
 
     @BeforeEach
     void setUp() {
-        paymentConfirmService = new PaymentConfirmService(tossPaymentClient, paymentConfirmTransactionService);
+        paymentConfirmService = new PaymentConfirmService(tossPaymentClient, paymentConfirmTransactionService, paymentReconciliationService);
     }
 
     // 토스 승인에 성공하면 결제 완료 저장을 호출한다.
@@ -142,6 +148,37 @@ class PaymentConfirmServiceTest {
         verify(paymentConfirmTransactionService, never()).approvePayment(any(), any());
     }
 
+    // 결과가 불확실한 네 경로 모두 복구 서비스에 위임
+    @ParameterizedTest
+    @ValueSource(strings = {"emptyResponse", "transportFailure", "uncertainTossFailure", "approvalSaveFailure"})
+    void confirm_uncertainResult_delegatesToReconciliation(String scenario) {
+        PreparedPaymentConfirm prepared = PreparedPaymentConfirm.ready(PAYMENT_ID, ORDER_ID, AMOUNT);
+        when(paymentConfirmTransactionService.prepareConfirm(MEMBER_ID, IDEMPOTENCY_KEY, confirmRequest()))
+                .thenReturn(prepared);
+        switch (scenario) {
+            case "emptyResponse" -> when(tossPaymentClient.confirmPayment(any(), eq(IDEMPOTENCY_KEY))).thenReturn(null);
+            case "transportFailure" -> when(tossPaymentClient.confirmPayment(any(), eq(IDEMPOTENCY_KEY)))
+                    .thenThrow(new RestClientException("통신 실패"));
+            case "uncertainTossFailure" -> when(tossPaymentClient.confirmPayment(any(), eq(IDEMPOTENCY_KEY)))
+                    .thenThrow(new TossPaymentException(HttpStatus.INTERNAL_SERVER_ERROR, "UNKNOWN", "결과 불확실"));
+            case "approvalSaveFailure" -> {
+                TossPaymentConfirmResponse payment = tossDoneResponse(ORDER_ID, AMOUNT);
+                when(tossPaymentClient.confirmPayment(any(), eq(IDEMPOTENCY_KEY))).thenReturn(payment);
+                when(paymentConfirmTransactionService.approvePayment(PAYMENT_ID, payment))
+                        .thenThrow(new IllegalStateException("승인 저장 실패"));
+            }
+            default -> throw new IllegalArgumentException(scenario);
+        }
+        when(paymentReconciliationService.reconcilePayment(eq(prepared), eq(PAYMENT_KEY), any(RuntimeException.class)))
+                .thenReturn(doneResponse());
+
+        assertThat(paymentConfirmService.confirm(MEMBER_ID, IDEMPOTENCY_KEY, confirmRequest())).isEqualTo(doneResponse());
+
+        verify(paymentReconciliationService).reconcilePayment(eq(prepared), eq(PAYMENT_KEY), any(RuntimeException.class));
+        verify(tossPaymentClient, never()).getPayment(any());
+        verify(tossPaymentClient, never()).cancelPayment(any(), any());
+    }
+
     private PaymentConfirmRequest confirmRequest() {
         return new PaymentConfirmRequest(PAYMENT_KEY, ORDER_ID, AMOUNT);
     }
@@ -159,13 +196,17 @@ class PaymentConfirmServiceTest {
     }
 
     private TossPaymentConfirmResponse tossDoneResponse(String orderId, Integer totalAmount) {
+        return tossResponse(orderId, totalAmount, "DONE");
+    }
+
+    private TossPaymentConfirmResponse tossResponse(String orderId, Integer totalAmount, String status) {
         return new TossPaymentConfirmResponse(
                 "tosspayments",
                 "2024-06-01",
                 PAYMENT_KEY,
                 orderId,
                 "그룹잇 테스트 주문",
-                "DONE",
+                status,
                 "transaction-key",
                 "카드",
                 "NORMAL",

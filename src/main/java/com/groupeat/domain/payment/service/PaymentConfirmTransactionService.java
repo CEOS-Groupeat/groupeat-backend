@@ -48,6 +48,7 @@ public class PaymentConfirmTransactionService {
         validateAmount(payment, request.amount());
         validateOrderableStore(payment);
 
+        // 이미 완료된 결제에 대한 재요청 처리
         if (payment.getPaymentStatus() == PaymentStatus.DONE) {
             validateAlreadyConfirmedPayment(payment, request.paymentKey());
             return PreparedPaymentConfirm.alreadyConfirmed(PaymentConverter.toConfirmResponse(payment));
@@ -164,21 +165,22 @@ public class PaymentConfirmTransactionService {
 
     // 승인 요청은 아직 처리되지 않은 READY 상태에서만 허용
     private void validateConfirmableStatus(Payment payment, String requestPaymentKey, String idempotencyKey) {
-        if (payment.getPaymentStatus() == PaymentStatus.RECONCILIATION_REQUIRED) {
-            throw new GeneralException(PaymentErrorStatus.PAYMENT_RECONCILIATION_REQUIRED);
-        }
+        switch (payment.getPaymentStatus()) {
+            case READY -> {
+                return;
+            }
+            case RECONCILIATION_REQUIRED ->
+                    throw new GeneralException(PaymentErrorStatus.PAYMENT_RECONCILIATION_REQUIRED);
+            case IN_PROGRESS -> {
+                boolean sameRequest = Objects.equals(payment.getPaymentKey(), requestPaymentKey)
+                        && Objects.equals(payment.getConfirmIdempotencyKey(), idempotencyKey);
 
-        if (payment.getPaymentStatus() == PaymentStatus.READY) {
-            return;
+                throw new GeneralException(sameRequest
+                        ? PaymentErrorStatus.PAYMENT_CONFIRM_IN_PROGRESS
+                        : PaymentErrorStatus.PAYMENT_INVALID_STATUS);
+            }
+            default -> throw new GeneralException(PaymentErrorStatus.PAYMENT_INVALID_STATUS);
         }
-
-        if (payment.getPaymentStatus() == PaymentStatus.IN_PROGRESS
-                && Objects.equals(payment.getPaymentKey(), requestPaymentKey)
-                && Objects.equals(payment.getConfirmIdempotencyKey(), idempotencyKey)) {
-            throw new GeneralException(PaymentErrorStatus.PAYMENT_CONFIRM_IN_PROGRESS);
-        }
-
-        throw new GeneralException(PaymentErrorStatus.PAYMENT_INVALID_STATUS);
     }
 
     private void validateIdempotencyKey(String idempotencyKey) {
@@ -193,7 +195,7 @@ public class PaymentConfirmTransactionService {
 
     private void validateOrderableStore(Payment payment) {
         if (payment.getOrder() == null || payment.getOrder().getStore() == null) {
-            return;
+            throw new GeneralException(PaymentErrorStatus.PAYMENT_ORDER_RELATION_INVALID);
         }
 
         orderStoreBlockService.validateOrderableStore(payment.getOrder().getStore().getId());

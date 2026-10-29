@@ -10,7 +10,9 @@ public class SearchConverter {
 
     public static StoreSearchResponse.StoreListDTO toStoreListDTO(
             List<Store> stores,
-            long totalElements
+            long totalElements,
+            boolean hasNext,
+            String nextCursor
     ) {
         List<StoreSearchResponse.StoreCardDTO> storeCards = stores.stream()
                 .map(SearchConverter::toStoreCardDTO)
@@ -19,6 +21,8 @@ public class SearchConverter {
         return StoreSearchResponse.StoreListDTO.builder()
                 .totalElements(totalElements)
                 .storeList(storeCards)
+                .hasNext(hasNext)
+                .nextCursor(nextCursor)
                 .build();
     }
 

@@ -234,8 +234,6 @@ public class OrderService {
         return OrderDetailConverter.toOrderDetailDTO(order, payment, optionsByOrderItemId, menuImageUrls);
     }
 
-    // 외부 결제 취소 호출이 기존 트랜잭션에 포함되지 않도록 분리
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public OrderCancelResponse cancelOrder(Long memberId, Long orderId, OrderCancelRequest request) {
         OrderCancelPreparation preparation = orderCancelTransactionService.prepareCustomerCancel(memberId, orderId);
 
@@ -271,8 +269,6 @@ public class OrderService {
         return orderOwnerActionTransactionService.acceptOrder(ownerId, orderId);
     }
 
-    // 외부 결제 취소 호출이 기존 트랜잭션에 포함되지 않도록 분리
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public OrderStatusChangeResponse rejectOrder(Long ownerId, MemberType memberType, Long orderId) {
         validateBusinessMember(memberType);
 

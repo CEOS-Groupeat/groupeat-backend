@@ -93,9 +93,11 @@ public class OrderOwnerActionTransactionService {
         validateRejectable(order);
 
         LocalDateTime rejectedAt = LocalDateTime.now();
-        order.reject(rejectedAt);
-        publishOrderStatusNotificationEvent(order);
+        order.reject(rejectedAt); // 주문 거절 상태 DB반영
 
+        publishOrderStatusNotificationEvent(order); // 주문 상태 알림 이벤트 발행
+
+        // 결제 취소 상태 DB반영
         paymentRepository.findByOrderId(order.getOrderId())
                 .ifPresent(payment -> applyPaymentCancel(payment, refundAmount, paymentCancelResult));
     }

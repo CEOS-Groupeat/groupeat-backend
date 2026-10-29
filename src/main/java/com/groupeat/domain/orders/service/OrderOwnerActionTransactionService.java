@@ -40,12 +40,13 @@ public class OrderOwnerActionTransactionService {
         Order order = orderRepository.findByIdAndStoreOwnerIdWithItems(orderId, ownerId)
                 .orElseThrow(() -> new GeneralException(OrderErrorStatus.ORDER_NOT_FOUND));
 
-        validateAcceptable(order);
-        orderScheduleValidationService.validateOrderAcceptance(order);
+        validateAcceptable(order); // 결제완료 상태 확인
+        orderScheduleValidationService.validateOrderAcceptance(order); // 매장이 주문 수락 가능 상태인지 확인
 
         LocalDateTime acceptedAt = LocalDateTime.now();
         order.accept(acceptedAt);
-        publishOrderStatusNotificationEvent(order);
+
+        publishOrderStatusNotificationEvent(order); // 알림 이벤트 발행
 
         return OrderConverter.toOrderStatusChangeResponse(order, acceptedAt);
     }

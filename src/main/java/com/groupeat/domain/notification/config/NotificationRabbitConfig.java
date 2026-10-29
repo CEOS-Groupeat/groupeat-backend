@@ -71,7 +71,7 @@ public class NotificationRabbitConfig {
     @Bean
     public Queue notificationFcmRetryQueue() {
         return QueueBuilder.durable(properties.retryQueue())
-                .withArgument("x-message-ttl", properties.retryTtlMs())
+                .withArgument("x-message-ttl", properties.retryTtlMs()) // retry 큐에서 10초(ttl) 대기 후 메인 큐로 이동
                 .withArgument("x-dead-letter-exchange", properties.exchange())
                 .withArgument("x-dead-letter-routing-key", properties.routingKey())
                 .build();

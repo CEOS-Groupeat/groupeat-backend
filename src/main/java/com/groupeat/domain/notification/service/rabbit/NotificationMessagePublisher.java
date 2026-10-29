@@ -16,8 +16,13 @@ public class NotificationMessagePublisher {
     private final RabbitTemplate rabbitTemplate;
     private final NotificationRabbitProperties properties;
 
+    // fcm알림 작업 RabbitMQ 메시지 발행
     public void publishFcmMessage(NotificationFcmMessage message) {
-        rabbitTemplate.convertAndSend(properties.exchange(), properties.routingKey(), message);
+        rabbitTemplate.convertAndSend(
+                properties.exchange(), // 메시지를 보낼 exchange
+                properties.routingKey(), // 라우팅 기준
+                message // 메시지
+        );
         log.info(
                 "FCM notification message published. messageId={}, notificationId={}, memberId={}, type={}",
                 message.messageId(),

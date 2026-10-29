@@ -125,7 +125,14 @@ public class SearchRepository {
     }
 
     private BooleanExpression keywordContains(String keyword) {
-        return StringUtils.hasText(keyword) ? store.storeName.contains(keyword) : null;
+        if (!StringUtils.hasText(keyword)) {
+            return null; // 검색어가 없으면 이름 검색 조건을 만들지 않음
+        }
+
+        return Expressions.stringTemplate(
+                "replace({0}, ' ', '')", // => REPLACE(store_name, ' ', '')
+                store.storeName
+        ).contains(keyword); // 공백을 제거한 가게 이름에 검색어가 포함되는지 검사
     }
 
     private BooleanExpression districtEq(String district) {

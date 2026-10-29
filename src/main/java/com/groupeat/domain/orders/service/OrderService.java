@@ -60,7 +60,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Transactional
 public class OrderService {
 
     private static final String OWNER_REJECT_CANCEL_REASON = "사업자 주문 거절";
@@ -235,7 +234,6 @@ public class OrderService {
         return OrderDetailConverter.toOrderDetailDTO(order, payment, optionsByOrderItemId, menuImageUrls);
     }
 
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public OrderCancelResponse cancelOrder(Long memberId, Long orderId, OrderCancelRequest request) {
         OrderCancelPreparation preparation = orderCancelTransactionService.prepareCustomerCancel(memberId, orderId);
 
@@ -266,13 +264,11 @@ public class OrderService {
         }
     }
 
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public OrderStatusChangeResponse acceptOrder(Long ownerId, MemberType memberType, Long orderId) {
         validateBusinessMember(memberType);
         return orderOwnerActionTransactionService.acceptOrder(ownerId, orderId);
     }
 
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public OrderStatusChangeResponse rejectOrder(Long ownerId, MemberType memberType, Long orderId) {
         validateBusinessMember(memberType);
 
@@ -303,7 +299,6 @@ public class OrderService {
         }
     }
 
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public OrderStatusChangeResponse completePickup(Long ownerId, MemberType memberType, Long orderId) {
         validateBusinessMember(memberType);
         return orderOwnerActionTransactionService.completePickup(ownerId, orderId);

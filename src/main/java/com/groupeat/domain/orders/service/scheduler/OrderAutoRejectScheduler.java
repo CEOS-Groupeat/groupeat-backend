@@ -36,6 +36,7 @@ public class OrderAutoRejectScheduler {
             return;
         }
 
+        // 24시간 미처리 주문건 도출
         LocalDateTime approvedAtOrBefore = LocalDateTime.now().minusHours(schedulerProperties.acceptDeadlineHours());
         List<Payment> payments = paymentRepository.findAllAutoRejectCandidates(
                 PaymentStatus.DONE,

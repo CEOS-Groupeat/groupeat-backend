@@ -75,6 +75,7 @@ public class OrderController {
         return ApiResponse.onSuccess(response);
     }
 
+    // 주문승인, 주문거절, 픽업완료 메서드는 OwnerOrderController 클래스로 옮길 예정
     @PatchMapping("/{orderId}/accept")
     @Operation(summary = "주문 승인", description = "사업자가 본인 가게의 주문을 승인합니다.")
     public ApiResponse<OrderStatusChangeResponse> acceptOrder(

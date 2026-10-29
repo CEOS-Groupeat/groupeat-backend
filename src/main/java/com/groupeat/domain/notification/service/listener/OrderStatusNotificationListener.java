@@ -38,6 +38,7 @@ public class OrderStatusNotificationListener {
                     event.orderStatus()
             );
 
+            // 사용자의 알림 수신 동의 여부 확인
             Member member = memberRepository.findById(event.memberId()).orElse(null);
             if (member == null || !member.isOrderStatusNotificationAgreed()) {
                 return;

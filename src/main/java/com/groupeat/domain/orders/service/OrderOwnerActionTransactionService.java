@@ -40,12 +40,13 @@ public class OrderOwnerActionTransactionService {
         Order order = orderRepository.findByIdAndStoreOwnerIdWithItems(orderId, ownerId)
                 .orElseThrow(() -> new GeneralException(OrderErrorStatus.ORDER_NOT_FOUND));
 
-        validateAcceptable(order);
-        orderScheduleValidationService.validateOrderAcceptance(order);
+        validateAcceptable(order); // 결제완료 상태 확인
+        orderScheduleValidationService.validateOrderAcceptance(order); // 매장이 주문 수락 가능 상태인지 확인
 
         LocalDateTime acceptedAt = LocalDateTime.now();
         order.accept(acceptedAt);
-        publishOrderStatusNotificationEvent(order);
+
+        publishOrderStatusNotificationEvent(order); // 알림 이벤트 발행
 
         return OrderConverter.toOrderStatusChangeResponse(order, acceptedAt);
     }
@@ -92,9 +93,11 @@ public class OrderOwnerActionTransactionService {
         validateRejectable(order);
 
         LocalDateTime rejectedAt = LocalDateTime.now();
-        order.reject(rejectedAt);
-        publishOrderStatusNotificationEvent(order);
+        order.reject(rejectedAt); // 주문 거절 상태 DB반영
 
+        publishOrderStatusNotificationEvent(order); // 주문 상태 알림 이벤트 발행
+
+        // 결제 취소 상태 DB반영
         paymentRepository.findByOrderId(order.getOrderId())
                 .ifPresent(payment -> applyPaymentCancel(payment, refundAmount, paymentCancelResult));
     }

@@ -36,6 +36,7 @@ public class FcmNotificationMessageConsumer {
     @RabbitListener(queues = "${app.notification.rabbitmq.queue}")
     public void consume(NotificationFcmMessage fcmMessage, Message rawMessage) {
         try {
+            // Redis에서 이전 발송 완료 여부 확인
             if (notificationFcmIdempotencyService.alreadySent(fcmMessage.notificationId())) {
                 log.info(
                         "FCM notification message skipped because already sent. messageId={}, notificationId={}, memberId={}",

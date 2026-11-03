@@ -97,8 +97,11 @@ public record StoreSearchCondition(
         }
     }
 
-    // 공백만 있는 키워드는 null로 정제하여 쿼리 최적화
+    // 검색어 공백 제거
     public String cleanKeyword() {
-        return StringUtils.hasText(keyword) ? keyword.trim() : null;
+        if (!StringUtils.hasText(keyword)) {
+            return null;
+        }
+        return keyword.trim().replace(" ", "");
     }
 }

@@ -12,7 +12,13 @@ public class StoreSearchResponse {
             long totalElements,
 
             @Schema(description = "가게 카드 리스트")
-            List<StoreCardDTO> storeList
+            List<StoreCardDTO> storeList,
+
+            @Schema(description = "다음 페이지 존재 여부")
+            boolean hasNext,
+
+            @Schema(description = "다음 요청에 전달할 커서. 마지막 페이지는 null")
+            String nextCursor
     ) {}
 
     @Builder
